@@ -1,0 +1,550 @@
+#!/bin/sh
+#
+#    Ubuntu Jeos image builder
+#    Copyright (C) 2007  Canonical Ltd.
+#
+#    Author: Soren Hansen <soren@canonical.com>
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License along
+#    with this program; if not, write to the Free Software Foundation, Inc.,
+#    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+usage () {
+	cat <<EOT
+usage: ubuntu-jeos-builder  [--addpkg PKG]
+                            [(-a|--arch) i386] 
+                            [(-d|--dest) <destination (zip filename)>]
+                            [--domain DOMAIN]
+                            [-h|--help]
+                            [--hostname NAME]
+                            [--mem num]
+                            [--mirror URL]
+                            [--removepkg PKG]
+                            [(-s|--suite) gutsy]
+                            [(-t|--tmp) temp_dir]
+                            [--vm (vmw6|vmserver|vbox|qemu)]
+
+--addpkg PKG       Install PKG into the guest (can be specfied multiple times)
+-a, --arch ARCH    Specify the target architecture. Valid options: i386*
+-d, --dest         Specify the destination zip file. 
+                   Default: ubuntu-jeos-$SUITE-$ARCH.zip
+--domain DOMAIN    Set DOMAIN as the domain name of the guest. Default:
+                   The domain of the machine running this script.
+-h, --help         This help text.
+--hostname NAME    Set NAME as the hostname of the guest. Default: ubuntu
+--mem NN           Assign NN megabytes of memory to the guest vm.
+                   Default: 128
+--mirror URL       Use Ubuntu mirror at URL instead of the default, which
+                   is: http://se.archive.ubuntu.com/ubuntu
+--removepkg PKG    Remove PKG from the guest (can be specfied multiple times)
+-s, --suite SUITE  Use the specified Ubuntu suite. Valid options: gutsy*
+-t, --tmp  TMPDIR  Use TMPDIR as temporary working area for the image
+                   generation. Defaults to \$TMPDIR if set, or /tmp if not.
+--vm VM            Generate image for specified virtualisation software.
+                   Valid choices are: vmw6* vmserver vbox qemu
+
+('*' denotes default option)
+
+ubuntu-jeos-builder is Copyright (C) 2007 Canonical Ltd. and
+written by Soren Hansen <soren@canonical.com>
+EOT
+}
+
+#
+# The defaults
+#
+ARCH="i386"
+if [ -z "$TMPDIR" ]
+then
+	TMPDIR="/tmp"
+fi
+VM=vmw6
+SUITE="gutsy"
+MIRROR="http://se.archive.ubuntu.com/ubuntu"
+MEM=128
+HOSTNAME="ubuntu"
+DOMAIN="`hostname -d`"
+
+TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,  -- "$@"`
+eval set -- "$TEMP"
+
+while true
+do
+	case "$1" in 
+		--addpkg)
+			echo "Will add $2 to the guest"
+			PKGCMD="$PKGCMD $2"
+			shift 2
+		;;
+		-a|--arch)
+			if [ "$2" = i386 ] || [ "$2" = amd64 ]
+			then
+				echo "Setting architecture to \"$2\""
+				ARCH="$2"
+			else
+				echo "Invalid architecture: \"$2\". Valid choices are: i386 amd64"
+				exit 1
+			fi
+			shift 2
+		;;
+		-d|--dest)
+			if [ -d "`dirname $2`" ]
+			then
+				if [ -w "`dirname $2`" ]
+				then
+					echo "Setting destination to \"$2\""
+					if [ ! "${2#/}" = "${2}" ]
+					then
+						# Absolute path given
+						DESTINATION="$2"
+					else
+						# Relative path given
+						DESTINATION="${PWD}/$2"
+					fi
+				else
+					echo "\"`dirname $2`\" is not writable"
+					exit 1
+				fi
+			else
+				echo "\"`dirname $2`\" is not a directory"
+				exit 1
+			fi
+			shift 2
+		;;
+		--domain)
+			echo "Setting guest domain to $2"
+			DOMAIN="$2"
+			shift 2
+		;;
+		-h|--help)
+			usage
+			exit 0
+			;;
+		--hostname)
+			echo "Setting guest hostname to $2"
+			HOSTNAME="$2"
+			shift 2
+		;;
+		--mem)
+			echo "Setting guest memory to $2 MB"
+			MEM="$2"
+			shift 2
+		;;
+		--mirror)
+			echo "Setting Ubuntu mirror to \"$2\""
+			MIRROR="$2"
+			shift 2
+		;;
+		--removepkg)
+			echo "Will remove $2 from the guest"
+			PKGCMD="$PKGCMD ${2}-"
+			shift 2
+		;;
+		--s|--suite)
+			if [ "$2" = gutsy ]
+			then
+				echo "Setting Ubuntu version to \"$2\""
+				SUITE="$2"
+			else
+				echo "Invalid Ubuntu version: \"$2\". Valid choices are: gutsy"
+				exit 1
+			fi
+			shift 2
+		;;
+		-t|--tmp)
+			if [ ! -d "$2" ]
+			then
+				echo "\"$2\" is not a directory"
+				exit 1
+			fi
+			if [ ! -w "$2" ]
+			then
+				echo "\"$2\" is not writable"
+				exit 1
+			fi
+			echo "Setting temporary working dir to \"$2\""
+			TMPDIR="$2"
+			shift 2
+		;;
+		--vm)
+			if [ "$2" = vmw6 ] || [ "$2" = vmserver ] || [ "$2" = vbox ] || [ "$2" = qemu ]
+			then
+				echo "Setting target vm to \"$2\""
+				VM="$2"
+			else
+				echo "Invalid vm software: \"$2\". Valid choices are: vmw6 vmserver vbox qemu"
+				exit 1
+			fi
+			shift 2
+		;;
+		--)
+			shift
+			break
+		;;
+	esac
+done
+
+if [ $# -gt 0 ];
+then
+	usage
+	exit 1
+fi
+
+if [ -d "$TMPDIR/jeos-builder-tmp" ]
+then
+	echo "\"$TMPDIR/jeos-builder-tmp\" already exists"
+	exit 1
+fi
+
+WORKINGDIR="$TMPDIR/jeos-builder-tmp"
+
+if [ -z "$DESTINATION" ]
+then
+	DESTINATION="$PWD/ubuntu-jeos-$SUITE-$ARCH.zip"
+fi
+
+if [ ! "`id -u`" = 0 ]
+then
+	echo "$0 must be run as root (e.g. by means of sudo)"
+	exit 1
+fi
+
+mkfs3loop () {
+	loopfile="$1"
+	lodev="`losetup -o 16384 -fv $loopfile | cut -f4 -d\ `" && mkfs.ext3 $lodev && /lib/udev/vol_id --uuid $lodev > $loopfile.uuid && losetup -d $lodev
+}
+
+mkswaploop () {
+	loopfile="$1"
+	lodev="`losetup -o 16384 -fv $loopfile | cut -f4 -d\ `" && mkswap $lodev && /lib/udev/vol_id --uuid $lodev > $loopfile.uuid && losetup -d $lodev
+}
+
+do_initial_user () {
+	#
+	# Set up a user with sudo etc.
+	#
+
+	chroot root adduser --disabled-password --gecos Ubuntu ubuntu > /dev/null
+	chroot root chpasswd <<EOF
+ubuntu:ubuntu
+EOF
+
+	chroot root addgroup --system admin >/dev/null 2>&1
+	chroot root adduser ubuntu admin >/dev/null 2>&1
+
+	sponge root/etc/sudoers << EOF
+
+# Members of the admin group may gain root privileges
+%admin ALL=(ALL) ALL
+EOF
+
+	for group in adm audio cdrom dialout floppy video plugdev dip netdev powerdev lpadmin scanner; do
+		chroot root adduser ubuntu $group >/dev/null 2>&1
+	done
+
+}
+
+do_network_setup () {
+	echo $HOSTNAME | sponge root/etc/hostname
+
+	sponge root/etc/hosts <<EOF
+127.0.0.1 localhost
+127.0.1.1 $HOSTNAME.$DOMAIN $HOSTNAME
+EOF
+
+	sponge root/etc/network/interfaces <<EOF
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+auto eth0
+iface eth0 inet dhcp
+EOF
+}
+
+do_bootloader () {
+
+	sponge root/etc/kernel-img.conf << EOF
+do_symlinks = yes
+relative_links = yes
+do_bootfloppy = no
+do_initrd = yes
+link_in_boot = no
+postinst_hook = /usr/sbin/update-grub
+postrm_hook = /usr/sbin/update-grub
+do_bootloader = no
+EOF
+
+	chroot root apt-get --force-yes -y install grub
+
+
+	mkdir root/boot/grub
+	#
+	# Create device.map
+	#
+	sponge root/boot/grub/device.map << EOF
+(fd0)	/dev/fd0
+(hd0)	/dev/sda
+(hd1)	/dev/sdb
+(hd2)	/dev/sdc
+EOF
+
+
+	if [ $ARCH = "amd64" ]
+	then
+		grubarch="x86_64-pc"
+	else
+		grubarch="i386-pc"
+	fi
+	#
+	# No animals (and only one human) were harmed during the making of the following boot loader installation.
+	#
+
+	# This should replicate pretty closely what grub's stage2 shell does when asked to install
+	BOOTSEC_BPB_OFFSET=$((0x3))
+	BOOTSEC_BPB_LENGTH=$((0x3B))
+	STAGE1_WINDOWS_NT_MAGIC=$((0x1b8))
+	STAGE1_PARTEND=$((0x1fe))
+	STAGE1_BOOT_DRIVE=$((0x40))
+	STAGE1_BOOT_DRIVE_CHECK=$((0x4b))
+	STAGE1_STAGE2_SECTOR=$((0x44))
+	STAGE1_STAGE2_ADDRESS=$((0x42))
+	STAGE1_STAGE2_SEGMENT=$((0x48))
+	STAGE2_FORCE_LBA=$((0x11))
+	STAGE2_VER_STR_OFFS=$((0x12))
+
+	cp root/usr/lib/grub/$grubarch/stage1 stage1_buffer
+	dd bs=512 count=1 if=root.raw of=old_sect
+
+	dd bs=1 count=$BOOTSEC_BPB_LENGTH conv=notrunc skip=$BOOTSEC_BPB_OFFSET seek=$BOOTSEC_BPB_OFFSET if=old_sect of=stage1_buffer
+	dd bs=1 count=$(($STAGE1_PARTEND - $STAGE1_WINDOWS_NT_MAGIC)) conv=notrunc skip=$STAGE1_WINDOWS_NT_MAGIC seek=$STAGE1_WINDOWS_NT_MAGIC if=old_sect of=stage1_buffer
+
+	# Set boot device to GRUB_UNKNOWN_DEVICE (that's what grub does) and force lba
+	/bin/echo -ne '\xff\01' | dd bs=1 count=2 conv=notrunc seek=$STAGE1_BOOT_DRIVE of=stage1_buffer
+
+	# Hack to workaround buggy bios'es
+	/bin/echo -ne '\x90\x90' | dd bs=1 count=2 conv=notrunc seek=$STAGE1_BOOT_DRIVE_CHECK of=stage1_buffer
+
+	dd if=root/usr/lib/grub/$grubarch/e2fs_stage1_5 of=stage2_first_buffer bs=512 count=1
+	dd if=root/usr/lib/grub/$grubarch/e2fs_stage1_5 of=stage2_second_buffer bs=512 count=1 skip=1
+
+	# Stage 2 (actually 1.5) is at sector 1 (0-indexed)
+	/bin/echo -ne '\1\0\0\0' | dd bs=1 count=4 conv=notrunc seek=$STAGE1_STAGE2_SECTOR of=stage1_buffer
+	# Set address and segment accordingly
+	/bin/echo -ne '\0\x20' | dd bs=1 count=2 conv=notrunc seek=$STAGE1_STAGE2_ADDRESS of=stage1_buffer
+	/bin/echo -ne '\0\02' | dd bs=1 count=2 conv=notrunc seek=$STAGE1_STAGE2_SEGMENT of=stage1_buffer
+
+	/bin/echo -ne '\1' | dd bs=1 count=1 conv=notrunc seek=$STAGE2_FORCE_LBA of=stage2_second_buffer
+
+	# These two are unexplained.. 
+	/bin/echo -ne '\x10' | dd bs=1 count=1 conv=notrunc seek=508 of=stage2_first_buffer
+	/bin/echo -ne '\0' | dd bs=1 count=1 conv=notrunc seek=$((0x19)) of=stage2_second_buffer
+
+	# I couldn't figure out how to reimplement this properly in posix shell, so I'll hardcode the offset for now
+
+	/bin/echo -ne ' /boot/grub/menu.lst\0' | dd bs=1 count=21 conv=notrunc seek=$((0x2c)) of=stage2_second_buffer
+
+	#
+	# Stuff this all back into the disk image
+	#
+	dd bs=512 count=1               if=stage1_buffer                              conv=notrunc of=root.raw
+	dd bs=512 count=1 seek=1        if=stage2_first_buffer                        conv=notrunc of=root.raw
+	dd bs=512 count=1 seek=2        if=stage2_second_buffer                       conv=notrunc of=root.raw
+	dd bs=512         seek=3 skip=2 if=root/usr/lib/grub/$grubarch/e2fs_stage1_5 conv=notrunc of=root.raw
+
+	cp root/usr/lib/grub/$grubarch/* root/boot/grub/
+
+	# Hacky-di-hack.. First generate the template, then remove the errant kopt_2_6 (which hardcodes the root device to /dev/hda1) and then rerun update-grub.
+	chroot root /usr/sbin/update-grub -y
+	sed -ie '/^# kopt_2_6/ d' root/boot/grub/menu.lst
+	chroot root /usr/sbin/update-grub
+	chroot root grub-set-default 0
+	rm old_sect stage1_buffer stage2_first_buffer stage2_second_buffer
+}
+
+do_disk_images() {
+	#
+	# Create disk images
+	#
+	qemu-img create -f raw root.raw 1G
+	qemu-img create -f raw swap.raw 1G
+	qemu-img create -f raw opt.raw  4G
+
+	#
+	# Add a partition table to each disk
+	#
+	parted --script root.raw mklabel msdos
+	parted --script swap.raw mklabel msdos
+	parted --script opt.raw  mklabel msdos
+
+	#
+	# Create a partition on each disk
+	#
+	parted --script -- root.raw mkpart primary ext2 1 -1
+	parted --script -- swap.raw mkpart primary linux-swap 1 -1
+	parted --script -- opt.raw  mkpart primary ext2 1 -1
+
+	#
+	# Format the file systems and swap partition
+	#
+	mkfs3loop root.raw
+	mkfs3loop opt.raw
+	mkswaploop swap.raw
+}
+
+do_debootstrap() {
+	mkdir root
+	debootstrap --arch $ARCH $SUITE root "$MIRROR"
+}
+
+do_fstab() {
+	#
+	# Set up fstab
+	#
+	sed -e "s/%ROOT%/$(cat root.raw.uuid)/" \
+		-e "s/%OPT%/$(cat opt.raw.uuid)/" \
+		-e "s/%SWAP%/$(cat swap.raw.uuid)/"  << EOF | sponge root/etc/fstab
+# /etc/fstab: static file system information.
+#
+# <file system>					<mount point>	<type>	<options>	<dump>	<pass>
+proc						/proc		proc	defaults	0	0
+UUID=%ROOT%	/		ext3	defaults	0	1
+UUID=%OPT%	/opt		ext3	defaults	0	1
+UUID=%SWAP%	swap		swap	defaults	0	1
+EOF
+
+}
+
+do_kernel_n_friends () {
+
+	PKGS="usplash usplash-theme-ubuntu"
+
+	if [ "$SUITE" = gutsy ] && [ "$ARCH" = i386 ]
+	then
+		PKGS="$PKGS linux-virtual linux-ubuntu-modules-2.6.22-14-virtual"
+	fi
+
+	chroot root apt-get --force-yes -y install $PKGS
+}
+
+do_add_remove_packages () {
+	cmd="apt-get --purge install "
+	chroot root apt-get --purge install $PKGCMD
+}
+
+do_copy_to_disk_images () {
+
+	chroot root apt-get clean
+	#
+	# Copy the debootstrapped filesystem into root.raw
+	#
+	mkdir target 
+	mount -o loop,offset=16384 root.raw target
+	cp -a root/* target
+	umount target
+	rmdir target
+	rm -rf root
+}
+
+do_target_vm_conversion () {
+	if [ $VM = vmserver ]
+	then
+		QEMU_IMG_CONVERT_OPTS=""
+		VMHWVERSION=4
+	elif [ $VM = vmw6 ]
+	then
+		QEMU_IMG_CONVERT_OPTS="-6"
+		VMHWVERSION=6
+	fi
+
+	#
+	# Convert to target vm disk images. 
+	#
+
+	qemu-img convert $QEMU_IMG_CONVERT_OPTS root.raw -O vmdk root.vmdk
+	qemu-img convert $QEMU_IMG_CONVERT_OPTS swap.raw -O vmdk swap.vmdk
+	qemu-img convert $QEMU_IMG_CONVERT_OPTS opt.raw  -O vmdk opt.vmdk
+
+	if [ $ARCH = "amd64" ]
+	then
+		guestos="ubuntu-64"
+	else
+		guestos="ubuntu"
+	fi
+
+	if [ "$VM" = vmserver ] || [ "$VM" = vmw6 ]
+	then
+		cat > vaos.vmx << EOF
+config.version = "8"
+virtualHW.version = "$VMWHVERSION"
+scsi0.present = "FALSE"
+scsi0.virtualDev = "lsilogic"
+memsize = "$MEM"
+Ethernet0.virtualDev = "vlance"
+Ethernet0.present = "TRUE"
+Ethernet0.connectionType = "bridged"
+displayName = "Ubuntu Jeos $ARCH"
+guestOS = "$guestos"
+priority.grabbed = "normal"
+priority.ungrabbed = "normal"
+powerType.powerOff = "hard"
+powerType.powerOn = "hard"
+powerType.suspend = "hard"
+powerType.reset = "hard"
+
+ide0:0.present = "TRUE"
+ide0:0.fileName = "root.vmdk"
+
+ide0:1.present = "TRUE"
+ide0:1.fileName = "swap.vmdk"
+
+ide1:0.present = "TRUE"
+ide1:0.fileName = "opt.vmdk"
+
+floppy0.present = "FALSE"
+EOF
+
+		chmod +x vaos.vmx
+		FILES="vaos.vmx root.vmdk opt.vmdk swap.vmdk"
+	fi
+	zip $DESTINATION $FILES
+	rm $FILES
+
+}
+
+do_cleanup () {
+	rm root.raw root.raw.uuid opt.raw opt.raw.uuid swap.raw swap.raw.uuid
+	cd /
+	rmdir "$WORKINGDIR"
+}
+
+mkdir "$WORKINGDIR" || exit 1
+cd "$WORKINGDIR"
+
+do_disk_images
+do_debootstrap
+do_fstab
+do_initial_user
+do_network_setup
+do_bootloader
+do_kernel_n_friends 
+do_add_remove_packages
+do_copy_to_disk_images 
+do_target_vm_conversion 
+do_cleanup
+
+exit 0
