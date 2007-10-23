@@ -526,7 +526,6 @@ do_cleanup () {
 	rmdir "$WORKINGDIR"
 }
 
-mkdir "$WORKINGDIR" || exit 1
 cd "$WORKINGDIR"
 
 do_disk_images
