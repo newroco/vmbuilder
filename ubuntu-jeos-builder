@@ -200,13 +200,7 @@ then
 	exit 1
 fi
 
-if [ -d "$TMPDIR/jeos-builder-tmp" ]
-then
-	echo "\"$TMPDIR/jeos-builder-tmp\" already exists"
-	exit 1
-fi
-
-WORKINGDIR="$TMPDIR/jeos-builder-tmp"
+WORKINGDIR=`mktemp -d -p $TMPDIR jeos-builder-XXXXXXXXXX` || exit 1
 
 if [ -z "$DESTINATION" ]
 then
@@ -532,7 +526,6 @@ do_cleanup () {
 	rmdir "$WORKINGDIR"
 }
 
-mkdir "$WORKINGDIR" || exit 1
 cd "$WORKINGDIR"
 
 do_disk_images
