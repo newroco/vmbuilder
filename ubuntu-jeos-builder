@@ -236,7 +236,7 @@ EOF
 	chroot root addgroup --system admin >/dev/null 2>&1
 	chroot root adduser ubuntu admin >/dev/null 2>&1
 
-	sponge root/etc/sudoers << EOF
+	cat >> root/etc/sudoers << EOF
 
 # Members of the admin group may gain root privileges
 %admin ALL=(ALL) ALL
@@ -249,14 +249,14 @@ EOF
 }
 
 do_network_setup () {
-	echo $HOSTNAME | sponge root/etc/hostname
+	echo $HOSTNAME > root/etc/hostname
 
-	sponge root/etc/hosts <<EOF
+	cat > root/etc/hosts <<EOF
 127.0.0.1 localhost
 127.0.1.1 $HOSTNAME.$DOMAIN $HOSTNAME
 EOF
 
-	sponge root/etc/network/interfaces <<EOF
+	cat > root/etc/network/interfaces <<EOF
 # This file describes the network interfaces available on your system
 # and how to activate them. For more information, see interfaces(5).
 
@@ -272,7 +272,7 @@ EOF
 
 do_bootloader () {
 
-	sponge root/etc/kernel-img.conf << EOF
+	cat > root/etc/kernel-img.conf << EOF
 do_symlinks = yes
 relative_links = yes
 do_bootfloppy = no
@@ -290,7 +290,7 @@ EOF
 	#
 	# Create device.map
 	#
-	sponge root/boot/grub/device.map << EOF
+	cat > root/boot/grub/device.map << EOF
 (fd0)	/dev/fd0
 (hd0)	/dev/sda
 (hd1)	/dev/sdb
@@ -411,7 +411,7 @@ do_fstab() {
 	#
 	sed -e "s/%ROOT%/$(cat root.raw.uuid)/" \
 		-e "s/%OPT%/$(cat opt.raw.uuid)/" \
-		-e "s/%SWAP%/$(cat swap.raw.uuid)/"  << EOF | sponge root/etc/fstab
+		-e "s/%SWAP%/$(cat swap.raw.uuid)/"  << EOF | cat > root/etc/fstab
 # /etc/fstab: static file system information.
 #
 # <file system>					<mount point>	<type>	<options>	<dump>	<pass>
