@@ -1,0 +1,6 @@
+open-vm-tools (2007.09.04-56574-0ubuntu1) gutsy; urgency=low
+
+  * Initial release
+
+ -- Soren Hansen <soren@ubuntu.com>  Wed, 12 Sep 2007 14:56:50 +0200
+

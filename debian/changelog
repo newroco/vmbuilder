@@ -1,0 +1,5 @@
+ubuntu-jeos-builder (0.1a-0ubuntu1) hardy; urgency=low
+
+  * Initial release.
+
+ -- Soren Hansen <soren@ubuntu.com>  Thu, 01 Nov 2007 16:43:57 +0100

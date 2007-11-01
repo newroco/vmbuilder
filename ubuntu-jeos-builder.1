@@ -1,0 +1,51 @@
+.TH UBUNTU-VM-BUILDER 1 "Nov 2007"
+.SH NAME
+ubuntu-vm-builder \- build ubuntu based vm's
+.SH SYNOPSIS
+.B ubuntu-vm-builder
+[\fIOPTIONS\fR]...
+.SH DESCRIPTION
+This manual page documents the
+.B ubuntu-vm-builder
+command.
+.B ubuntu-vm-builder
+is a program that builds customized virtual machines based on Ubuntu.
+.SH OPTIONS
+.TP
+.B \-\-addpkg PKG
+Install PKG into the guest (can be specfied multiple times)
+.TP
+.B \-a, \-\-arch ARCH
+Specify the target architecture. Valid options: i386*
+.TP
+.B \-d, \-\-dest
+Specify the destination zip file.  Default: ubuntu-jeos-$SUITE-$ARCH.zip
+.TP
+.B \-\-domain DOMAIN
+Set DOMAIN as the domain name of the guest. Default: The domain of the machine running this script.
+.TP
+.B \-h, \-\-help
+This help text.
+.TP
+.B \-\-hostname NAME
+Set NAME as the hostname of the guest. Default: ubuntu
+.TP
+.B \-\-mem NN
+Assign NN megabytes of memory to the guest vm.  Default: 128
+.TP
+.B \-\-mirror URL
+Use Ubuntu mirror at URL. Default: http://se.archive.ubuntu.com/ubuntu
+.TP
+.B \-\-removepkg PKG
+Remove PKG from the guest (can be specfied multiple times)
+.TP
+.B \-s, \-\-suite SUITE
+Use the specified Ubuntu suite. Valid options: gutsy*
+.TP
+.B \-t, \-\-tmp  TMPDIR
+Use TMPDIR as temporary working area for the image generation. Defaults to $TMPDIR if set, or /tmp if not.
+.TP
+.B \-\-vm VM
+Generate image for specified virtualisation software.  Valid choices are: vmw6* vmserver vbox qemu
+.SH AUTHOR
+ubuntu-vm-builder and this man page was written by Soren Hansen <soren@ubuntu.com> and is copyright 2007 Canonical Ltd.
