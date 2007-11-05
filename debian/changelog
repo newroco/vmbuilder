@@ -1,5 +1,15 @@
 ubuntu-jeos-builder (0.1a-0ubuntu1) hardy; urgency=low
 
+  [ Soren Hansen ]
   * Initial release.
 
- -- Soren Hansen <soren@ubuntu.com>  Thu, 01 Nov 2007 16:43:57 +0100
+  [ Neal McBurnett ]
+  * DESTINATION is now a directory, not a zip file.  This is faster, and
+    fixes problems with zipping files bigger than 2 GB.  Involves
+    chowning files to $SUDO_USER.
+  * Change default archive to http://archive.ubuntu.com/ubuntu from se....
+  * Check that we're running as root before making $WORKINGDIR
+  * Add support for --vm qemu and create launchjeos command for it
+  * Add Build-Depends debhelper
+
+ -- Neal McBurnett <neal@bcn.boulder.co.us>  Mon, 05 Nov 2007 15:27:03 -0700

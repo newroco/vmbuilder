@@ -2,7 +2,7 @@ Source: ubuntu-jeos-builder
 Section: utils
 Priority: extra
 Maintainer: Soren Hansen <soren@ubuntu.com>
-Build-Depends: cdbs
+Build-Depends: cdbs, debhelper
 Standards-Version: 3.7.2
 
 Package: ubuntu-jeos-builder

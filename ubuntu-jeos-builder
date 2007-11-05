@@ -19,11 +19,16 @@
 #    with this program; if not, write to the Free Software Foundation, Inc.,
 #    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+# Todo:
+#  create launchjeos command for vmware vm's
+#  fix perl locale warnings
+#  review security of running as root, messing with $DESTINATION
+
 usage () {
 	cat <<EOT
 usage: ubuntu-jeos-builder  [--addpkg PKG]
                             [(-a|--arch) i386] 
-                            [(-d|--dest) <destination (zip filename)>]
+                            [(-d|--dest) <destination (directory)>]
                             [--domain DOMAIN]
                             [-h|--help]
                             [--hostname NAME]
@@ -36,8 +41,8 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
 
 --addpkg PKG       Install PKG into the guest (can be specfied multiple times)
 -a, --arch ARCH    Specify the target architecture. Valid options: i386*
--d, --dest         Specify the destination zip file. 
-                   Default: ubuntu-jeos-$SUITE-$ARCH.zip
+-d, --dest         Specify the destination directory.
+                   Default: ubuntu-jeos-$SUITE-$ARCH
 --domain DOMAIN    Set DOMAIN as the domain name of the guest. Default:
                    The domain of the machine running this script.
 -h, --help         This help text.
@@ -45,7 +50,7 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
 --mem NN           Assign NN megabytes of memory to the guest vm.
                    Default: 128
 --mirror URL       Use Ubuntu mirror at URL instead of the default, which
-                   is: http://se.archive.ubuntu.com/ubuntu
+                   is: http://archive.ubuntu.com/ubuntu
 --removepkg PKG    Remove PKG from the guest (can be specfied multiple times)
 -s, --suite SUITE  Use the specified Ubuntu suite. Valid options: gutsy*
 -t, --tmp  TMPDIR  Use TMPDIR as temporary working area for the image
@@ -70,7 +75,7 @@ then
 fi
 VM=vmw6
 SUITE="gutsy"
-MIRROR="http://se.archive.ubuntu.com/ubuntu"
+MIRROR="http://archive.ubuntu.com/ubuntu"
 MEM=128
 HOSTNAME="ubuntu"
 DOMAIN="`hostname -d`"
@@ -200,18 +205,20 @@ then
 	exit 1
 fi
 
-WORKINGDIR=`mktemp -d -p $TMPDIR jeos-builder-XXXXXXXXXX` || exit 1
-
-if [ -z "$DESTINATION" ]
-then
-	DESTINATION="$PWD/ubuntu-jeos-$SUITE-$ARCH.zip"
-fi
-
 if [ ! "`id -u`" = 0 ]
 then
 	echo "$0 must be run as root (e.g. by means of sudo)"
 	exit 1
 fi
+
+WORKINGDIR=`mktemp -d -p $TMPDIR jeos-builder-XXXXXXXXXX` || exit 1
+
+if [ -z "$DESTINATION" ]
+then
+	DESTINATION="$PWD/ubuntu-jeos-$SUITE-$ARCH"
+fi
+
+sudo -u "$SUDO_USER" mkdir $DESTINATION
 
 mkfs3loop () {
 	loopfile="$1"
@@ -448,6 +455,7 @@ do_copy_to_disk_images () {
 	#
 	mkdir target 
 	mount -o loop,offset=16384 root.raw target
+	echo Copy the debootstrapped filesystem into root.raw
 	cp -a root/* target
 	umount target
 	rmdir target
@@ -455,6 +463,8 @@ do_copy_to_disk_images () {
 }
 
 do_target_vm_conversion () {
+        echo Convert to format $VM
+
 	if [ $VM = vmserver ]
 	then
 		QEMU_IMG_CONVERT_OPTS=""
@@ -465,14 +475,6 @@ do_target_vm_conversion () {
 		VMHWVERSION=6
 	fi
 
-	#
-	# Convert to target vm disk images. 
-	#
-
-	qemu-img convert $QEMU_IMG_CONVERT_OPTS root.raw -O vmdk root.vmdk
-	qemu-img convert $QEMU_IMG_CONVERT_OPTS swap.raw -O vmdk swap.vmdk
-	qemu-img convert $QEMU_IMG_CONVERT_OPTS opt.raw  -O vmdk opt.vmdk
-
 	if [ $ARCH = "amd64" ]
 	then
 		guestos="ubuntu-64"
@@ -482,6 +484,10 @@ do_target_vm_conversion () {
 
 	if [ "$VM" = vmserver ] || [ "$VM" = vmw6 ]
 	then
+		qemu-img convert $QEMU_IMG_CONVERT_OPTS root.raw root.vmdk
+		qemu-img convert $QEMU_IMG_CONVERT_OPTS swap.raw swap.vmdk
+		qemu-img convert $QEMU_IMG_CONVERT_OPTS opt.raw  opt.vmdk
+
 		cat > vaos.vmx << EOF
 config.version = "8"
 virtualHW.version = "$VMWHVERSION"
@@ -514,10 +520,20 @@ EOF
 
 		chmod +x vaos.vmx
 		FILES="vaos.vmx root.vmdk opt.vmdk swap.vmdk"
-	fi
-	zip $DESTINATION $FILES
-	rm $FILES
+	elif [ $VM = qemu ]
+	then
+		qemu-img convert $QEMU_IMG_CONVERT_OPTS root.raw root.qcow2
+		qemu-img convert $QEMU_IMG_CONVERT_OPTS swap.raw swap.qcow2
+		qemu-img convert $QEMU_IMG_CONVERT_OPTS opt.raw  opt.qcow2
 
+	        echo > launchjeos kvm -hda root.qcow2 -hdb swap.qcow2 -hdc opt.qcow2
+		chmod +x launchjeos
+		FILES="launchjeos root.qcow2 opt.qcow2 swap.qcow2"
+	fi
+
+	chown "$SUDO_USER" $FILES
+	mv $FILES $DESTINATION
+	echo Done.  Images are in $DESTINATION
 }
 
 do_cleanup () {
