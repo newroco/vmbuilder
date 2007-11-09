@@ -1,3 +1,10 @@
+ubuntu-jeos-builder (0.1a-0ubuntu1~ppa1) gutsy; urgency=low
+
+  * release as ppa
+  * fix vmware regression - qemu-img needs -O vmdk
+
+ -- Neal McBurnett <neal@bcn.boulder.co.us>  Fri, 09 Nov 2007 08:45:55 -0700
+
 ubuntu-jeos-builder (0.1a-0ubuntu1) hardy; urgency=low
 
   [ Soren Hansen ]

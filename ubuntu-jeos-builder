@@ -484,9 +484,9 @@ do_target_vm_conversion () {
 
 	if [ "$VM" = vmserver ] || [ "$VM" = vmw6 ]
 	then
-		qemu-img convert $QEMU_IMG_CONVERT_OPTS root.raw root.vmdk
-		qemu-img convert $QEMU_IMG_CONVERT_OPTS swap.raw swap.vmdk
-		qemu-img convert $QEMU_IMG_CONVERT_OPTS opt.raw  opt.vmdk
+		qemu-img convert $QEMU_IMG_CONVERT_OPTS root.raw -O vmdk root.vmdk
+		qemu-img convert $QEMU_IMG_CONVERT_OPTS swap.raw -O vmdk swap.vmdk
+		qemu-img convert $QEMU_IMG_CONVERT_OPTS opt.raw  -O vmdk opt.vmdk
 
 		cat > vaos.vmx << EOF
 config.version = "8"
