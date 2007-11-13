@@ -1,3 +1,9 @@
+ubuntu-jeos-builder (0.1a-0ubuntu1~ppa2) gutsy; urgency=low
+
+  * actually save qemu images as qcow2 files to allow snapshots
+
+ -- Neal McBurnett <neal@bcn.boulder.co.us>  Fri, 09 Nov 2007 23:18:37 -0700
+
 ubuntu-jeos-builder (0.1a-0ubuntu1~ppa1) gutsy; urgency=low
 
   * release as ppa

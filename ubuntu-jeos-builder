@@ -522,9 +522,9 @@ EOF
 		FILES="vaos.vmx root.vmdk opt.vmdk swap.vmdk"
 	elif [ $VM = qemu ]
 	then
-		qemu-img convert $QEMU_IMG_CONVERT_OPTS root.raw root.qcow2
-		qemu-img convert $QEMU_IMG_CONVERT_OPTS swap.raw swap.qcow2
-		qemu-img convert $QEMU_IMG_CONVERT_OPTS opt.raw  opt.qcow2
+		qemu-img convert $QEMU_IMG_CONVERT_OPTS root.raw -O qcow2 root.qcow2
+		qemu-img convert $QEMU_IMG_CONVERT_OPTS swap.raw -O qcow2 swap.qcow2
+		qemu-img convert $QEMU_IMG_CONVERT_OPTS opt.raw  -O qcow2 opt.qcow2
 
 	        echo > launchjeos 'kvm -hda root.qcow2 -hdb swap.qcow2 -hdc opt.qcow2 "$@"'
 		chmod +x launchjeos
