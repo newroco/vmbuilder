@@ -3,7 +3,8 @@
 #    Ubuntu Jeos image builder
 #    Copyright (C) 2007  Canonical Ltd.
 #
-#    Author: Soren Hansen <soren@canonical.com>
+#    Authors: Soren Hansen <soren@canonical.com>
+#             Neal McBurnett <neal@mcburnett.org>
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -19,11 +20,16 @@
 #    with this program; if not, write to the Free Software Foundation, Inc.,
 #    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+# Todo:
+#  create launchjeos command for vmware vm's
+#  fix perl locale warnings
+#  review security of running as root, messing with $DESTINATION
+
 usage () {
 	cat <<EOT
 usage: ubuntu-jeos-builder  [--addpkg PKG]
                             [(-a|--arch) i386] 
-                            [(-d|--dest) <destination (zip filename)>]
+                            [(-d|--dest) <destination (directory)>]
                             [--domain DOMAIN]
                             [-h|--help]
                             [--hostname NAME]
@@ -32,12 +38,12 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
                             [--removepkg PKG]
                             [(-s|--suite) gutsy]
                             [(-t|--tmp) temp_dir]
-                            [--vm (vmw6|vmserver|vbox|qemu)]
+                            [--vm (vmw6|vmserver|vbox|qemu|kvm)]
 
 --addpkg PKG       Install PKG into the guest (can be specfied multiple times)
 -a, --arch ARCH    Specify the target architecture. Valid options: i386*
--d, --dest         Specify the destination zip file. 
-                   Default: ubuntu-jeos-$SUITE-$ARCH.zip
+-d, --dest         Specify the destination directory.
+                   Default: ubuntu-jeos-$SUITE-$ARCH
 --domain DOMAIN    Set DOMAIN as the domain name of the guest. Default:
                    The domain of the machine running this script.
 -h, --help         This help text.
@@ -45,13 +51,13 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
 --mem NN           Assign NN megabytes of memory to the guest vm.
                    Default: 128
 --mirror URL       Use Ubuntu mirror at URL instead of the default, which
-                   is: http://se.archive.ubuntu.com/ubuntu
+                   is: http://archive.ubuntu.com/ubuntu
 --removepkg PKG    Remove PKG from the guest (can be specfied multiple times)
 -s, --suite SUITE  Use the specified Ubuntu suite. Valid options: gutsy*
 -t, --tmp  TMPDIR  Use TMPDIR as temporary working area for the image
                    generation. Defaults to \$TMPDIR if set, or /tmp if not.
 --vm VM            Generate image for specified virtualisation software.
-                   Valid choices are: vmw6* vmserver vbox qemu
+                   Valid choices are: vmw6* vmserver vbox qemu kvm
 
 ('*' denotes default option)
 
@@ -70,7 +76,7 @@ then
 fi
 VM=vmw6
 SUITE="gutsy"
-MIRROR="http://se.archive.ubuntu.com/ubuntu"
+MIRROR="http://archive.ubuntu.com/ubuntu"
 MEM=128
 HOSTNAME="ubuntu"
 DOMAIN="`hostname -d`"
@@ -177,12 +183,12 @@ do
 			shift 2
 		;;
 		--vm)
-			if [ "$2" = vmw6 ] || [ "$2" = vmserver ] || [ "$2" = vbox ] || [ "$2" = qemu ]
+			if [ "$2" = vmw6 ] || [ "$2" = vmserver ] || [ "$2" = vbox ] || [ "$2" = qemu ] || [ "$2" = kvm ]
 			then
 				echo "Setting target vm to \"$2\""
 				VM="$2"
 			else
-				echo "Invalid vm software: \"$2\". Valid choices are: vmw6 vmserver vbox qemu"
+				echo "Invalid vm software: \"$2\". Valid choices are: vmw6 vmserver vbox qemu kvm"
 				exit 1
 			fi
 			shift 2
@@ -200,18 +206,20 @@ then
 	exit 1
 fi
 
-WORKINGDIR=`mktemp -d -p $TMPDIR jeos-builder-XXXXXXXXXX` || exit 1
-
-if [ -z "$DESTINATION" ]
-then
-	DESTINATION="$PWD/ubuntu-jeos-$SUITE-$ARCH.zip"
-fi
-
 if [ ! "`id -u`" = 0 ]
 then
 	echo "$0 must be run as root (e.g. by means of sudo)"
 	exit 1
 fi
+
+WORKINGDIR=`mktemp -d -p $TMPDIR jeos-builder-XXXXXXXXXX` || exit 1
+
+if [ -z "$DESTINATION" ]
+then
+	DESTINATION="$PWD/ubuntu-jeos-$SUITE-$ARCH"
+fi
+
+test -n "${SUDO_USER}" && sudo -u "${SUDO_USER}" mkdir "${DESTINATION}"
 
 mkfs3loop () {
 	loopfile="$1"
@@ -448,6 +456,7 @@ do_copy_to_disk_images () {
 	#
 	mkdir target 
 	mount -o loop,offset=16384 root.raw target
+	echo Copy the debootstrapped filesystem into root.raw
 	cp -a root/* target
 	umount target
 	rmdir target
@@ -455,23 +464,17 @@ do_copy_to_disk_images () {
 }
 
 do_target_vm_conversion () {
+	echo Convert to format $VM
+
 	if [ $VM = vmserver ]
 	then
-		QEMU_IMG_CONVERT_OPTS=""
+		QEMU_IMG_CONVERT_OPTS="-O vmdk"
 		VMHWVERSION=4
 	elif [ $VM = vmw6 ]
 	then
-		QEMU_IMG_CONVERT_OPTS="-6"
+		QEMU_IMG_CONVERT_OPTS="-O vmdk -6"
 		VMHWVERSION=6
 	fi
-
-	#
-	# Convert to target vm disk images. 
-	#
-
-	qemu-img convert $QEMU_IMG_CONVERT_OPTS root.raw -O vmdk root.vmdk
-	qemu-img convert $QEMU_IMG_CONVERT_OPTS swap.raw -O vmdk swap.vmdk
-	qemu-img convert $QEMU_IMG_CONVERT_OPTS opt.raw  -O vmdk opt.vmdk
 
 	if [ $ARCH = "amd64" ]
 	then
@@ -482,6 +485,7 @@ do_target_vm_conversion () {
 
 	if [ "$VM" = vmserver ] || [ "$VM" = vmw6 ]
 	then
+
 		cat > vaos.vmx << EOF
 config.version = "8"
 virtualHW.version = "$VMWHVERSION"
@@ -514,10 +518,31 @@ EOF
 
 		chmod +x vaos.vmx
 		FILES="vaos.vmx root.vmdk opt.vmdk swap.vmdk"
+	elif [ $VM = qemu ] || [ $VM = kvm ]
+	then
+		QEMU_IMG_CONVERT_OPTS="-O qcow2 -6"
+		QEMU_IMG_CONVERT_EXTENSION=".qcow2"
+		if [ $VM = kvm ]
+		then
+			CMD=kvm
+		else
+			CMD=qemu
+		fi
+        cat > launchjeos <<EOF
+#!/bin/sh
+$CMD -m $MEM -hda root.qcow2 -hdb swap.qcow2 -hdc opt.qcow2 "\$@"
+EOF
+		chmod +x launchjeos
+		FILES="launchjeos root.qcow2 opt.qcow2 swap.qcow2"
 	fi
-	zip $DESTINATION $FILES
-	rm $FILES
 
+	qemu-img convert $QEMU_IMG_CONVERT_OPTS root.raw "root${QEMU_IMG_CONVERT_EXTENSION}"
+	qemu-img convert $QEMU_IMG_CONVERT_OPTS swap.raw "swap${QEMU_IMG_CONVERT_EXTENSION}"
+	qemu-img convert $QEMU_IMG_CONVERT_OPTS opt.raw  "opt${QEMU_IMG_CONVERT_EXTENSION}"
+
+	test -n "${SUDO_USER}" && chown "$SUDO_USER" $FILES
+	mv $FILES $DESTINATION
+	echo "Done.  Images are in ${DESTINATION}."
 }
 
 do_cleanup () {

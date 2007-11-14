@@ -1,0 +1,7 @@
+#!/usr/bin/make -f
+
+include /usr/share/cdbs/1/rules/debhelper.mk
+
+install/ubuntu-jeos-builder::
+	install -d debian/ubuntu-jeos-builder/usr/bin
+	install ubuntu-jeos-builder debian/ubuntu-jeos-builder/usr/bin/ubuntu-jeos-builder
