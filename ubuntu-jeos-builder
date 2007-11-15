@@ -492,7 +492,7 @@ do_target_vm_conversion () {
 
 	if [ "$VM" = vmserver ] || [ "$VM" = vmw6 ]
 	then
-
+		QEMU_IMG_CONVERT_EXTENSION=".vmdk"
 		cat > vaos.vmx << EOF
 config.version = "8"
 virtualHW.version = "$VMWHVERSION"
