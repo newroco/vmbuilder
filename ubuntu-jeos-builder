@@ -60,6 +60,9 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
                    Valid choices are: vmw6* vmserver vbox qemu kvm
 
 --rootsize size    The size of the root filesystem (default 1G)
+--kernel-flavor    The kernel image flavor to install (default virtual)
+--components       A comma seperaed list of distro components to include 
+                   (e.g. main,universe). This defaults to "main"
 
 ('*' denotes default option)
 
@@ -83,8 +86,10 @@ MEM=128
 HOSTNAME="ubuntu"
 DOMAIN="`hostname -d`"
 ROOTSIZE="1G"
+KERNEL_FLAVOR="virtual"
+COMPS="main"
 
-TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,rootsize:,  -- "$@"`
+TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,rootsize:,kernel-flavor:,components:,  -- "$@"`
 eval set -- "$TEMP"
 
 while true
@@ -160,12 +165,12 @@ do
 			shift 2
 		;;
 		--s|--suite)
-			if [ "$2" = gutsy ]
+			if [ "$2" = gutsy ] || [ "$2" = feisty ] || [ "$2" = dapper ]
 			then
 				echo "Setting Ubuntu version to \"$2\""
 				SUITE="$2"
 			else
-				echo "Invalid Ubuntu version: \"$2\". Valid choices are: gutsy"
+				echo "Invalid Ubuntu version: \"$2\". Valid choices are: gutsy feisty dapper"
 				exit 1
 			fi
 			shift 2
@@ -199,6 +204,16 @@ do
 		--rootsize)
 		        echo "Setting rootsize to \"$2\""
 			ROOTSIZE="$2"
+			shift 2
+		;;
+		--kernel-flavor)
+		        echo "Setting kernel flavor to \"$2\""
+			KERNEL_FLAVOR="$2"
+			shift 2
+		;;
+		--components)
+		        echo "Setting compoents to \"$2\""
+			COMPS="$2"
 			shift 2
 		;;
 		--)
@@ -287,15 +302,19 @@ EOF
 }
 
 do_bootloader () {
-
-	cat > root/etc/kernel-img.conf << EOF
+        updategrub="\/usr\/sbin\/update-grub"
+	if [ "$SUITE" = dapper ]
+	then
+	    updategrub="\/sbin\/update-grub"
+	fi
+	sed -e "s/%UPDATEGRUB%/$updategrub/g" << EOF | cat > root/etc/kernel-img.conf
 do_symlinks = yes
 relative_links = yes
 do_bootfloppy = no
 do_initrd = yes
 link_in_boot = no
-postinst_hook = /usr/sbin/update-grub
-postrm_hook = /usr/sbin/update-grub
+postinst_hook = %UPDATEGRUB%
+postrm_hook = %UPDATEGRUB%
 do_bootloader = no
 EOF
 
@@ -337,7 +356,15 @@ EOF
 	STAGE2_FORCE_LBA=$((0x11))
 	STAGE2_VER_STR_OFFS=$((0x12))
 
-	cp root/usr/lib/grub/$grubarch/stage1 stage1_buffer
+	# *sigh* dapper is a bit special
+	grubroot=root/usr/lib/grub/
+	updategrub=/usr/sbin/update-grub
+	if [ "$SUITE" = dapper ]
+	then
+	    grubroot=root/lib/grub
+	    updategrub=/sbin/update-grub
+	fi
+	cp $grubroot/$grubarch/stage1 stage1_buffer
 	dd bs=512 count=1 if=root.raw of=old_sect
 
 	dd bs=1 count=$BOOTSEC_BPB_LENGTH conv=notrunc skip=$BOOTSEC_BPB_OFFSET seek=$BOOTSEC_BPB_OFFSET if=old_sect of=stage1_buffer
@@ -349,8 +376,8 @@ EOF
 	# Hack to workaround buggy bios'es
 	/bin/echo -ne '\x90\x90' | dd bs=1 count=2 conv=notrunc seek=$STAGE1_BOOT_DRIVE_CHECK of=stage1_buffer
 
-	dd if=root/usr/lib/grub/$grubarch/e2fs_stage1_5 of=stage2_first_buffer bs=512 count=1
-	dd if=root/usr/lib/grub/$grubarch/e2fs_stage1_5 of=stage2_second_buffer bs=512 count=1 skip=1
+	dd if=$grubroot/$grubarch/e2fs_stage1_5 of=stage2_first_buffer bs=512 count=1
+	dd if=$grubroot/$grubarch/e2fs_stage1_5 of=stage2_second_buffer bs=512 count=1 skip=1
 
 	# Stage 2 (actually 1.5) is at sector 1 (0-indexed)
 	/bin/echo -ne '\1\0\0\0' | dd bs=1 count=4 conv=notrunc seek=$STAGE1_STAGE2_SECTOR of=stage1_buffer
@@ -374,14 +401,14 @@ EOF
 	dd bs=512 count=1               if=stage1_buffer                              conv=notrunc of=root.raw
 	dd bs=512 count=1 seek=1        if=stage2_first_buffer                        conv=notrunc of=root.raw
 	dd bs=512 count=1 seek=2        if=stage2_second_buffer                       conv=notrunc of=root.raw
-	dd bs=512         seek=3 skip=2 if=root/usr/lib/grub/$grubarch/e2fs_stage1_5 conv=notrunc of=root.raw
+	dd bs=512         seek=3 skip=2 if=$grubroot/$grubarch/e2fs_stage1_5 conv=notrunc of=root.raw
 
-	cp root/usr/lib/grub/$grubarch/* root/boot/grub/
+	cp $grubroot/$grubarch/* root/boot/grub/
 
 	# Hacky-di-hack.. First generate the template, then remove the errant kopt_2_6 (which hardcodes the root device to /dev/hda1) and then rerun update-grub.
-	chroot root /usr/sbin/update-grub -y
+	chroot root $updategrub -y
 	sed -ie '/^# kopt_2_6/ d' root/boot/grub/menu.lst
-	chroot root /usr/sbin/update-grub
+	chroot root $updategrub
 	chroot root grub-set-default 0
 	rm old_sect stage1_buffer stage2_first_buffer stage2_second_buffer
 }
@@ -418,7 +445,24 @@ do_disk_images() {
 
 do_debootstrap() {
 	mkdir root
-	debootstrap --arch $ARCH $SUITE root "$MIRROR"
+	debootstrap --components="$COMPS" --arch $ARCH $SUITE root "$MIRROR"
+}
+
+do_fstab_dapper() {
+	#
+	# Set up fstab
+	#
+        cat > root/etc/fstab << EOF
+# /etc/fstab: static file system information.
+#
+# <file system>					<mount point>	<type>	<options>	<dump>	<pass>
+proc						/proc		proc	defaults	0	0
+/dev/hda1	/		ext3	defaults	0	1
+/dev/hdc1	/opt		ext3	defaults	0	1
+/dev/hdb1	swap		swap	defaults	0	1
+EOF
+
+
 }
 
 do_fstab() {
@@ -441,13 +485,11 @@ EOF
 
 do_kernel_n_friends () {
 
-	PKGS="usplash usplash-theme-ubuntu"
-
-	if [ "$SUITE" = gutsy ] && [ "$ARCH" = i386 ]
+	PKGS="linux-$KERNEL_FLAVOR"
+        if [ "$SUITE" != dapper ]
 	then
-		PKGS="$PKGS linux-virtual linux-ubuntu-modules-2.6.22-14-virtual"
+	    PKGS="$PKGS usplash usplash-theme-ubuntu"
 	fi
-
 	chroot root apt-get --force-yes -y install $PKGS
 }
 
@@ -563,7 +605,12 @@ cd "$WORKINGDIR"
 
 do_disk_images
 do_debootstrap
-do_fstab
+if [ "$SUITE" = dapper ]
+then
+    do_fstab_dapper
+else
+    do_fstab
+fi
 do_initial_user
 do_network_setup
 do_bootloader
