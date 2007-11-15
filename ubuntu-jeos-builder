@@ -214,12 +214,19 @@ fi
 
 WORKINGDIR=`mktemp -d -p $TMPDIR jeos-builder-XXXXXXXXXX` || exit 1
 
-if [ -z "$DESTINATION" ]
-then
-	DESTINATION="$PWD/ubuntu-jeos-$SUITE-$ARCH"
+[ -n "$DESTINATION" ] || DESTINATION="$PWD/ubuntu-jeos-$SUITE-$ARCH"
+
+if [ -n "${SUDO_USER}" ]; then
+	echo "sudo environment detected (SUDO_USER=$SUDO_USER)"
+	sudo -u "${SUDO_USER}" mkdir "${DESTINATION}"
+else
+	mkdir "${DESTINATION}"
 fi
 
-test -n "${SUDO_USER}" && sudo -u "${SUDO_USER}" mkdir "${DESTINATION}"
+if [ $? -ne 0 ]; then
+	echo "Error creating directory ${DESTINATION}. Unable to proceed."
+	exit 1
+fi
 
 mkfs3loop () {
 	loopfile="$1"
