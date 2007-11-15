@@ -66,6 +66,9 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
 --kernel-flavor    The kernel image flavor to install (default virtual)
 --components       A comma seperaed list of distro components to include 
                    (e.g. main,universe). This defaults to "main"
+--ssh-key          Add the given ssh public key file (absolute path)
+                   to roots authorized hosts and install openssh-server
+                   (WARNING: this has strong security implications)
 
 ('*' denotes default option)
 
@@ -91,8 +94,9 @@ DOMAIN="`hostname -d`"
 ROOTSIZE="1G"
 KERNEL_FLAVOR="virtual"
 COMPS="main"
+SSHKEY=""
 
-TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,rootsize:,kernel-flavor:,components:,  -- "$@"`
+TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,rootsize:,kernel-flavor:,components:,ssh-key:,  -- "$@"`
 eval set -- "$TEMP"
 
 while true
@@ -217,6 +221,11 @@ do
 		--components)
 		        echo "Setting compoents to \"$2\""
 			COMPS="$2"
+			shift 2
+		;;
+		--ssh-key)
+		        echo "Setting ssh-key to \"$2\""
+			SSHKEY="$2"
 			shift 2
 		;;
 		--)
@@ -501,6 +510,22 @@ do_add_remove_packages () {
 	chroot root apt-get --purge install $PKGCMD
 }
 
+do_add_ssh_key () {
+        if [ -z "$SSHKEY" ]
+	then
+	    return
+	fi
+	if [ ! -f "$SSHKEY" ]
+	then
+	    echo "NO $SSHKEY found"
+	    return
+	fi
+	# we have a key, add it
+	chroot root apt-get install --force-yes -y openssh-server
+	mkdir root/root/.ssh
+	cp "$SSHKEY" root/root/.ssh/authorized_keys
+}
+
 do_copy_to_disk_images () {
 
 	chroot root apt-get clean
@@ -619,6 +644,7 @@ do_network_setup
 do_bootloader
 do_kernel_n_friends 
 do_add_remove_packages
+do_add_ssh_key
 do_copy_to_disk_images 
 do_target_vm_conversion 
 do_cleanup
