@@ -59,6 +59,8 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
 --vm VM            Generate image for specified virtualisation software.
                    Valid choices are: vmw6* vmserver vbox qemu kvm
 
+--rootsize size    The size of the root filesystem (default 1G)
+
 ('*' denotes default option)
 
 ubuntu-jeos-builder is Copyright (C) 2007 Canonical Ltd. and
@@ -80,8 +82,9 @@ MIRROR="http://archive.ubuntu.com/ubuntu"
 MEM=128
 HOSTNAME="ubuntu"
 DOMAIN="`hostname -d`"
+ROOTSIZE="1G"
 
-TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,  -- "$@"`
+TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,rootsize:,  -- "$@"`
 eval set -- "$TEMP"
 
 while true
@@ -191,6 +194,11 @@ do
 				echo "Invalid vm software: \"$2\". Valid choices are: vmw6 vmserver vbox qemu kvm"
 				exit 1
 			fi
+			shift 2
+		;;
+		--rootsize)
+		        echo "Setting rootsize to \"$2\""
+			ROOTSIZE="$2"
 			shift 2
 		;;
 		--)
@@ -382,7 +390,7 @@ do_disk_images() {
 	#
 	# Create disk images
 	#
-	qemu-img create -f raw root.raw 1G
+	qemu-img create -f raw root.raw $ROOTSIZE
 	qemu-img create -f raw swap.raw 1G
 	qemu-img create -f raw opt.raw  4G
 
