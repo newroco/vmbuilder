@@ -39,6 +39,9 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
                             [(-s|--suite) gutsy]
                             [(-t|--tmp) temp_dir]
                             [--vm (vmw6|vmserver|vbox|qemu|kvm)]
+                            [--rootsize size]
+                            [--kernel-flavor virtual]
+                            [--components main,restricted]
 
 --addpkg PKG       Install PKG into the guest (can be specfied multiple times)
 -a, --arch ARCH    Specify the target architecture. Valid options: i386*
