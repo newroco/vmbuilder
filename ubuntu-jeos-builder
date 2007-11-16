@@ -42,6 +42,7 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
                             [--rootsize size]
                             [--kernel-flavor virtual]
                             [--components main,restricted]
+                            [--no-opt]
 
 --addpkg PKG       Install PKG into the guest (can be specfied multiple times)
 -a, --arch ARCH    Specify the target architecture. Valid options: i386*
@@ -69,6 +70,7 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
 --ssh-key          Add the given ssh public key file (absolute path)
                    to roots authorized hosts and install openssh-server
                    (WARNING: this has strong security implications)
+--no-opt           Do not build the /opt image
 
 ('*' denotes default option)
 
@@ -95,8 +97,9 @@ ROOTSIZE="1G"
 KERNEL_FLAVOR="virtual"
 COMPS="main"
 SSHKEY=""
+OPTFS="yes"
 
-TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,rootsize:,kernel-flavor:,components:,ssh-key:,  -- "$@"`
+TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,rootsize:,kernel-flavor:,components:,ssh-key:,no-opt,  -- "$@"`
 eval set -- "$TEMP"
 
 while true
@@ -227,6 +230,11 @@ do
 		        echo "Setting ssh-key to \"$2\""
 			SSHKEY="$2"
 			shift 2
+		;;
+		--no-opt)
+		        echo "Not building /opt"
+			OPTFS="no"
+			shift 1
 		;;
 		--)
 			shift
@@ -470,10 +478,12 @@ do_fstab_dapper() {
 # <file system>					<mount point>	<type>	<options>	<dump>	<pass>
 proc						/proc		proc	defaults	0	0
 /dev/hda1	/		ext3	defaults	0	1
-/dev/hdc1	/opt		ext3	defaults	0	1
 /dev/hdb1	swap		swap	defaults	0	1
 EOF
-
+	if [ "$OPTFS" = "yes" ]
+	then
+	    echo "/dev/hdc1	/opt		ext3	defaults	0	1" >> root/etc/fstab 
+	fi
 
 }
 
@@ -482,16 +492,18 @@ do_fstab() {
 	# Set up fstab
 	#
 	sed -e "s/%ROOT%/$(cat root.raw.uuid)/" \
-		-e "s/%OPT%/$(cat opt.raw.uuid)/" \
 		-e "s/%SWAP%/$(cat swap.raw.uuid)/"  << EOF | cat > root/etc/fstab
 # /etc/fstab: static file system information.
 #
 # <file system>					<mount point>	<type>	<options>	<dump>	<pass>
 proc						/proc		proc	defaults	0	0
 UUID=%ROOT%	/		ext3	defaults	0	1
-UUID=%OPT%	/opt		ext3	defaults	0	1
 UUID=%SWAP%	swap		swap	defaults	0	1
 EOF
+	if [ "$OPTFS" = "yes" ]
+	then
+	    echo "UUID=%OPT%	/opt		ext3	defaults	0	1"  | sed -e  "s/%OPT%/$(cat opt.raw.uuid)/" >> root/etc/fstab 
+	fi
 
 }
 
