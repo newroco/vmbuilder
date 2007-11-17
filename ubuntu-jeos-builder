@@ -495,7 +495,7 @@ do_target_vm_conversion () {
 		QEMU_IMG_CONVERT_EXTENSION=".vmdk"
 		cat > vaos.vmx << EOF
 config.version = "8"
-virtualHW.version = "$VMWHVERSION"
+virtualHW.version = "$VMHWVERSION"
 scsi0.present = "FALSE"
 scsi0.virtualDev = "lsilogic"
 memsize = "$MEM"
