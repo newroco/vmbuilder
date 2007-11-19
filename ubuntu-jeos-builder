@@ -5,6 +5,8 @@
 #
 #    Authors: Soren Hansen <soren@canonical.com>
 #             Neal McBurnett <neal@mcburnett.org>
+#             Michael Vogt <michael.vogt@ubuntu.com>
+#             Mike Frisch
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -264,7 +266,16 @@ then
 	fi
 fi
 		
-test -n "${SUDO_USER}" && sudo -u "${SUDO_USER}" mkdir "${DESTINATION}"
+if [ -n "${SUDO_USER}" ]; then
+	sudo -u "${SUDO_USER}" mkdir "${DESTINATION}"
+else
+	mkdir "${DESTINATION}"
+fi
+
+if [ $? -ne 0 ]; then
+	echo "Error creating directory ${DESTINATION}. Unable to proceed."
+	exit 1
+fi
 
 mkfs3loop () {
 	loopfile="$1"
@@ -573,10 +584,10 @@ do_target_vm_conversion () {
 
 	if [ "$VM" = vmserver ] || [ "$VM" = vmw6 ]
 	then
-
+		QEMU_IMG_CONVERT_EXTENSION=".vmdk"
 		cat > vaos.vmx << EOF
 config.version = "8"
-virtualHW.version = "$VMWHVERSION"
+virtualHW.version = "$VMHWVERSION"
 scsi0.present = "FALSE"
 scsi0.virtualDev = "lsilogic"
 memsize = "$MEM"
