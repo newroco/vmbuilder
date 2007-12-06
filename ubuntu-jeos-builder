@@ -45,7 +45,7 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
                             [--kernel-flavour <flavour>]
                             [--components <comma separated list of components>]
                             [--ssh-key <public key file>]
-
+ 
 --addpkg PKG       Install PKG into the guest (can be specfied multiple times)
 -a, --arch ARCH    Specify the target architecture. Valid options: i386*
 -d, --dest         Specify the destination directory.
@@ -54,6 +54,7 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
                    The domain of the machine running this script.
 -h, --help         This help text.
 --hostname NAME    Set NAME as the hostname of the guest. Default: ubuntu
+                   Also uses this name as the VM name
 --mem NN           Assign NN megabytes of memory to the guest vm.
                    Default: 128
 --mirror URL       Use Ubuntu mirror at URL instead of the default, which
@@ -65,6 +66,8 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
 --vm VM            Generate image for specified virtualisation software.
                    Valid choices are: vmw6* vmserver vbox qemu kvm
 --rootsize size    The size of the root filesystem (default 1G)
+--optsize size     The size of the /opt filesystem (default 4G)
+--swapsize size    The size of the swap partition (default 1G)
 --kernel-flavour   The kernel image flavour to install (default: virtual for
                    >=gutsy, server otherwise)
 --components       A comma seperaed list of distro components to include 
@@ -72,6 +75,15 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
 --ssh-key          Add the given ssh public key file (absolute path)
                    to root's authorized keys and install openssh-server
                    (WARNING: this has strong security implications)
+--ip address       Ip address in dotted form
+                   (defaults to dhcp if not specified)
+
+Options belows are discarded if --ip is not specified
+--mask value       IP mask in dotted form (default: 255.255.255.0)
+--net value        IP net address (default: X.X.X.0)
+--bcast value      IP broadcast (default: X.X.X.255)
+--gw address       Gateway address (default: X.X.X.1)
+--dns address      Name server address (default: X.X.X.1)
 
 ('*' denotes default option)
 
@@ -95,10 +107,12 @@ MEM=128
 HOSTNAME="ubuntu"
 DOMAIN="`hostname -d`"
 ROOTSIZE="1G"
+OPTSIZE="4G"
+SWAPSIZE="1G"
 COMPS="main"
 SSHKEY=""
 
-TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,rootsize:,kernel-flavour:,components:,ssh-key:,  -- "$@"`
+TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,  -- "$@"`
 eval set -- "$TEMP"
 
 while true
@@ -215,6 +229,16 @@ do
 			ROOTSIZE="$2"
 			shift 2
 		;;
+		--swapsize)
+                        echo "Setting swapsize to \"$2\""
+                        SWAPSIZE="$2"
+                        shift 2
+                ;;
+		--optsize)
+                        echo "Setting optsize to \"$2\""
+                        OPTSIZE="$2"
+                        shift 2
+                ;;
 		--kernel-flavour)
 		        echo "Setting kernel flavour to \"$2\""
 			KERNEL_FLAVOUR="$2"
@@ -228,6 +252,36 @@ do
 		--ssh-key)
 		        echo "Setting ssh-key to \"$2\""
 			SSHKEY="$2"
+			shift 2
+		;;
+		--ip)
+			echo "setting ipaddress to \"$2\""
+			IP=$2
+			shift 2
+		;;
+		--mask)
+			echo "setting mask to \"$2\""
+			MASK=$2
+			shift 2
+		;;
+		--net)
+			echo "setting network to \"$2\""
+			NETWORK=$2
+			shift 2
+		;;
+		--bcast)
+			echo "setting broadcast to \"$2\""
+			BCAST=$2
+			shift 2
+		;;
+		--gw)
+			echo "setting gateway to \"$2\""
+			GW=$2
+			shift 2
+		;;
+		--dns)
+			echo "setting name server to \"$2\""
+			DNS=$2
 			shift 2
 		;;
 		--)
@@ -276,6 +330,33 @@ if [ $? -ne 0 ]; then
 	echo "Error creating directory ${DESTINATION}. Unable to proceed."
 	exit 1
 fi
+
+if [ -z "$IP" ]; then
+	IP="DHCP"
+else
+	if [ -z "$MASK" ]; then
+		MASK="255.255.255.0"
+		echo "setting mask to \"$MASK\""
+	fi
+	if [ -z "$NET" ]; then
+		NET=`echo $IP | sed 's/\./.0./3' | sed 's/\.[[:digit:]]\{1,3\}$//'` 
+		echo "setting network to \"$NET\""
+	fi
+	if [ -z "$BCAST" ]; then
+		BCAST=`echo $IP | sed 's/\./.255./3' | sed 's/\.[[:digit:]]\{1,3\}$//'` 
+		echo "setting broadcast to \"$BCAST\""
+	fi
+	if [ -z "$GW" ]; then
+                GW=`echo $IP | sed 's/\./.1./3' | sed 's/\.[[:digit:]]\{1,3\}$//'`
+		echo "setting gateway to \"$GW\""
+        fi
+	if [ -z "$DNS" ]; then
+                DNS=`echo $IP | sed 's/\./.1./3' | sed 's/\.[[:digit:]]\{1,3\}$//'`
+		echo "setting name server to \"$DNS\""
+        fi
+
+
+fi 
 
 mkfs3loop () {
 	loopfile="$1"
@@ -330,8 +411,24 @@ iface lo inet loopback
 
 # The primary network interface
 auto eth0
+EOF
+	if [ $IP -eq "DHCP" ]; then
+		cat >> root/etc/network/interfaces <<EOF
 iface eth0 inet dhcp
 EOF
+	else
+		cat >> root/etc/network/interfaces <<EOF
+iface eth0 inet static
+        address $IP
+        netmask $MASK 
+        network $NET
+        broadcast $BCAST
+        gateway $GW
+        # dns-* options are implemented by the resolvconf package, if installed
+        dns-nameservers $DNS
+        dns-search $DOMAIN
+EOF
+	fi
 }
 
 do_bootloader () {
@@ -451,8 +548,8 @@ do_disk_images() {
 	# Create disk images
 	#
 	qemu-img create -f raw root.raw $ROOTSIZE
-	qemu-img create -f raw swap.raw 1G
-	qemu-img create -f raw opt.raw  4G
+	qemu-img create -f raw swap.raw $SWAPSIZE
+	qemu-img create -f raw opt.raw  $OPTSIZE
 
 	#
 	# Add a partition table to each disk
@@ -585,7 +682,7 @@ do_target_vm_conversion () {
 	if [ "$VM" = vmserver ] || [ "$VM" = vmw6 ]
 	then
 		QEMU_IMG_CONVERT_EXTENSION=".vmdk"
-		cat > vaos.vmx << EOF
+		cat > $HOSTNAME.vmx << EOF
 config.version = "8"
 virtualHW.version = "$VMHWVERSION"
 scsi0.present = "FALSE"
@@ -594,7 +691,7 @@ memsize = "$MEM"
 Ethernet0.virtualDev = "vlance"
 Ethernet0.present = "TRUE"
 Ethernet0.connectionType = "bridged"
-displayName = "Ubuntu Jeos $ARCH"
+displayName = "$HOSTNAME $ARCH"
 guestOS = "$guestos"
 priority.grabbed = "normal"
 priority.ungrabbed = "normal"
@@ -615,8 +712,8 @@ ide1:0.fileName = "opt.vmdk"
 floppy0.present = "FALSE"
 EOF
 
-		chmod +x vaos.vmx
-		FILES="vaos.vmx root.vmdk opt.vmdk swap.vmdk"
+		chmod +x $HOSTNAME.vmx
+		FILES="$HOSTNAME.vmx root.vmdk opt.vmdk swap.vmdk"
 	elif [ $VM = qemu ] || [ $VM = kvm ]
 	then
 		QEMU_IMG_CONVERT_OPTS="-O qcow2 -6"
