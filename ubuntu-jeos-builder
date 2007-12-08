@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 #    Ubuntu Jeos image builder
 #    Copyright (C) 2007  Canonical Ltd.
@@ -7,6 +7,7 @@
 #             Neal McBurnett <neal@mcburnett.org>
 #             Michael Vogt <michael.vogt@ubuntu.com>
 #             Mike Frisch
+#             Nick Barcet <nick.barcet@canonical.com>
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -41,9 +42,11 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
                             [(-s|--suite) gutsy]
                             [(-t|--tmp) temp_dir]
                             [--vm (vmw6|vmserver|vbox|qemu|kvm)]
-                            [--rootsize size]
-                            [--optsize size]
-                            [--swapsize size]
+			    [
+			      [--part partitionfile]
+                            | [--rootsize size]
+                              [--optsize size]
+                              [--swapsize size]
                             [--kernel-flavour <flavour>]
                             [--components <comma separated list of components>]
                             [--ssh-key <public key file>]
@@ -73,9 +76,18 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
                    generation. Defaults to \$TMPDIR if set, or /tmp if not.
 --vm VM            Generate image for specified virtualisation software.
                    Valid choices are: vmw6* vmserver vbox qemu kvm
+--part partfile    Allows to specify a partition table in partfile
+                   each line of partfile should specify (root first):
+		      mountpoint size
+		   ie:
+		      root 1G
+		      /opt 1G
+		      swap 256M
+The following three option are not used if --part is specified:
 --rootsize size    The size of the root filesystem (default 1G)
 --optsize size     The size of the /opt filesystem (default 4G)
 --swapsize size    The size of the swap partition (default 1G)
+
 --kernel-flavour   The kernel image flavour to install (default: virtual for
                    >=gutsy, server otherwise)
 --components       A comma seperaed list of distro components to include 
@@ -119,8 +131,12 @@ OPTSIZE="4G"
 SWAPSIZE="1G"
 COMPS="main"
 SSHKEY=""
+declare -a MOUNTPOINTS
+declare -a MOUNTSIZES
+declare -a MOUNTDISKS
+declare -a MOUNTIMGS
 
-TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,  -- "$@"`
+TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,part:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,  -- "$@"`
 eval set -- "$TEMP"
 
 while true
@@ -232,6 +248,11 @@ do
 			fi
 			shift 2
 		;;
+		--part)
+			echo "Setting partitions from \"$2\""
+			PARTFILE="$2"
+			shift 2
+		;;
 		--rootsize)
 		        echo "Setting rootsize to \"$2\""
 			ROOTSIZE="$2"
@@ -339,6 +360,41 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
+if [ -z "$PARTFILE" ]; then
+	MOUNTPOINTS[0]="root" # /opt swap
+	if [ -z "$ROOTSIZE" ]; then
+		MOUNTSIZES[0]="1G"
+	else
+		MOUNTSIZES[0]="$ROOTSIZE"
+	fi
+	if [ -z "$OPTSIZE" ]; then
+		MOUNTSIZES[1]="$SIZE 4G"
+	else
+		MOUNTSIZES[1]="$SIZE $OPTSIZE"
+	fi
+	if [ -z "$SWAPSIZE" ]; then
+		MOUNTSIZESi[2]="$SIZE 1G"
+	else
+		MOUNTSIZES[2]="$SIZE $SWAPSIZE"
+	fi
+else
+	let index=0
+	
+	exec 10<$PARTFILE
+	while read line<&10
+	do
+		MOUNTPOINTS[$index]=${line%\ *}
+		MOUNTSIZES[$index]=${line#*\ }
+		echo "setting ${MOUNTPOINTS[$index]} to \"${MOUNTSIZES[$index]}\""
+		let index=$index+1
+	done 
+fi
+letters=("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "u" "v" "w" "x" "y" "z")
+for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+	MOUNTDISKS[$i]="${letters[$i]}"
+	MOUNTIMGS[$i]=`echo "${MOUNTPOINTS[$i]}" | sed 's%\/%%g'`
+done
+
 if [ -z "$IP" ]; then
 	IP="DHCP"
 else
@@ -365,6 +421,8 @@ else
 
 
 fi 
+
+
 
 mkfs3loop () {
 	loopfile="$1"
@@ -465,11 +523,10 @@ EOF
 	#
 	cat > root/boot/grub/device.map << EOF
 (fd0)	/dev/fd0
-(hd0)	/dev/sda
-(hd1)	/dev/sdb
-(hd2)	/dev/sdc
 EOF
-
+	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+		echo "(hd$i) /dev/sd${MOUNTDISKS[$i]}" >> root/boot/grub/device.map
+	done
 
 	if [ $ARCH = "amd64" ]
 	then
@@ -553,32 +610,26 @@ EOF
 
 do_disk_images() {
 	#
-	# Create disk images
+	# Create disk images, partitions and format
 	#
-	qemu-img create -f raw root.raw $ROOTSIZE
-	qemu-img create -f raw swap.raw $SWAPSIZE
-	qemu-img create -f raw opt.raw  $OPTSIZE
+	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+		img="${MOUNTIMGS[$i]}"
 
-	#
-	# Add a partition table to each disk
-	#
-	parted --script root.raw mklabel msdos
-	parted --script swap.raw mklabel msdos
-	parted --script opt.raw  mklabel msdos
-
-	#
-	# Create a partition on each disk
-	#
-	parted --script -- root.raw mkpart primary ext2 1 -1
-	parted --script -- swap.raw mkpart primary linux-swap 1 -1
-	parted --script -- opt.raw  mkpart primary ext2 1 -1
-
-	#
-	# Format the file systems and swap partition
-	#
-	mkfs3loop root.raw
-	mkfs3loop opt.raw
-	mkswaploop swap.raw
+		# Create disk image
+		qemu-img create -f raw $img.raw ${MOUNTSIZES[$i]}
+		
+		# Add a partition
+		parted --script $img.raw mklabel msdos
+		
+		# Create partition and format
+		if [ "$img" = "swap" ]; then
+			parted --script -- $img.raw mkpart primary linux-swap 1 -1
+			mkswaploop $img.raw
+		else
+			parted --script -- $img.raw mkpart primary ext2 1 -1
+			mkfs3loop $img.raw
+		fi
+	done	
 }
 
 do_debootstrap() {
@@ -595,30 +646,37 @@ do_fstab_dapper() {
 #
 # <file system>					<mount point>	<type>	<options>	<dump>	<pass>
 proc						/proc		proc	defaults	0	0
-/dev/hda1	/		ext3	defaults	0	1
-/dev/hdc1	/opt		ext3	defaults	0	1
-/dev/hdb1	swap		swap	defaults	0	1
 EOF
-
-
+	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+		if [ "${MOUNTPOINTS[$i]}" = "root" ]; then
+			echo "/dev/hd${MOUNTDISKS[$i]}1	/	ext3	defaults	0	1">>root/etc/fstab
+		elif [ "${MOUNTPOINTS[$i]}" = "swap" ]; then
+			echo "/dev/hd${MOUNTDISKS[$i]}1	swap      swap    defaults        0       1">>root/etc/fstab
+		else 
+			echo "/dev/hd${MOUNTDISKS[$i]}1	${MOUNTPOINTS[$i]}       ext3    defaults        0       1">>root/etc/fstab
+		fi
+	done
 }
 
 do_fstab() {
 	#
 	# Set up fstab
 	#
-	sed -e "s/%ROOT%/$(cat root.raw.uuid)/" \
-		-e "s/%OPT%/$(cat opt.raw.uuid)/" \
-		-e "s/%SWAP%/$(cat swap.raw.uuid)/"  << EOF | cat > root/etc/fstab
+	cat > root/etc/fstab << EOF
 # /etc/fstab: static file system information.
 #
-# <file system>					<mount point>	<type>	<options>	<dump>	<pass>
-proc						/proc		proc	defaults	0	0
-UUID=%ROOT%	/		ext3	defaults	0	1
-UUID=%OPT%	/opt		ext3	defaults	0	1
-UUID=%SWAP%	swap		swap	defaults	0	1
+# <file system>                                 <mount point>   <type>  <options>       <dump>  <pass>
+proc                                            /proc           proc    defaults        0       0
 EOF
-
+	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+                if [ "${MOUNTPOINTS[$i]}" = "root" ]; then
+                        echo "UUID=$(cat ${MOUNTIMGS[$i]}.raw.uuid) /       ext3    defaults        0       1">>root/etc/fstab
+                elif [ "${MOUNTPOINTS[$i]}" = "swap" ]; then
+                        echo "UUID=$(cat ${MOUNTIMGS[$i]}.raw.uuid) swap      swap    defaults        0       1">>root/etc/fstab
+                else
+                        echo "UUID=$(cat ${MOUNTIMGS[$i]}.raw.uuid) ${MOUNTPOINTS[$i]}       ext3    defaults        0       1">>root/etc/fstab
+                fi
+        done
 }
 
 do_kernel_n_friends () {
@@ -707,21 +765,20 @@ powerType.powerOff = "hard"
 powerType.powerOn = "hard"
 powerType.suspend = "hard"
 powerType.reset = "hard"
-
-ide0:0.present = "TRUE"
-ide0:0.fileName = "root.vmdk"
-
-ide0:1.present = "TRUE"
-ide0:1.fileName = "swap.vmdk"
-
-ide1:0.present = "TRUE"
-ide1:0.fileName = "opt.vmdk"
-
 floppy0.present = "FALSE"
+
 EOF
 
 		chmod +x $HOSTNAME.vmx
-		FILES="$HOSTNAME.vmx root.vmdk opt.vmdk swap.vmdk"
+		FILES="$HOSTNAME.vmx"
+		for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+			FILES="$FILES ${MOUNTIMGS[$i]}.vmdk"
+			let "id=$i%2"
+			let "bus=$i/2"
+			echo "ide${bus}:${id}.present = \"TRUE\"">>$HOSTNAME.vmx
+			echo "ide${bus}:${id}.fileName = \"${MOUNTIMGS[$i]}.vmdk\"">>$HOSTNAME.vmx
+		done
+
 	elif [ $VM = qemu ] || [ $VM = kvm ]
 	then
 		QEMU_IMG_CONVERT_OPTS="-O qcow2 -6"
@@ -732,17 +789,23 @@ EOF
 		else
 			CMD=qemu
 		fi
-        cat > launchjeos <<EOF
+		FILES="$HOSTNAME.$CMD" 
+		IMGFILES=""
+		for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+			FILES="$FILES ${MOUNTIMGS[$i]}.qcow2"
+			IMGFILES="$IMGFILES -hd${MOUNTDISKS[$i]} ${MOUNTIMGS[$i]}.qcow2" 
+		done
+
+        cat > $HOSTNAME.$CMD <<EOF
 #!/bin/sh
-$CMD -m $MEM -hda root.qcow2 -hdb swap.qcow2 -hdc opt.qcow2 "\$@"
+$CMD -m $MEM $IMGFILES "\$@"
 EOF
-		chmod +x launchjeos
-		FILES="launchjeos root.qcow2 opt.qcow2 swap.qcow2"
+		chmod +x $HOSTNAME.$CMD
 	fi
 
-	qemu-img convert $QEMU_IMG_CONVERT_OPTS root.raw "root${QEMU_IMG_CONVERT_EXTENSION}"
-	qemu-img convert $QEMU_IMG_CONVERT_OPTS swap.raw "swap${QEMU_IMG_CONVERT_EXTENSION}"
-	qemu-img convert $QEMU_IMG_CONVERT_OPTS opt.raw  "opt${QEMU_IMG_CONVERT_EXTENSION}"
+	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+		qemu-img convert $QEMU_IMG_CONVERT_OPTS ${MOUNTIMGS[$i]}.raw "${MOUNTIMGS[$i]}${QEMU_IMG_CONVERT_EXTENSION}"
+	done
 
 	test -n "${SUDO_USER}" && chown "$SUDO_USER" $FILES
 	mv $FILES $DESTINATION
@@ -750,7 +813,9 @@ EOF
 }
 
 do_cleanup () {
-	rm root.raw root.raw.uuid opt.raw opt.raw.uuid swap.raw swap.raw.uuid
+	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+		rm ${MOUNTIMGS[$i]}.raw ${MOUNTIMGS[$i]}.raw.uuid
+	done
 	cd /
 	rmdir "$WORKINGDIR"
 }
