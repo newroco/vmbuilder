@@ -79,7 +79,7 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
 --part partfile    Allows to specify a partition table in partfile
                    each line of partfile should specify (root first):
 		      mountpoint size
-		   ie:
+		   ie (4 partitions maximum):
 		      root 1G
 		      /opt 1G
 		      swap 256M
@@ -332,34 +332,6 @@ then
 	exit 1
 fi
 
-WORKINGDIR=`mktemp -d -p $TMPDIR jeos-builder-XXXXXXXXXX` || exit 1
-
-if [ -z "$DESTINATION" ]
-then
-	DESTINATION="$PWD/ubuntu-jeos-$SUITE-$ARCH"
-fi
-
-if [ -z "$KERNEL_FLAVOUR" ]
-then
-	if [ "$SUITE" = "gutsy" ] || [ "$SUITE" = "hardy" ]
-	then
-		KERNEL_FLAVOUR="virtual"
-	else
-		KERNEL_FLAVOUR="server"
-	fi
-fi
-		
-if [ -n "${SUDO_USER}" ]; then
-	sudo -u "${SUDO_USER}" mkdir "${DESTINATION}"
-else
-	mkdir "${DESTINATION}"
-fi
-
-if [ $? -ne 0 ]; then
-	echo "Error creating directory ${DESTINATION}. Unable to proceed."
-	exit 1
-fi
-
 if [ -z "$PARTFILE" ]; then
 	MOUNTPOINTS[0]="root" # /opt swap
 	if [ -z "$ROOTSIZE" ]; then
@@ -383,17 +355,50 @@ else
 	exec 10<$PARTFILE
 	while read line<&10
 	do
+		if [ $index -gt 3 ]; then
+                        echo "Sorry, you cannot have more than 4 partitions at this time."
+                        exit 1
+                fi
+
 		MOUNTPOINTS[$index]=${line%\ *}
-		MOUNTSIZES[$index]=${line#*\ }
-		echo "setting ${MOUNTPOINTS[$index]} to \"${MOUNTSIZES[$index]}\""
+		MOUNTSIZES[$index]=`echo "${line#*\ }" | sed 's/^[ \t]*//'`
 		let index=$index+1
 	done 
 fi
-letters=("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "u" "v" "w" "x" "y" "z")
+letters=("a" "b" "c" "d")
 for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
 	MOUNTDISKS[$i]="${letters[$i]}"
-	MOUNTIMGS[$i]=`echo "${MOUNTPOINTS[$i]}" | sed 's%\/%%g'`
+	MOUNTIMGS[$i]=`echo "${MOUNTPOINTS[$i]}" | sed 's%\/%%g' | sed 's/[ \t]*$//'`
+	echo "setting disk: ${MOUNTPOINTS[$i]}, size: ${MOUNTSIZES[$i]}, image name: ${MOUNTIMGS[$i]}, on: /dev/hd${MOUNTDISKS[$i]}"
 done
+
+WORKINGDIR=`mktemp -d -p $TMPDIR jeos-builder-XXXXXXXXXX` || exit 1
+
+if [ -z "$DESTINATION" ]
+then
+        DESTINATION="$PWD/ubuntu-jeos-$SUITE-$ARCH"
+fi
+
+if [ -z "$KERNEL_FLAVOUR" ]
+then
+        if [ "$SUITE" = "gutsy" ] || [ "$SUITE" = "hardy" ]
+        then
+                KERNEL_FLAVOUR="virtual"
+        else
+                KERNEL_FLAVOUR="server"
+        fi
+fi
+
+if [ -n "${SUDO_USER}" ]; then
+        sudo -u "${SUDO_USER}" mkdir "${DESTINATION}"
+else
+        mkdir "${DESTINATION}"
+fi
+
+if [ $? -ne 0 ]; then
+        echo "Error creating directory ${DESTINATION}. Unable to proceed."
+        exit 1
+fi
 
 if [ -z "$IP" ]; then
 	IP="DHCP"
