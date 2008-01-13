@@ -512,7 +512,7 @@ iface lo inet loopback
 # The primary network interface
 auto eth0
 EOF
-	if [ $IP -eq "DHCP" ]; then
+	if [ "$IP" = "DHCP" ]; then
 		cat >> root/etc/network/interfaces <<EOF
 iface eth0 inet dhcp
 EOF
