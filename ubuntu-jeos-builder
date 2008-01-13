@@ -54,6 +54,7 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
                             [--kernel-flavour <flavour>]
                             [--components <comma separated list of components>]
                             [--ssh-key <public key file>]
+                            [--exec <script to execute>]
                             [--ip address [
                               [--mask value]
                               [--net value]
@@ -102,6 +103,8 @@ The following three option are not used if --part is specified:
 --ssh-key          Add the given ssh public key file (absolute path)
                    to root's authorized keys and install openssh-server
                    (WARNING: this has strong security implications)
+--exec             Run the given script file. You can use 
+                    'chroot root <cmd>' to execute code in the guest.
 --ip address       Ip address in dotted form
                    (defaults to dhcp if not specified)
 
@@ -146,7 +149,7 @@ declare -a MOUNTSIZES
 declare -a MOUNTDISKS
 declare -a MOUNTIMGS
 
-TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,  -- "$@"`
+TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,exec:,  -- "$@"`
 eval set -- "$TEMP"
 
 while true
@@ -306,6 +309,11 @@ do
 		--ssh-key)
 		        echo "Setting ssh-key to \"$2\""
 			SSHKEY="$2"
+			shift 2
+		;;
+		--exec)
+			echo "Setting exec script to \"$2\""
+			EXEC="$2"
 			shift 2
 		;;
 		--ip)
@@ -744,6 +752,18 @@ do_add_ssh_key () {
 	cp "$SSHKEY" root/root/.ssh/authorized_keys
 }
 
+do_exec_script () {
+	if [ ! -f "$EXEC" ]
+	then
+	    echo "Script '$EXEC' not found."
+	    return
+	fi
+	#
+	# Execute the script.
+	#
+	"$EXEC"
+}
+
 do_copy_to_disk_images () {
 
 	chroot root apt-get clean
@@ -870,6 +890,7 @@ do_bootloader
 do_kernel_n_friends 
 do_add_remove_packages
 do_add_ssh_key
+do_exec_script
 do_copy_to_disk_images 
 do_target_vm_conversion 
 do_cleanup
