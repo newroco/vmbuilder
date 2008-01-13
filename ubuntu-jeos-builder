@@ -8,6 +8,7 @@
 #             Michael Vogt <michael.vogt@ubuntu.com>
 #             Mike Frisch
 #             Nick Barcet <nick.barcet@canonical.com>
+#             Onno Benschop <onno@itmaze.com.au>
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -42,6 +43,9 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
                             [(-s|--suite) gutsy]
                             [(-t|--tmp) temp_dir]
                             [--vm (vmw6|vmserver|vbox|qemu|kvm)]
+                            [--user username]
+                            [--name fullname]
+                            [--pass password]
 			    [
 			      [--part partitionfile]
                             | [--rootsize size]
@@ -76,6 +80,9 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
                    generation. Defaults to \$TMPDIR if set, or /tmp if not.
 --vm VM            Generate image for specified virtualisation software.
                    Valid choices are: vmw6* vmserver vbox qemu kvm
+--user username    Set the name of the user to be added. Default ubuntu.
+--name fullname    Set the full name of the user to be added. Default Ubuntu.
+--pass password    Set the password for the user. Default ubuntu.
 --part partfile    Allows to specify a partition table in partfile
                    each line of partfile should specify (root first):
 		      mountpoint size
@@ -121,6 +128,9 @@ then
 	TMPDIR="/tmp"
 fi
 VM=vmw6
+USER=ubuntu
+NAME=Ubuntu
+PASS=ubuntu
 SUITE="gutsy"
 MIRROR="http://archive.ubuntu.com/ubuntu"
 MEM=128
@@ -136,7 +146,7 @@ declare -a MOUNTSIZES
 declare -a MOUNTDISKS
 declare -a MOUNTIMGS
 
-TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,part:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,  -- "$@"`
+TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,  -- "$@"`
 eval set -- "$TEMP"
 
 while true
@@ -246,6 +256,21 @@ do
 				echo "Invalid vm software: \"$2\". Valid choices are: vmw6 vmserver vbox qemu kvm"
 				exit 1
 			fi
+			shift 2
+		;;
+		--user)
+			echo "Setting username to: \"$2\""
+			USER="$2"
+			shift 2
+		;;
+		--name)
+			echo "Setting fullname to: \"$2\""
+			NAME="$2"
+			shift 2
+		;;
+		--pass)
+			echo "Setting password to: \"$2\""
+			PASS="$2"
 			shift 2
 		;;
 		--part)
@@ -448,13 +473,13 @@ do_initial_user () {
 	# Set up a user with sudo etc.
 	#
 
-	chroot root adduser --disabled-password --gecos Ubuntu ubuntu > /dev/null
+	chroot root adduser --disabled-password --gecos "${NAME}" ${USER} > /dev/null
 	chroot root chpasswd <<EOF
-ubuntu:ubuntu
+${USER}:${PASS}
 EOF
 
 	chroot root addgroup --system admin >/dev/null 2>&1
-	chroot root adduser ubuntu admin >/dev/null 2>&1
+	chroot root adduser ${USER} admin >/dev/null 2>&1
 
 	cat >> root/etc/sudoers << EOF
 
@@ -463,7 +488,7 @@ EOF
 EOF
 
 	for group in adm audio cdrom dialout floppy video plugdev dip netdev powerdev lpadmin scanner; do
-		chroot root adduser ubuntu $group >/dev/null 2>&1
+		chroot root adduser ${USER} $group >/dev/null 2>&1
 	done
 
 }
