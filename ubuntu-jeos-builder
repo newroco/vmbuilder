@@ -177,7 +177,7 @@ do
 			shift 2
 		;;
 		--s|--suite)
-			if [ "$2" = gutsy ] || [ "$2" = feisty ] || [ "$2" = dapper ]
+			if [ "$2" = gutsy ] || [ "$2" = feisty ] || [ "$2" = dapper ] || [ "$2" = hardy ]
 			then
 				echo "Setting Ubuntu version to \"$2\""
 				SUITE="$2"
@@ -449,6 +449,8 @@ EOF
 	# Hacky-di-hack.. First generate the template, then remove the errant kopt_2_6 (which hardcodes the root device to /dev/hda1) and then rerun update-grub.
 	chroot root $updategrub -y
 	sed -ie '/^# kopt_2_6/ d' root/boot/grub/menu.lst
+ 	# more hacks! change hda1 to the UUID to unbreak hardy image generation
+ 	sed -ie "s/^# kopt=root=\/dev\/hda1/# kopt=root=UUID=$(cat root.raw.uuid)/" root/boot/grub/menu.lst
 	chroot root $updategrub
 	chroot root grub-set-default 0
 	rm old_sect stage1_buffer stage2_first_buffer stage2_second_buffer
