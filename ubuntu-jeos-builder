@@ -5,6 +5,8 @@
 #
 #    Authors: Soren Hansen <soren@canonical.com>
 #             Neal McBurnett <neal@mcburnett.org>
+#             Michael Vogt <michael.vogt@ubuntu.com>
+#             Mike Frisch
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -39,10 +41,11 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
                             [(-s|--suite) gutsy]
                             [(-t|--tmp) temp_dir]
                             [--vm (vmw6|vmserver|vbox|qemu|kvm)]
-                            [--rootsize size]
-                            [--kernel-flavor virtual]
-                            [--components main,restricted]
                             [--no-opt]
+                            [--rootsize size]
+                            [--kernel-flavour <flavour>]
+                            [--components <comma separated list of components>]
+                            [--ssh-key <public key file>]
 
 --addpkg PKG       Install PKG into the guest (can be specfied multiple times)
 -a, --arch ARCH    Specify the target architecture. Valid options: i386*
@@ -62,15 +65,15 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
                    generation. Defaults to \$TMPDIR if set, or /tmp if not.
 --vm VM            Generate image for specified virtualisation software.
                    Valid choices are: vmw6* vmserver vbox qemu kvm
-
 --rootsize size    The size of the root filesystem (default 1G)
---kernel-flavor    The kernel image flavor to install (default virtual)
+--kernel-flavour   The kernel image flavour to install (default: virtual for
+                   >=gutsy, server otherwise)
 --components       A comma seperaed list of distro components to include 
                    (e.g. main,universe). This defaults to "main"
---ssh-key          Add the given ssh public key file (absolute path)
-                   to roots authorized hosts and install openssh-server
-                   (WARNING: this has strong security implications)
 --no-opt           Do not build the /opt image
+--ssh-key          Add the given ssh public key file (absolute path)
+                   to root's authorized keys and install openssh-server
+                   (WARNING: this has strong security implications)
 
 ('*' denotes default option)
 
@@ -94,12 +97,11 @@ MEM=128
 HOSTNAME="ubuntu"
 DOMAIN="`hostname -d`"
 ROOTSIZE="1G"
-KERNEL_FLAVOR="virtual"
 COMPS="main"
-SSHKEY=""
 OPTFS="yes"
+SSHKEY=""
 
-TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,rootsize:,kernel-flavor:,components:,ssh-key:,no-opt,  -- "$@"`
+TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,rootsize:,kernel-flavour:,components:,ssh-key:,no-opt,  -- "$@"`
 eval set -- "$TEMP"
 
 while true
@@ -216,9 +218,9 @@ do
 			ROOTSIZE="$2"
 			shift 2
 		;;
-		--kernel-flavor)
-		        echo "Setting kernel flavor to \"$2\""
-			KERNEL_FLAVOR="$2"
+		--kernel-flavour)
+		        echo "Setting kernel flavour to \"$2\""
+			KERNEL_FLAVOUR="$2"
 			shift 2
 		;;
 		--components)
@@ -226,15 +228,15 @@ do
 			COMPS="$2"
 			shift 2
 		;;
-		--ssh-key)
-		        echo "Setting ssh-key to \"$2\""
-			SSHKEY="$2"
-			shift 2
-		;;
 		--no-opt)
 		        echo "Not building /opt"
 			OPTFS="no"
 			shift 1
+		;;
+		--ssh-key)
+		        echo "Setting ssh-key to \"$2\""
+			SSHKEY="$2"
+			shift 2
 		;;
 		--)
 			shift
@@ -262,7 +264,26 @@ then
 	DESTINATION="$PWD/ubuntu-jeos-$SUITE-$ARCH"
 fi
 
-test -n "${SUDO_USER}" && sudo -u "${SUDO_USER}" mkdir "${DESTINATION}"
+if [ -z "$KERNEL_FLAVOUR" ]
+then
+	if [ "$SUITE" = "gutsy" ] || [ "$SUITE" = "hardy" ]
+	then
+		KERNEL_FLAVOUR="virtual"
+	else
+		KERNEL_FLAVOUR="server"
+	fi
+fi
+		
+if [ -n "${SUDO_USER}" ]; then
+	sudo -u "${SUDO_USER}" mkdir "${DESTINATION}"
+else
+	mkdir "${DESTINATION}"
+fi
+
+if [ $? -ne 0 ]; then
+	echo "Error creating directory ${DESTINATION}. Unable to proceed."
+	exit 1
+fi
 
 mkfs3loop () {
 	loopfile="$1"
@@ -509,10 +530,10 @@ EOF
 
 do_kernel_n_friends () {
 
-	PKGS="linux-$KERNEL_FLAVOR"
-        if [ "$SUITE" != dapper ]
+	PKGS="linux-$KERNEL_FLAVOUR"
+	if [ "$SUITE" != dapper ]
 	then
-	    PKGS="$PKGS usplash usplash-theme-ubuntu"
+		PKGS="$PKGS usplash usplash-theme-ubuntu"
 	fi
 	chroot root apt-get --force-yes -y install $PKGS
 }
@@ -575,10 +596,10 @@ do_target_vm_conversion () {
 
 	if [ "$VM" = vmserver ] || [ "$VM" = vmw6 ]
 	then
-
+		QEMU_IMG_CONVERT_EXTENSION=".vmdk"
 		cat > vaos.vmx << EOF
 config.version = "8"
-virtualHW.version = "$VMWHVERSION"
+virtualHW.version = "$VMHWVERSION"
 scsi0.present = "FALSE"
 scsi0.virtualDev = "lsilogic"
 memsize = "$MEM"
