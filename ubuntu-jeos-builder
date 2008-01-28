@@ -553,7 +553,7 @@ do_add_ssh_key () {
 	if [ ! -f "$SSHKEY" ]
 	then
 	    echo "NO $SSHKEY found"
-	    return
+	    exit 1
 	fi
 	# we have a key, add it
 	chroot root apt-get install --force-yes -y openssh-server
