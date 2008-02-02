@@ -87,14 +87,15 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
 --part partfile    Allows to specify a partition table in partfile
                    each line of partfile should specify (root first):
 		      mountpoint size
+		   where size is in megabytes
 		   ie (4 partitions maximum):
-		      root 1G
-		      /opt 1G
-		      swap 256M
+		      root 1000
+		      /opt 1000
+		      swap 256
 The following three option are not used if --part is specified:
---rootsize size    The size of the root filesystem (default 1G)
---optsize size     The size of the /opt filesystem (default 4G)
---swapsize size    The size of the swap partition (default 1G)
+--rootsize size    The size in meg of the root filesystem (default 1000)
+--optsize size     The size in meg of the /opt filesystem (default 4000)
+--swapsize size    The size in meg of the swap partition (default 1000)
 
 --kernel-flavour   The kernel image flavour to install (default: virtual for
                    >=gutsy, server otherwise)
@@ -104,7 +105,7 @@ The following three option are not used if --part is specified:
                    to root's authorized keys and install openssh-server
                    (WARNING: this has strong security implications)
 --exec             Run the given script file. You can use 
-                    'chroot root <cmd>' to execute code in the guest.
+                   'chroot root <cmd>' to execute code in the guest.
 --ip address       Ip address in dotted form
                    (defaults to dhcp if not specified)
 
@@ -139,15 +140,20 @@ MIRROR="http://archive.ubuntu.com/ubuntu"
 MEM=128
 HOSTNAME="ubuntu"
 DOMAIN="`hostname -d`"
-ROOTSIZE="1G"
-OPTSIZE="4G"
-SWAPSIZE="1G"
+ROOTSIZE="1000"
+OPTSIZE="4000"
+SWAPSIZE="1000"
 COMPS="main"
 SSHKEY=""
-declare -a MOUNTPOINTS
+declare -a MOUNTPOINTS 
 declare -a MOUNTSIZES
 declare -a MOUNTDISKS
-declare -a MOUNTIMGS
+declare -a DISKIMGS
+declare -a DISKSIZES
+declare -a PARTITION_NUMBER
+declare -a PARTITION_START
+declare -a PARTITION_END
+letters=("a" "b" "c" "d")
 
 TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,exec:,  -- "$@"`
 eval set -- "$TEMP"
@@ -262,20 +268,20 @@ do
 			shift 2
 		;;
 		--user)
-			echo "Setting username to: \"$2\""
-			USER="$2"
-			shift 2
-		;;
-		--name)
-			echo "Setting fullname to: \"$2\""
-			NAME="$2"
-			shift 2
-		;;
-		--pass)
-			echo "Setting password to: \"$2\""
-			PASS="$2"
-			shift 2
-		;;
+                        echo "Setting username to: \"$2\""
+                        USER="$2"
+                        shift 2
+                ;;
+                --name)
+                        echo "Setting fullname to: \"$2\""
+                        NAME="$2"
+                        shift 2
+                ;;
+                --pass)
+                        echo "Setting password to: \"$2\""
+                        PASS="$2"
+                        shift 2
+                ;;
 		--part)
 			echo "Setting partitions from \"$2\""
 			PARTFILE="$2"
@@ -311,11 +317,11 @@ do
 			SSHKEY="$2"
 			shift 2
 		;;
-		--exec)
-			echo "Setting exec script to \"$2\""
-			EXEC="$2"
-			shift 2
-		;;
+                --exec)
+                        echo "Setting exec script to \"$2\""
+                        EXEC="$2"
+                        shift 2
+                ;;
 		--ip)
 			echo "setting ipaddress to \"$2\""
 			IP=$2
@@ -366,48 +372,88 @@ then
 fi
 
 if [ -z "$PARTFILE" ]; then
+	let partstart=0
+	let NUMDISKS=0
+	DISKIMGS[0]="root"
+
 	MOUNTPOINTS[0]="root" 
+	MOUNTDISKS[0]="a"
 	if [ -z "$ROOTSIZE" ]; then
 		MOUNTSIZES[0]="1G"
 	else
 		MOUNTSIZES[0]="$ROOTSIZE"
 	fi
+	let PARTITION_NUMBER[0]=0
+        let PARTITION_START[0]=$partstart
+        let PARTITION_END[0]=$partstart+MOUNTSIZES[0]
+	let partstart=PARTITION_END[0]+1
 
-	MOUNTPOINTS[1]="opt"
+	MOUNTPOINTS[1]="opt" 
+        MOUNTDISKS[1]="a"
 	if [ -z "$OPTSIZE" ]; then
-		MOUNTSIZES[1]="$SIZE 4G"
+		MOUNTSIZES[1]="$SIZE 4000"
 	else
 		MOUNTSIZES[1]="$SIZE $OPTSIZE"
 	fi
+	let PARTITION_NUMBER[1]=1
+        let PARTITION_START[1]=$partstart
+        let PARTITION_END[1]=$partstart+MOUNTSIZES[1]
+        let partstart=PARTITION_END[1]+1
 
-	MOUNTPOINTS[2]="swap"
+        MOUNTPOINTS[2]="swap" 
+        MOUNTDISKS[2]="a"
 	if [ -z "$SWAPSIZE" ]; then
-		MOUNTSIZES[2]="$SIZE 1G"
+		MOUNTSIZESi[2]="$SIZE 1000"
 	else
 		MOUNTSIZES[2]="$SIZE $SWAPSIZE"
 	fi
+	let PARTITION_NUMBER[2]=1
+        let PARTITION_START[2]=$partstart
+        let PARTITION_END[2]=$partstart+MOUNTSIZES[2]
+	let DISKSIZES[0]=PARTITION_END[2]+1
 else
+	letters=("a" "b" "c" "d")
 	let index=0
-	
+	let diskindex=0
+	let partnum=0
+	let partstart=0
+
+	echo "Disks and partitions:"
+
 	exec 10<$PARTFILE
 	while read line<&10
 	do
-		if [ $index -gt 3 ]; then
-                        echo "Sorry, you cannot have more than 4 partitions at this time."
-                        exit 1
-                fi
+		if [ "$line" = "---" ]; then
+			let DISKSIZES[$diskindex]=$partstart
+			let diskindex=$diskindex+1
+			let partstart=0
+			let partnum=0
+			if [ $diskindex -gt 3 ]; then
+				echo "Sorry, no more than 4 IDE disks..."
+				exit 1
+			fi
+		else
+			MOUNTDISKS[$index]="${letters[$diskindex]}"
+			MOUNTPOINTS[$index]=${line%\ *}
+			MOUNTSIZES[$index]=`echo "${line#*\ }" | sed 's/^[ \t]*//'`
+			let PARTITION_NUMBER[$index]=$partnum
+			let PARTITION_START[$index]=$partstart
+			let PARTITION_END[$index]=$partstart+MOUNTSIZES[$index]
+			if [ $partnum -eq 0 ]; then
+				DISKIMGS[$diskindex]=`echo "${MOUNTPOINTS[$index]}" | sed 's%\/%%g' | sed 's/[ \t]*$//'`
+				echo " Disk: $diskindex ${DISKIMGS[$diskindex]}"
+			fi
 
-		MOUNTPOINTS[$index]=${line%\ *}
-		MOUNTSIZES[$index]=`echo "${line#*\ }" | sed 's/^[ \t]*//'`
-		let index=$index+1
+			echo "  Partition: $partnum ${MOUNTPOINTS[$index]} start: $partstart end: ${PARTITION_END[$index]} size: ${MOUNTSIZES[$index]}"
+			let partstart=PARTITION_END[$index]+1
+			let index=$index+1
+			let partnum=$partnum+1
+			
+		fi
 	done 
+	let DISKSIZES[$diskindex]=$partstart
+	let NUMDISK=$diskindex
 fi
-letters=("a" "b" "c" "d")
-for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
-	MOUNTDISKS[$i]="${letters[$i]}"
-	MOUNTIMGS[$i]=`echo "${MOUNTPOINTS[$i]}" | sed 's%\/%%g' | sed 's/[ \t]*$//'`
-	echo "setting disk: ${MOUNTPOINTS[$i]}, size: ${MOUNTSIZES[$i]}, image name: ${MOUNTIMGS[$i]}, on: /dev/hd${MOUNTDISKS[$i]}"
-done
 
 WORKINGDIR=`mktemp -d -p $TMPDIR jeos-builder-XXXXXXXXXX` || exit 1
 
@@ -463,18 +509,6 @@ else
 
 
 fi 
-
-
-
-mkfs3loop () {
-	loopfile="$1"
-	lodev="`losetup -o 16384 -fv $loopfile | cut -f4 -d\ `" && mkfs.ext3 $lodev && /lib/udev/vol_id --uuid $lodev > $loopfile.uuid && losetup -d $lodev
-}
-
-mkswaploop () {
-	loopfile="$1"
-	lodev="`losetup -o 16384 -fv $loopfile | cut -f4 -d\ `" && mkswap $lodev && /lib/udev/vol_id --uuid $lodev > $loopfile.uuid && losetup -d $lodev
-}
 
 do_initial_user () {
 	#
@@ -566,8 +600,8 @@ EOF
 	cat > root/boot/grub/device.map << EOF
 (fd0)	/dev/fd0
 EOF
-	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
-		echo "(hd$i) /dev/sd${MOUNTDISKS[$i]}" >> root/boot/grub/device.map
+	for ((i=0;i<${#DISKIMGS[@]};i++)); do
+		echo "(hd$i) /dev/sd${letters[$i]}" >> root/boot/grub/device.map
 	done
 
 	if [ $ARCH = "amd64" ]
@@ -654,24 +688,63 @@ do_disk_images() {
 	#
 	# Create disk images, partitions and format
 	#
-	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
-		img="${MOUNTIMGS[$i]}"
 
-		# Create disk image
-		qemu-img create -f raw $img.raw ${MOUNTSIZES[$i]}
-		
-		# Add a partition
-		parted --script $img.raw mklabel msdos
-		
-		# Create partition and format
-		if [ "$img" = "swap" ]; then
-			parted --script -- $img.raw mkpart primary linux-swap 1 -1
-			mkswaploop $img.raw
-		else
-			parted --script -- $img.raw mkpart primary ext2 1 -1
-			mkfs3loop $img.raw
+	for ((i=0; i<${#DISKIMGS[@]}; i++)); do
+		# create disk image
+		let size=${DISKSIZES[$i]}*1024
+		qemu-img create -f raw ${DISKIMGS[$i]}.raw $size
+
+		# label the disk
+		parted --script ${DISKIMGS[$i]}.raw mklabel msdos
+	done
+	
+	let diskindex=-1
+	curdisk=""
+
+	# create the partitions
+	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+		if [ "$curdisk" != "${MOUNTDISKS[$i]i}" ]; then
+			let diskindex++
+			img="${DISKIMGS[$diskindex]}"
+			curdisk=${MOUNTDISKS[$i]}
+			echo "Disk: $curdisk $img"
 		fi
-	done	
+
+		# Create partition and format
+		echo "  creating partition ${MOUNTPOINTS[$i]} on $img"
+		if [ "${MOUNTPOINTS[$i]}" = "swap" ]; then
+			parted --script -- $img.raw mkpartfs primary linux-swap ${PARTITION_START[$i]} ${PARTITION_END[$i]}
+		else
+			parted --script -- $img.raw mkpartfs primary ext2 ${PARTITION_START[$i]} ${PARTITION_END[$i]}
+		fi
+	done
+	
+	#mount the disk loops
+	for ((i=0;i<${#DISKIMGS[@]};i++)); do
+		kpartx -av ${DISKIMGS[$i]}.raw
+	done
+	
+	#format the partitions
+	let diskindex=-1
+        curdisk=""
+        for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+                if [ "$curdisk" != "${MOUNTDISKS[$i]}" ]; then
+                        let diskindex++
+                        img="${DISKIMGS[$diskindex]}"
+                        curdisk=${MOUNTDISKS[$i]}
+			let partindex=1
+                fi
+		if  [ "${MOUNTPOINTS[$i]}" = "swap" ]; then
+			echo formating /dev/mapper/loop${diskindex}p${partindex} as swap for ${MOUNTPOINTS[$i]}
+			mkswap /dev/mapper/loop${diskindex}p${partindex}	
+		else 
+			echo formating /dev/mapper/loop${diskindex}p${partindex} as ext3 for ${MOUNTPOINTS[$i]}
+			mkfs.ext3 /dev/mapper/loop${diskindex}p${partindex}
+		fi
+		/lib/udev/vol_id --uuid  /dev/mapper/loop${diskindex}p${partindex} >  ${MOUNTPOINTS[$i]}.uuid
+		let partindex++
+	done
+
 }
 
 do_debootstrap() {
@@ -712,11 +785,11 @@ proc                                            /proc           proc    defaults
 EOF
 	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
                 if [ "${MOUNTPOINTS[$i]}" = "root" ]; then
-                        echo "UUID=$(cat ${MOUNTIMGS[$i]}.raw.uuid) /       ext3    defaults        0       1">>root/etc/fstab
+                        echo "UUID=$(cat ${MOUNTPOINTS[$i]}.uuid) /       ext3    defaults        0       1">>root/etc/fstab
                 elif [ "${MOUNTPOINTS[$i]}" = "swap" ]; then
-                        echo "UUID=$(cat ${MOUNTIMGS[$i]}.raw.uuid) swap      swap    defaults        0       1">>root/etc/fstab
+                        echo "UUID=$(cat ${MOUNTPOINTS[$i]}.uuid) swap      swap    defaults        0       1">>root/etc/fstab
                 else
-                        echo "UUID=$(cat ${MOUNTIMGS[$i]}.raw.uuid) ${MOUNTPOINTS[$i]}       ext3    defaults        0       1">>root/etc/fstab
+                        echo "UUID=$(cat ${MOUNTPOINTS[$i]}.uuid) ${MOUNTPOINTS[$i]}       ext3    defaults        0       1">>root/etc/fstab
                 fi
         done
 }
@@ -753,28 +826,66 @@ do_add_ssh_key () {
 }
 
 do_exec_script () {
-	if [ ! -f "$EXEC" ]
-	then
-	    echo "Script '$EXEC' not found."
-	    return
+       if [ ! -f "$EXEC" ]
+       then
+           echo "Script '$EXEC' not found."
+           return
+       fi
+       #
+       # Execute the script.
+       #
+       "$EXEC"
+}
+
+mount_parts () {
+	base="$1"
+	if [ "$base" = "" ]; then
+		echo base is empty....  exiting
+		exit 0
 	fi
-	#
-	# Execute the script.
-	#
-	"$EXEC"
+	let diskindex=-1
+        curdisk=""
+        for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+                if [ "$curdisk" != "${MOUNTDISKS[$i]}" ]; then
+                        let diskindex++
+                        img="${DISKIMGS[$diskindex]}"
+                        curdisk=${MOUNTDISKS[$i]}
+                        let partindex=1
+                fi
+
+                if  [ "${MOUNTPOINTS[$i]}" = "root" ]; then
+			mount /dev/mapper/loop${diskindex}p${partindex} $base
+		elif  [ "${MOUNTPOINTS[$i]}" != "swap" ]; then
+			mkdir $base${MOUNTPOINTS[$i]}
+			mount /dev/mapper/loop${diskindex}p${partindex} $base${MOUNTPOINTS[$i]}
+                fi
+		let partindex++
+        done
+}
+
+umount_parts () {
+	base="$1"
+        for ((i=${#MOUNTPOINTS[@]};i>-1;i--)); do
+                if  [ "${MOUNTPOINTS[$i]}" = "root" ]; then
+                        umount  $base
+                elif  [ "${MOUNTPOINTS[$i]}" != "swap" ]; then
+                        umount  $base${MOUNTPOINTS[$i]}
+                fi
+        done
 }
 
 do_copy_to_disk_images () {
 
 	chroot root apt-get clean
 	#
-	# Copy the debootstrapped filesystem into root.raw
+	# Copy the debootstrapped filesystem into the partitions
 	#
 	mkdir target 
-	mount -o loop,offset=16384 root.raw target
-	echo Copy the debootstrapped filesystem into root.raw
+	#mount -o loop,offset=16384 root.raw target
+	mount_parts target
+	echo Copy the debootstrapped filesystem 
 	cp -a root/* target
-	umount target
+	umount_parts target
 	rmdir target
 	rm -rf root
 }
@@ -825,12 +936,12 @@ EOF
 
 		chmod +x $HOSTNAME.vmx
 		FILES="$HOSTNAME.vmx"
-		for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
-			FILES="$FILES ${MOUNTIMGS[$i]}.vmdk"
+		for ((i=0;i<${#DISKIMGS[@]};i++)); do
+			FILES="$FILES ${DISKIMGS[$i]}.vmdk"
 			let "id=$i%2"
 			let "bus=$i/2"
 			echo "ide${bus}:${id}.present = \"TRUE\"">>$HOSTNAME.vmx
-			echo "ide${bus}:${id}.fileName = \"${MOUNTIMGS[$i]}.vmdk\"">>$HOSTNAME.vmx
+			echo "ide${bus}:${id}.fileName = \"${DISKIMGS[$i]}.vmdk\"">>$HOSTNAME.vmx
 		done
 
 	elif [ $VM = qemu ] || [ $VM = kvm ]
@@ -845,9 +956,16 @@ EOF
 		fi
 		FILES="$HOSTNAME.$CMD" 
 		IMGFILES=""
+		let diskindex=1
+		curdisk=""
 		for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
-			FILES="$FILES ${MOUNTIMGS[$i]}.qcow2"
-			IMGFILES="$IMGFILES -hd${MOUNTDISKS[$i]} ${MOUNTIMGS[$i]}.qcow2" 
+			if [ "$curdisk" != "${MOUNTDISKS[$i]}" ]; then
+                        	let diskindex++
+        	                img="${DISKIMGS[$diskindex]}"
+                	        curdisk=${MOUNTDISKS[$i]}
+                		FILES="$FILES $img.qcow2"
+				IMGFILES="$IMGFILES -hd$curdisk $img.qcow2" 
+			fi
 		done
 
         cat > $HOSTNAME.$CMD <<EOF
@@ -857,8 +975,8 @@ EOF
 		chmod +x $HOSTNAME.$CMD
 	fi
 
-	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
-		qemu-img convert $QEMU_IMG_CONVERT_OPTS ${MOUNTIMGS[$i]}.raw "${MOUNTIMGS[$i]}${QEMU_IMG_CONVERT_EXTENSION}"
+	for ((i=0;i<${#DISKIMGS[@]};i++)); do
+		qemu-img convert $QEMU_IMG_CONVERT_OPTS ${DISKIMGS[$i]}.raw "${DISKIMGS[$i]}${QEMU_IMG_CONVERT_EXTENSION}"
 	done
 
 	test -n "${SUDO_USER}" && chown "$SUDO_USER" $FILES
@@ -867,11 +985,19 @@ EOF
 }
 
 do_cleanup () {
+	#unmount the disk loops
+        for ((i=0;i<${#DISKIMGS[@]};i++)); do
+                kpartx -dv ${DISKIMGS[$i]}.raw
+        done
+
 	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
-		rm ${MOUNTIMGS[$i]}.raw ${MOUNTIMGS[$i]}.raw.uuid
+		rm ${MOUNTPOINTS[$i]}.uuid
 	done
+	for ((i=0;i<${#DISKIMGS[@]};i++)); do
+                rm ${DISKIMGS[$i]}.raw 
+        done
 	cd /
-	rmdir "$WORKINGDIR"
+	rm -rf "$WORKINGDIR"
 }
 
 cd "$WORKINGDIR"
