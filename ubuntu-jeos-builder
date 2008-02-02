@@ -40,7 +40,7 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
                             [--mem num]
                             [--mirror URL]
                             [--removepkg PKG]
-                            [(-s|--suite) gutsy]
+                            [(-s|--suite) hardy]
                             [(-t|--tmp) temp_dir]
                             [--vm (vmw6|vmserver|vbox|qemu|kvm)]
                             [--user username]
@@ -76,7 +76,8 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
 --mirror URL       Use Ubuntu mirror at URL instead of the default, which
                    is: http://archive.ubuntu.com/ubuntu
 --removepkg PKG    Remove PKG from the guest (can be specfied multiple times)
--s, --suite SUITE  Use the specified Ubuntu suite. Valid options: gutsy*
+-s, --suite SUITE  Use the specified Ubuntu suite. Valid options: hardy, gutsy,
+                   feisty, dapper
 -t, --tmp  TMPDIR  Use TMPDIR as temporary working area for the image
                    generation. Defaults to \$TMPDIR if set, or /tmp if not.
 --vm VM            Generate image for specified virtualisation software.
@@ -135,7 +136,7 @@ VM=vmw6
 USER=ubuntu
 NAME=Ubuntu
 PASS=ubuntu
-SUITE="gutsy"
+SUITE="hardy"
 MIRROR="http://archive.ubuntu.com/ubuntu"
 MEM=128
 HOSTNAME="ubuntu"
@@ -231,12 +232,12 @@ do
 			shift 2
 		;;
 		--s|--suite)
-			if [ "$2" = gutsy ] || [ "$2" = feisty ] || [ "$2" = dapper ]
+			if [ "$2" = gutsy ] || [ "$2" = feisty ] || [ "$2" = dapper ] || [ "$2" = hardy ]
 			then
 				echo "Setting Ubuntu version to \"$2\""
 				SUITE="$2"
 			else
-				echo "Invalid Ubuntu version: \"$2\". Valid choices are: gutsy feisty dapper"
+				echo "Invalid Ubuntu version: \"$2\". Valid choices are: hardy gutsy feisty dapper"
 				exit 1
 			fi
 			shift 2
