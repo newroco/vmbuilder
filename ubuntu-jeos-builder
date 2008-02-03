@@ -88,11 +88,15 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
 --part partfile    Allows to specify a partition table in partfile
                    each line of partfile should specify (root first):
 		      mountpoint size
-		   where size is in megabytes
-		   ie (4 partitions maximum):
+		   where size is in megabytes. You can have up to 4 virtual disks,
+                   a new disk starts on a line with ---
+		   ie :
 		      root 1000
 		      /opt 1000
 		      swap 256
+                      ---
+                      /var 2000
+                      /log 1500
 The following three option are not used if --part is specified:
 --rootsize size    The size in meg of the root filesystem (default 1000)
 --optsize size     The size in meg of the /opt filesystem (default 4000)
@@ -151,7 +155,6 @@ declare -a MOUNTSIZES
 declare -a MOUNTDISKS
 declare -a DISKIMGS
 declare -a DISKSIZES
-declare -a PARTITION_NUMBER
 declare -a PARTITION_START
 declare -a PARTITION_END
 letters=("a" "b" "c" "d")
@@ -380,23 +383,21 @@ if [ -z "$PARTFILE" ]; then
 	MOUNTPOINTS[0]="root" 
 	MOUNTDISKS[0]="a"
 	if [ -z "$ROOTSIZE" ]; then
-		MOUNTSIZES[0]="1G"
+		MOUNTSIZES[0]="1000"
 	else
 		MOUNTSIZES[0]="$ROOTSIZE"
 	fi
-	let PARTITION_NUMBER[0]=0
         let PARTITION_START[0]=$partstart
         let PARTITION_END[0]=$partstart+MOUNTSIZES[0]
 	let partstart=PARTITION_END[0]+1
 
-	MOUNTPOINTS[1]="opt" 
+	MOUNTPOINTS[1]="/opt" 
         MOUNTDISKS[1]="a"
 	if [ -z "$OPTSIZE" ]; then
-		MOUNTSIZES[1]="$SIZE 4000"
+		MOUNTSIZES[1]="4000"
 	else
-		MOUNTSIZES[1]="$SIZE $OPTSIZE"
+		MOUNTSIZES[1]="$OPTSIZE"
 	fi
-	let PARTITION_NUMBER[1]=1
         let PARTITION_START[1]=$partstart
         let PARTITION_END[1]=$partstart+MOUNTSIZES[1]
         let partstart=PARTITION_END[1]+1
@@ -404,11 +405,10 @@ if [ -z "$PARTFILE" ]; then
         MOUNTPOINTS[2]="swap" 
         MOUNTDISKS[2]="a"
 	if [ -z "$SWAPSIZE" ]; then
-		MOUNTSIZESi[2]="$SIZE 1000"
+		MOUNTSIZES[2]="1000"
 	else
-		MOUNTSIZES[2]="$SIZE $SWAPSIZE"
+		MOUNTSIZES[2]="$SWAPSIZE"
 	fi
-	let PARTITION_NUMBER[2]=1
         let PARTITION_START[2]=$partstart
         let PARTITION_END[2]=$partstart+MOUNTSIZES[2]
 	let DISKSIZES[0]=PARTITION_END[2]+1
@@ -437,7 +437,6 @@ else
 			MOUNTDISKS[$index]="${letters[$diskindex]}"
 			MOUNTPOINTS[$index]=${line%\ *}
 			MOUNTSIZES[$index]=`echo "${line#*\ }" | sed 's/^[ \t]*//'`
-			let PARTITION_NUMBER[$index]=$partnum
 			let PARTITION_START[$index]=$partstart
 			let PARTITION_END[$index]=$partstart+MOUNTSIZES[$index]
 			if [ $partnum -eq 0 ]; then
@@ -481,6 +480,7 @@ fi
 
 if [ $? -ne 0 ]; then
         echo "Error creating directory ${DESTINATION}. Unable to proceed."
+	rm -rf $WORKINGDIR
         exit 1
 fi
 
@@ -601,9 +601,12 @@ EOF
 	cat > root/boot/grub/device.map << EOF
 (fd0)	/dev/fd0
 EOF
-	for ((i=0;i<${#DISKIMGS[@]};i++)); do
-		echo "(hd$i) /dev/sd${letters[$i]}" >> root/boot/grub/device.map
-	done
+	if [ "$SUITE" = dapper ]
+        then
+		echo "(hd0) /dev/sd${letters[0]}" >> root/boot/grub/device.map
+	else
+		echo "(hd0) UUID=$(cat ${MOUNTPOINTS[0]}.uuid)" >> root/boot/grub/device.map
+	fi
 
 	if [ $ARCH = "amd64" ]
 	then
@@ -679,7 +682,12 @@ EOF
 
 	# Hacky-di-hack.. First generate the template, then remove the errant kopt_2_6 (which hardcodes the root device to /dev/hda1) and then rerun update-grub.
 	chroot root $updategrub -y
-	sed -ie '/^# kopt_2_6/ d' root/boot/grub/menu.lst
+	if [ "$SUITE" = dapper ]; then
+		sed -ie '/^# kopt_2_6/ d' root/boot/grub/menu.lst
+	else
+		rep="UUID=$(cat ${MOUNTPOINTS[0]}.uuid)"
+		sed -ie "s/\/dev\/hda1/$rep/g" root/boot/grub/menu.lst
+	fi
 	chroot root $updategrub
 	chroot root grub-set-default 0
 	rm old_sect stage1_buffer stage2_first_buffer stage2_second_buffer
