@@ -572,6 +572,12 @@ iface eth0 inet static
         dns-search $DOMAIN
 EOF
 	fi
+
+	#temporary fix for /var/run/network not being created
+	if [ ! -e root/var/run/network ]; then 
+		echo "Creating /var/run/network"
+		mkdir root/var/run/network
+	fi
 }
 
 do_bootloader () {
