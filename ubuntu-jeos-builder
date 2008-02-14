@@ -48,6 +48,7 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
                             [--pass password]
                             [--part partitionfile]
                             [--rootsize size]
+                            [--no-opt]
                             [--optsize size]
                             [--swapsize size]
                             [--kernel-flavour <flavour>]
@@ -60,7 +61,7 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
                             [--bcast value]
                             [--gw address]
                             [--dns address] ]
- 
+
 --addpkg PKG       Install PKG into the guest (can be specfied multiple times)
 -a, --arch ARCH    Specify the target architecture. Valid options: i386*
 -d, --dest         Specify the destination directory.
@@ -84,6 +85,7 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
 --user username    Set the name of the user to be added. Default ubuntu.
 --name fullname    Set the full name of the user to be added. Default Ubuntu.
 --pass password    Set the password for the user. Default ubuntu.
+--no-opt           Do not build the /opt image
 --part partfile    Allows to specify a partition table in partfile
                    each line of partfile should specify (root first):
                       mountpoint size
@@ -149,6 +151,7 @@ OPTSIZE="4000"
 SWAPSIZE="1000"
 COMPS="main"
 SSHKEY=""
+OPTFS="yes"
 declare -a MOUNTPOINTS 
 declare -a MOUNTSIZES
 declare -a MOUNTDISKS
@@ -158,7 +161,7 @@ declare -a PARTITION_START
 declare -a PARTITION_END
 letters=("a" "b" "c" "d")
 
-TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,exec:,  -- "$@"`
+TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,no-opt,exec:,  -- "$@"`
 eval set -- "$TEMP"
 
 while true
@@ -320,11 +323,11 @@ do
 			SSHKEY="$2"
 			shift 2
 		;;
-                --exec)
-                        echo "Setting exec script to \"$2\""
-                        EXEC="$2"
-                        shift 2
-                ;;
+		--exec)
+			echo "Setting exec script to \"$2\""
+			EXEC="$2"
+			shift 2
+		;;
 		--ip)
 			echo "setting ipaddress to \"$2\""
 			IP=$2
@@ -355,6 +358,11 @@ do
 			DNS=$2
 			shift 2
 		;;
+		--no-opt)
+		        echo "Not building /opt"
+			OPTFS="no"
+			shift 1
+		;;
 		--)
 			shift
 			break
@@ -376,41 +384,47 @@ fi
 
 if [ -z "$PARTFILE" ]; then
 	let partstart=0
+	let partid=0
 	let NUMDISKS=0
 	DISKIMGS[0]="root"
 
-	MOUNTPOINTS[0]="root" 
-	MOUNTDISKS[0]="a"
+	MOUNTPOINTS[$partid]="root" 
+	MOUNTDISKS[$partid]="a"
 	if [ -z "$ROOTSIZE" ]; then
-		MOUNTSIZES[0]="1000"
+		MOUNTSIZES[$partid]="1000"
 	else
-		MOUNTSIZES[0]="$ROOTSIZE"
+		MOUNTSIZES[$partid]="$ROOTSIZE"
 	fi
-        let PARTITION_START[0]=$partstart
-        let PARTITION_END[0]=$partstart+MOUNTSIZES[0]
-	let partstart=PARTITION_END[0]+1
+	let PARTITION_START[$partid]=$partstart
+	let PARTITION_END[$partid]=$partstart+MOUNTSIZES[$partid]
+	let partstart=PARTITION_END[$partid]+1
 
-	MOUNTPOINTS[1]="/opt" 
-        MOUNTDISKS[1]="a"
-	if [ -z "$OPTSIZE" ]; then
-		MOUNTSIZES[1]="4000"
-	else
-		MOUNTSIZES[1]="$OPTSIZE"
+	if [ "$OPTFS" = "yes" ]
+	then
+		let partid=$partid+1
+		MOUNTPOINTS[$partid]="/opt" 
+			MOUNTDISKS[$partid]="a"
+		if [ -z "$OPTSIZE" ]; then
+			MOUNTSIZES[$partid]="4000"
+		else
+			MOUNTSIZES[$partid]="$OPTSIZE"
+		fi
+		let PARTITION_START[$partid]=$partstart
+		let PARTITION_END[$partid]=$partstart+MOUNTSIZES[$partid]
+		let partstart=PARTITION_END[$partid]+1
 	fi
-        let PARTITION_START[1]=$partstart
-        let PARTITION_END[1]=$partstart+MOUNTSIZES[1]
-        let partstart=PARTITION_END[1]+1
 
-        MOUNTPOINTS[2]="swap" 
-        MOUNTDISKS[2]="a"
+	let partid=$partid+1
+	MOUNTPOINTS[$partid]="swap" 
+	MOUNTDISKS[$partid]="a"
 	if [ -z "$SWAPSIZE" ]; then
-		MOUNTSIZES[2]="1000"
+		MOUNTSIZES[$partid2]="1000"
 	else
-		MOUNTSIZES[2]="$SWAPSIZE"
+		MOUNTSIZES[$partid2]="$SWAPSIZE"
 	fi
-        let PARTITION_START[2]=$partstart
-        let PARTITION_END[2]=$partstart+MOUNTSIZES[2]
-	let DISKSIZES[0]=PARTITION_END[2]+1
+	let PARTITION_START[$partid2]=$partstart
+	let PARTITION_END[$partid2]=$partstart+MOUNTSIZES[$partid2]
+	let DISKSIZES[0]=PARTITION_END[$partid2]+1
 else
 	letters=("a" "b" "c" "d")
 	let index=0
