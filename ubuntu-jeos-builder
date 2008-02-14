@@ -971,7 +971,7 @@ EOF
 		fi
 		FILES="$HOSTNAME.$CMD" 
 		IMGFILES=""
-		let diskindex=1
+		let diskindex=-1
 		curdisk=""
 		for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
 			if [ "$curdisk" != "${MOUNTDISKS[$i]}" ]; then
