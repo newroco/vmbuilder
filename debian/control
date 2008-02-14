@@ -1,11 +1,12 @@
-Source: ubuntu-jeos-builder
+Source: ubuntu-vm-builder
 Section: utils
 Priority: extra
 Maintainer: Soren Hansen <soren@ubuntu.com>
 Build-Depends: cdbs, debhelper
-Standards-Version: 3.7.2
+Standards-Version: 3.7.3
+Vcs-Bzr: http://bazaar.launchpad.net/~shawarma/ubuntu-jeos/trunk
 
-Package: ubuntu-jeos-builder
+Package: ubuntu-vm-builder
 Architecture: all
 Depends: qemu, debootstrap, parted, kpartx
 Description: Ubuntu VM builder
@@ -13,4 +14,4 @@ Description: Ubuntu VM builder
  a ready to use VM based on Ubuntu. You can pass command line options to add
  extra packages, remove packages, choose which version of Ubuntu, which mirror
  etc. On recent hardware with plenty of RAM, tmpdir in /dev/shm, and a local
- mirror, you can bootstrap a vm in less than 50 seconds.
+ mirror, you can bootstrap a vm in less than a minute.

@@ -1,28 +1,5 @@
-ubuntu-jeos-builder (0.1a-0ubuntu1~ppa2) gutsy; urgency=low
+ubuntu-vm-builder (0.1) hardy; urgency=low
 
-  * actually save qemu images as qcow2 files to allow snapshots
+  * Initial upload to Ubuntu.
 
- -- Neal McBurnett <neal@bcn.boulder.co.us>  Fri, 09 Nov 2007 23:18:37 -0700
-
-ubuntu-jeos-builder (0.1a-0ubuntu1~ppa1) gutsy; urgency=low
-
-  * release as ppa
-  * fix vmware regression - qemu-img needs -O vmdk
-
- -- Neal McBurnett <neal@bcn.boulder.co.us>  Fri, 09 Nov 2007 08:45:55 -0700
-
-ubuntu-jeos-builder (0.1a-0ubuntu1) hardy; urgency=low
-
-  [ Soren Hansen ]
-  * Initial release.
-
-  [ Neal McBurnett ]
-  * DESTINATION is now a directory, not a zip file.  This is faster, and
-    fixes problems with zipping files bigger than 2 GB.  Involves
-    chowning files to $SUDO_USER.
-  * Change default archive to http://archive.ubuntu.com/ubuntu from se....
-  * Check that we're running as root before making $WORKINGDIR
-  * Add support for --vm qemu and create launchjeos command for it
-  * Add Build-Depends debhelper
-
- -- Neal McBurnett <neal@bcn.boulder.co.us>  Mon, 05 Nov 2007 15:27:03 -0700
+ -- Soren Hansen <soren@ubuntu.com>  Thu, 14 Feb 2008 15:41:51 +0100
