@@ -7,7 +7,7 @@ Standards-Version: 3.7.2
 
 Package: ubuntu-jeos-builder
 Architecture: all
-Depends: qemu, debootstrap, parted
+Depends: qemu, debootstrap, parted, kpartx
 Description: Ubuntu VM builder
  This is the Ubuntu VM builder script which automates the process of creating
  a ready to use VM based on Ubuntu. You can pass command line options to add

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 #    Ubuntu Jeos image builder
 #    Copyright (C) 2007  Canonical Ltd.
@@ -7,6 +7,8 @@
 #             Neal McBurnett <neal@mcburnett.org>
 #             Michael Vogt <michael.vogt@ubuntu.com>
 #             Mike Frisch
+#             Nick Barcet <nick.barcet@canonical.com>
+#             Onno Benschop <onno@itmaze.com.au>
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -38,14 +40,28 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
                             [--mem num]
                             [--mirror URL]
                             [--removepkg PKG]
-                            [(-s|--suite) gutsy]
+                            [(-s|--suite) hardy]
                             [(-t|--tmp) temp_dir]
                             [--vm (vmw6|vmserver|vbox|qemu|kvm)]
-                            [--rootsize size]
+                            [--user username]
+                            [--name fullname]
+                            [--pass password]
+			    [
+			      [--part partitionfile]
+                            | [--rootsize size]
+                              [--optsize size]
+                              [--swapsize size]
                             [--kernel-flavour <flavour>]
                             [--components <comma separated list of components>]
                             [--ssh-key <public key file>]
-
+                            [--exec <script to execute>]
+                            [--ip address [
+                              [--mask value]
+                              [--net value]
+                              [--bcast value]
+                              [--gw address]
+                              [--dns address] ]
+ 
 --addpkg PKG       Install PKG into the guest (can be specfied multiple times)
 -a, --arch ARCH    Specify the target architecture. Valid options: i386*
 -d, --dest         Specify the destination directory.
@@ -54,17 +70,38 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
                    The domain of the machine running this script.
 -h, --help         This help text.
 --hostname NAME    Set NAME as the hostname of the guest. Default: ubuntu
+                   Also uses this name as the VM name
 --mem NN           Assign NN megabytes of memory to the guest vm.
                    Default: 128
 --mirror URL       Use Ubuntu mirror at URL instead of the default, which
                    is: http://archive.ubuntu.com/ubuntu
 --removepkg PKG    Remove PKG from the guest (can be specfied multiple times)
--s, --suite SUITE  Use the specified Ubuntu suite. Valid options: gutsy*
+-s, --suite SUITE  Use the specified Ubuntu suite. Valid options: hardy, gutsy,
+                   feisty, dapper
 -t, --tmp  TMPDIR  Use TMPDIR as temporary working area for the image
                    generation. Defaults to \$TMPDIR if set, or /tmp if not.
 --vm VM            Generate image for specified virtualisation software.
                    Valid choices are: vmw6* vmserver vbox qemu kvm
---rootsize size    The size of the root filesystem (default 1G)
+--user username    Set the name of the user to be added. Default ubuntu.
+--name fullname    Set the full name of the user to be added. Default Ubuntu.
+--pass password    Set the password for the user. Default ubuntu.
+--part partfile    Allows to specify a partition table in partfile
+                   each line of partfile should specify (root first):
+		      mountpoint size
+		   where size is in megabytes. You can have up to 4 virtual disks,
+                   a new disk starts on a line with ---
+		   ie :
+		      root 1000
+		      /opt 1000
+		      swap 256
+                      ---
+                      /var 2000
+                      /log 1500
+The following three option are not used if --part is specified:
+--rootsize size    The size in meg of the root filesystem (default 1000)
+--optsize size     The size in meg of the /opt filesystem (default 4000)
+--swapsize size    The size in meg of the swap partition (default 1000)
+
 --kernel-flavour   The kernel image flavour to install (default: virtual for
                    >=gutsy, server otherwise)
 --components       A comma seperaed list of distro components to include 
@@ -72,6 +109,17 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
 --ssh-key          Add the given ssh public key file (absolute path)
                    to root's authorized keys and install openssh-server
                    (WARNING: this has strong security implications)
+--exec             Run the given script file. You can use 
+                   'chroot root <cmd>' to execute code in the guest.
+--ip address       Ip address in dotted form
+                   (defaults to dhcp if not specified)
+
+Options belows are discarded if --ip is not specified
+--mask value       IP mask in dotted form (default: 255.255.255.0)
+--net value        IP net address (default: X.X.X.0)
+--bcast value      IP broadcast (default: X.X.X.255)
+--gw address       Gateway address (default: X.X.X.1)
+--dns address      Name server address (default: X.X.X.1)
 
 ('*' denotes default option)
 
@@ -89,16 +137,29 @@ then
 	TMPDIR="/tmp"
 fi
 VM=vmw6
-SUITE="gutsy"
+USER=ubuntu
+NAME=Ubuntu
+PASS=ubuntu
+SUITE="hardy"
 MIRROR="http://archive.ubuntu.com/ubuntu"
 MEM=128
 HOSTNAME="ubuntu"
 DOMAIN="`hostname -d`"
-ROOTSIZE="1G"
+ROOTSIZE="1000"
+OPTSIZE="4000"
+SWAPSIZE="1000"
 COMPS="main"
 SSHKEY=""
+declare -a MOUNTPOINTS 
+declare -a MOUNTSIZES
+declare -a MOUNTDISKS
+declare -a DISKIMGS
+declare -a DISKSIZES
+declare -a PARTITION_START
+declare -a PARTITION_END
+letters=("a" "b" "c" "d")
 
-TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,rootsize:,kernel-flavour:,components:,ssh-key:,  -- "$@"`
+TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,exec:,  -- "$@"`
 eval set -- "$TEMP"
 
 while true
@@ -174,12 +235,12 @@ do
 			shift 2
 		;;
 		--s|--suite)
-			if [ "$2" = gutsy ] || [ "$2" = feisty ] || [ "$2" = dapper ]
+			if [ "$2" = gutsy ] || [ "$2" = feisty ] || [ "$2" = dapper ] || [ "$2" = hardy ]
 			then
 				echo "Setting Ubuntu version to \"$2\""
 				SUITE="$2"
 			else
-				echo "Invalid Ubuntu version: \"$2\". Valid choices are: gutsy feisty dapper"
+				echo "Invalid Ubuntu version: \"$2\". Valid choices are: hardy gutsy feisty dapper"
 				exit 1
 			fi
 			shift 2
@@ -210,11 +271,41 @@ do
 			fi
 			shift 2
 		;;
+		--user)
+                        echo "Setting username to: \"$2\""
+                        USER="$2"
+                        shift 2
+                ;;
+                --name)
+                        echo "Setting fullname to: \"$2\""
+                        NAME="$2"
+                        shift 2
+                ;;
+                --pass)
+                        echo "Setting password to: \"$2\""
+                        PASS="$2"
+                        shift 2
+                ;;
+		--part)
+			echo "Setting partitions from \"$2\""
+			PARTFILE="$2"
+			shift 2
+		;;
 		--rootsize)
 		        echo "Setting rootsize to \"$2\""
 			ROOTSIZE="$2"
 			shift 2
 		;;
+		--swapsize)
+                        echo "Setting swapsize to \"$2\""
+                        SWAPSIZE="$2"
+                        shift 2
+                ;;
+		--optsize)
+                        echo "Setting optsize to \"$2\""
+                        OPTSIZE="$2"
+                        shift 2
+                ;;
 		--kernel-flavour)
 		        echo "Setting kernel flavour to \"$2\""
 			KERNEL_FLAVOUR="$2"
@@ -228,6 +319,41 @@ do
 		--ssh-key)
 		        echo "Setting ssh-key to \"$2\""
 			SSHKEY="$2"
+			shift 2
+		;;
+                --exec)
+                        echo "Setting exec script to \"$2\""
+                        EXEC="$2"
+                        shift 2
+                ;;
+		--ip)
+			echo "setting ipaddress to \"$2\""
+			IP=$2
+			shift 2
+		;;
+		--mask)
+			echo "setting mask to \"$2\""
+			MASK=$2
+			shift 2
+		;;
+		--net)
+			echo "setting network to \"$2\""
+			NETWORK=$2
+			shift 2
+		;;
+		--bcast)
+			echo "setting broadcast to \"$2\""
+			BCAST=$2
+			shift 2
+		;;
+		--gw)
+			echo "setting gateway to \"$2\""
+			GW=$2
+			shift 2
+		;;
+		--dns)
+			echo "setting name server to \"$2\""
+			DNS=$2
 			shift 2
 		;;
 		--)
@@ -249,56 +375,154 @@ then
 	exit 1
 fi
 
+if [ -z "$PARTFILE" ]; then
+	let partstart=0
+	let NUMDISKS=0
+	DISKIMGS[0]="root"
+
+	MOUNTPOINTS[0]="root" 
+	MOUNTDISKS[0]="a"
+	if [ -z "$ROOTSIZE" ]; then
+		MOUNTSIZES[0]="1000"
+	else
+		MOUNTSIZES[0]="$ROOTSIZE"
+	fi
+        let PARTITION_START[0]=$partstart
+        let PARTITION_END[0]=$partstart+MOUNTSIZES[0]
+	let partstart=PARTITION_END[0]+1
+
+	MOUNTPOINTS[1]="/opt" 
+        MOUNTDISKS[1]="a"
+	if [ -z "$OPTSIZE" ]; then
+		MOUNTSIZES[1]="4000"
+	else
+		MOUNTSIZES[1]="$OPTSIZE"
+	fi
+        let PARTITION_START[1]=$partstart
+        let PARTITION_END[1]=$partstart+MOUNTSIZES[1]
+        let partstart=PARTITION_END[1]+1
+
+        MOUNTPOINTS[2]="swap" 
+        MOUNTDISKS[2]="a"
+	if [ -z "$SWAPSIZE" ]; then
+		MOUNTSIZES[2]="1000"
+	else
+		MOUNTSIZES[2]="$SWAPSIZE"
+	fi
+        let PARTITION_START[2]=$partstart
+        let PARTITION_END[2]=$partstart+MOUNTSIZES[2]
+	let DISKSIZES[0]=PARTITION_END[2]+1
+else
+	letters=("a" "b" "c" "d")
+	let index=0
+	let diskindex=0
+	let partnum=0
+	let partstart=0
+
+	echo "Disks and partitions:"
+
+	exec 10<$PARTFILE
+	while read line<&10
+	do
+		if [ "$line" = "---" ]; then
+			let DISKSIZES[$diskindex]=$partstart
+			let diskindex=$diskindex+1
+			let partstart=0
+			let partnum=0
+			if [ $diskindex -gt 3 ]; then
+				echo "Sorry, no more than 4 IDE disks..."
+				exit 1
+			fi
+		else
+			MOUNTDISKS[$index]="${letters[$diskindex]}"
+			MOUNTPOINTS[$index]=${line%\ *}
+			MOUNTSIZES[$index]=`echo "${line#*\ }" | sed 's/^[ \t]*//'`
+			let PARTITION_START[$index]=$partstart
+			let PARTITION_END[$index]=$partstart+MOUNTSIZES[$index]
+			if [ $partnum -eq 0 ]; then
+				DISKIMGS[$diskindex]=`echo "${MOUNTPOINTS[$index]}" | sed 's%\/%%g' | sed 's/[ \t]*$//'`
+				echo " Disk: $diskindex ${DISKIMGS[$diskindex]}"
+			fi
+
+			echo "  Partition: $partnum ${MOUNTPOINTS[$index]} start: $partstart end: ${PARTITION_END[$index]} size: ${MOUNTSIZES[$index]}"
+			let partstart=PARTITION_END[$index]+1
+			let index=$index+1
+			let partnum=$partnum+1
+			
+		fi
+	done 
+	let DISKSIZES[$diskindex]=$partstart
+	let NUMDISK=$diskindex
+fi
+
 WORKINGDIR=`mktemp -d -p $TMPDIR jeos-builder-XXXXXXXXXX` || exit 1
 
 if [ -z "$DESTINATION" ]
 then
-	DESTINATION="$PWD/ubuntu-jeos-$SUITE-$ARCH"
+        DESTINATION="$PWD/ubuntu-jeos-$SUITE-$ARCH"
 fi
 
 if [ -z "$KERNEL_FLAVOUR" ]
 then
-	if [ "$SUITE" = "gutsy" ] || [ "$SUITE" = "hardy" ]
-	then
-		KERNEL_FLAVOUR="virtual"
-	else
-		KERNEL_FLAVOUR="server"
-	fi
+        if [ "$SUITE" = "gutsy" ] || [ "$SUITE" = "hardy" ]
+        then
+                KERNEL_FLAVOUR="virtual"
+        else
+                KERNEL_FLAVOUR="server"
+        fi
 fi
-		
+
 if [ -n "${SUDO_USER}" ]; then
-	sudo -u "${SUDO_USER}" mkdir "${DESTINATION}"
+        sudo -u "${SUDO_USER}" mkdir "${DESTINATION}"
 else
-	mkdir "${DESTINATION}"
+        mkdir "${DESTINATION}"
 fi
 
 if [ $? -ne 0 ]; then
-	echo "Error creating directory ${DESTINATION}. Unable to proceed."
-	exit 1
+        echo "Error creating directory ${DESTINATION}. Unable to proceed."
+	rm -rf $WORKINGDIR
+        exit 1
 fi
 
-mkfs3loop () {
-	loopfile="$1"
-	lodev="`losetup -o 16384 -fv $loopfile | cut -f4 -d\ `" && mkfs.ext3 $lodev && /lib/udev/vol_id --uuid $lodev > $loopfile.uuid && losetup -d $lodev
-}
+if [ -z "$IP" ]; then
+	IP="DHCP"
+else
+	if [ -z "$MASK" ]; then
+		MASK="255.255.255.0"
+		echo "setting mask to \"$MASK\""
+	fi
+	if [ -z "$NET" ]; then
+		NET=`echo $IP | sed 's/\./.0./3' | sed 's/\.[[:digit:]]\{1,3\}$//'` 
+		echo "setting network to \"$NET\""
+	fi
+	if [ -z "$BCAST" ]; then
+		BCAST=`echo $IP | sed 's/\./.255./3' | sed 's/\.[[:digit:]]\{1,3\}$//'` 
+		echo "setting broadcast to \"$BCAST\""
+	fi
+	if [ -z "$GW" ]; then
+                GW=`echo $IP | sed 's/\./.1./3' | sed 's/\.[[:digit:]]\{1,3\}$//'`
+		echo "setting gateway to \"$GW\""
+        fi
+	if [ -z "$DNS" ]; then
+                DNS=`echo $IP | sed 's/\./.1./3' | sed 's/\.[[:digit:]]\{1,3\}$//'`
+		echo "setting name server to \"$DNS\""
+        fi
 
-mkswaploop () {
-	loopfile="$1"
-	lodev="`losetup -o 16384 -fv $loopfile | cut -f4 -d\ `" && mkswap $lodev && /lib/udev/vol_id --uuid $lodev > $loopfile.uuid && losetup -d $lodev
-}
+
+fi 
 
 do_initial_user () {
 	#
 	# Set up a user with sudo etc.
 	#
 
-	chroot root adduser --disabled-password --gecos Ubuntu ubuntu > /dev/null
+	chroot root adduser --disabled-password --gecos "${NAME}" ${USER} > /dev/null
 	chroot root chpasswd <<EOF
-ubuntu:ubuntu
+${USER}:${PASS}
 EOF
 
 	chroot root addgroup --system admin >/dev/null 2>&1
-	chroot root adduser ubuntu admin >/dev/null 2>&1
+	chroot root adduser ${USER} admin >/dev/null 2>&1
 
 	cat >> root/etc/sudoers << EOF
 
@@ -307,7 +531,7 @@ EOF
 EOF
 
 	for group in adm audio cdrom dialout floppy video plugdev dip netdev powerdev lpadmin scanner; do
-		chroot root adduser ubuntu $group >/dev/null 2>&1
+		chroot root adduser ${USER} $group >/dev/null 2>&1
 	done
 
 }
@@ -330,8 +554,30 @@ iface lo inet loopback
 
 # The primary network interface
 auto eth0
+EOF
+	if [ "$IP" = "DHCP" ]; then
+		cat >> root/etc/network/interfaces <<EOF
 iface eth0 inet dhcp
 EOF
+	else
+		cat >> root/etc/network/interfaces <<EOF
+iface eth0 inet static
+        address $IP
+        netmask $MASK 
+        network $NET
+        broadcast $BCAST
+        gateway $GW
+        # dns-* options are implemented by the resolvconf package, if installed
+        dns-nameservers $DNS
+        dns-search $DOMAIN
+EOF
+	fi
+
+	#temporary fix for /var/run/network not being created
+	if [ ! -e root/var/run/network ]; then 
+		echo "Creating /var/run/network"
+		mkdir root/var/run/network
+	fi
 }
 
 do_bootloader () {
@@ -360,11 +606,13 @@ EOF
 	#
 	cat > root/boot/grub/device.map << EOF
 (fd0)	/dev/fd0
-(hd0)	/dev/sda
-(hd1)	/dev/sdb
-(hd2)	/dev/sdc
 EOF
-
+	if [ "$SUITE" = dapper ]
+        then
+		echo "(hd0) /dev/sd${letters[0]}" >> root/boot/grub/device.map
+	else
+		echo "(hd0) UUID=$(cat ${MOUNTPOINTS[0]}.uuid)" >> root/boot/grub/device.map
+	fi
 
 	if [ $ARCH = "amd64" ]
 	then
@@ -440,7 +688,12 @@ EOF
 
 	# Hacky-di-hack.. First generate the template, then remove the errant kopt_2_6 (which hardcodes the root device to /dev/hda1) and then rerun update-grub.
 	chroot root $updategrub -y
-	sed -ie '/^# kopt_2_6/ d' root/boot/grub/menu.lst
+	if [ "$SUITE" = dapper ]; then
+		sed -ie '/^# kopt_2_6/ d' root/boot/grub/menu.lst
+	else
+		rep="UUID=$(cat ${MOUNTPOINTS[0]}.uuid)"
+		sed -ie "s/\/dev\/hda1/$rep/g" root/boot/grub/menu.lst
+	fi
 	chroot root $updategrub
 	chroot root grub-set-default 0
 	rm old_sect stage1_buffer stage2_first_buffer stage2_second_buffer
@@ -448,32 +701,65 @@ EOF
 
 do_disk_images() {
 	#
-	# Create disk images
+	# Create disk images, partitions and format
 	#
-	qemu-img create -f raw root.raw $ROOTSIZE
-	qemu-img create -f raw swap.raw 1G
-	qemu-img create -f raw opt.raw  4G
 
-	#
-	# Add a partition table to each disk
-	#
-	parted --script root.raw mklabel msdos
-	parted --script swap.raw mklabel msdos
-	parted --script opt.raw  mklabel msdos
+	for ((i=0; i<${#DISKIMGS[@]}; i++)); do
+		# create disk image
+		let size=${DISKSIZES[$i]}*1024
+		qemu-img create -f raw ${DISKIMGS[$i]}.raw $size
 
-	#
-	# Create a partition on each disk
-	#
-	parted --script -- root.raw mkpart primary ext2 1 -1
-	parted --script -- swap.raw mkpart primary linux-swap 1 -1
-	parted --script -- opt.raw  mkpart primary ext2 1 -1
+		# label the disk
+		parted --script ${DISKIMGS[$i]}.raw mklabel msdos
+	done
+	
+	let diskindex=-1
+	curdisk=""
 
-	#
-	# Format the file systems and swap partition
-	#
-	mkfs3loop root.raw
-	mkfs3loop opt.raw
-	mkswaploop swap.raw
+	# create the partitions
+	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+		if [ "$curdisk" != "${MOUNTDISKS[$i]i}" ]; then
+			let diskindex++
+			img="${DISKIMGS[$diskindex]}"
+			curdisk=${MOUNTDISKS[$i]}
+			echo "Disk: $curdisk $img"
+		fi
+
+		# Create partition and format
+		echo "  creating partition ${MOUNTPOINTS[$i]} on $img"
+		if [ "${MOUNTPOINTS[$i]}" = "swap" ]; then
+			parted --script -- $img.raw mkpartfs primary linux-swap ${PARTITION_START[$i]} ${PARTITION_END[$i]}
+		else
+			parted --script -- $img.raw mkpartfs primary ext2 ${PARTITION_START[$i]} ${PARTITION_END[$i]}
+		fi
+	done
+	
+	#mount the disk loops
+	for ((i=0;i<${#DISKIMGS[@]};i++)); do
+		kpartx -av ${DISKIMGS[$i]}.raw
+	done
+	
+	#format the partitions
+	let diskindex=-1
+        curdisk=""
+        for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+                if [ "$curdisk" != "${MOUNTDISKS[$i]}" ]; then
+                        let diskindex++
+                        img="${DISKIMGS[$diskindex]}"
+                        curdisk=${MOUNTDISKS[$i]}
+			let partindex=1
+                fi
+		if  [ "${MOUNTPOINTS[$i]}" = "swap" ]; then
+			echo formating /dev/mapper/loop${diskindex}p${partindex} as swap for ${MOUNTPOINTS[$i]}
+			mkswap /dev/mapper/loop${diskindex}p${partindex}	
+		else 
+			echo formating /dev/mapper/loop${diskindex}p${partindex} as ext3 for ${MOUNTPOINTS[$i]}
+			mkfs.ext3 /dev/mapper/loop${diskindex}p${partindex}
+		fi
+		/lib/udev/vol_id --uuid  /dev/mapper/loop${diskindex}p${partindex} >  ${MOUNTPOINTS[$i]}.uuid
+		let partindex++
+	done
+
 }
 
 do_debootstrap() {
@@ -490,30 +776,37 @@ do_fstab_dapper() {
 #
 # <file system>					<mount point>	<type>	<options>	<dump>	<pass>
 proc						/proc		proc	defaults	0	0
-/dev/hda1	/		ext3	defaults	0	1
-/dev/hdc1	/opt		ext3	defaults	0	1
-/dev/hdb1	swap		swap	defaults	0	1
 EOF
-
-
+	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+		if [ "${MOUNTPOINTS[$i]}" = "root" ]; then
+			echo "/dev/hd${MOUNTDISKS[$i]}1	/	ext3	defaults	0	1">>root/etc/fstab
+		elif [ "${MOUNTPOINTS[$i]}" = "swap" ]; then
+			echo "/dev/hd${MOUNTDISKS[$i]}1	swap      swap    defaults        0       1">>root/etc/fstab
+		else 
+			echo "/dev/hd${MOUNTDISKS[$i]}1	${MOUNTPOINTS[$i]}       ext3    defaults        0       1">>root/etc/fstab
+		fi
+	done
 }
 
 do_fstab() {
 	#
 	# Set up fstab
 	#
-	sed -e "s/%ROOT%/$(cat root.raw.uuid)/" \
-		-e "s/%OPT%/$(cat opt.raw.uuid)/" \
-		-e "s/%SWAP%/$(cat swap.raw.uuid)/"  << EOF | cat > root/etc/fstab
+	cat > root/etc/fstab << EOF
 # /etc/fstab: static file system information.
 #
-# <file system>					<mount point>	<type>	<options>	<dump>	<pass>
-proc						/proc		proc	defaults	0	0
-UUID=%ROOT%	/		ext3	defaults	0	1
-UUID=%OPT%	/opt		ext3	defaults	0	1
-UUID=%SWAP%	swap		swap	defaults	0	1
+# <file system>                                 <mount point>   <type>  <options>       <dump>  <pass>
+proc                                            /proc           proc    defaults        0       0
 EOF
-
+	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+                if [ "${MOUNTPOINTS[$i]}" = "root" ]; then
+                        echo "UUID=$(cat ${MOUNTPOINTS[$i]}.uuid) /       ext3    defaults        0       1">>root/etc/fstab
+                elif [ "${MOUNTPOINTS[$i]}" = "swap" ]; then
+                        echo "UUID=$(cat ${MOUNTPOINTS[$i]}.uuid) swap      swap    defaults        0       1">>root/etc/fstab
+                else
+                        echo "UUID=$(cat ${MOUNTPOINTS[$i]}.uuid) ${MOUNTPOINTS[$i]}       ext3    defaults        0       1">>root/etc/fstab
+                fi
+        done
 }
 
 do_kernel_n_friends () {
@@ -547,17 +840,67 @@ do_add_ssh_key () {
 	cp "$SSHKEY" root/root/.ssh/authorized_keys
 }
 
+do_exec_script () {
+       if [ ! -f "$EXEC" ]
+       then
+           echo "Script '$EXEC' not found."
+           return
+       fi
+       #
+       # Execute the script.
+       #
+       "$EXEC"
+}
+
+mount_parts () {
+	base="$1"
+	if [ "$base" = "" ]; then
+		echo base is empty....  exiting
+		exit 0
+	fi
+	let diskindex=-1
+        curdisk=""
+        for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+                if [ "$curdisk" != "${MOUNTDISKS[$i]}" ]; then
+                        let diskindex++
+                        img="${DISKIMGS[$diskindex]}"
+                        curdisk=${MOUNTDISKS[$i]}
+                        let partindex=1
+                fi
+
+                if  [ "${MOUNTPOINTS[$i]}" = "root" ]; then
+			mount /dev/mapper/loop${diskindex}p${partindex} $base
+		elif  [ "${MOUNTPOINTS[$i]}" != "swap" ]; then
+			mkdir $base${MOUNTPOINTS[$i]}
+			mount /dev/mapper/loop${diskindex}p${partindex} $base${MOUNTPOINTS[$i]}
+                fi
+		let partindex++
+        done
+}
+
+umount_parts () {
+	base="$1"
+        for ((i=${#MOUNTPOINTS[@]};i>-1;i--)); do
+                if  [ "${MOUNTPOINTS[$i]}" = "root" ]; then
+                        umount  $base
+                elif  [ "${MOUNTPOINTS[$i]}" != "swap" ]; then
+                        umount  $base${MOUNTPOINTS[$i]}
+                fi
+        done
+}
+
 do_copy_to_disk_images () {
 
 	chroot root apt-get clean
 	#
-	# Copy the debootstrapped filesystem into root.raw
+	# Copy the debootstrapped filesystem into the partitions
 	#
 	mkdir target 
-	mount -o loop,offset=16384 root.raw target
-	echo Copy the debootstrapped filesystem into root.raw
+	#mount -o loop,offset=16384 root.raw target
+	mount_parts target
+	echo Copy the debootstrapped filesystem 
 	cp -a root/* target
-	umount target
+	umount_parts target
 	rmdir target
 	rm -rf root
 }
@@ -585,7 +928,7 @@ do_target_vm_conversion () {
 	if [ "$VM" = vmserver ] || [ "$VM" = vmw6 ]
 	then
 		QEMU_IMG_CONVERT_EXTENSION=".vmdk"
-		cat > vaos.vmx << EOF
+		cat > $HOSTNAME.vmx << EOF
 config.version = "8"
 virtualHW.version = "$VMHWVERSION"
 scsi0.present = "FALSE"
@@ -594,7 +937,7 @@ memsize = "$MEM"
 Ethernet0.virtualDev = "vlance"
 Ethernet0.present = "TRUE"
 Ethernet0.connectionType = "bridged"
-displayName = "Ubuntu Jeos $ARCH"
+displayName = "$HOSTNAME $ARCH"
 guestOS = "$guestos"
 priority.grabbed = "normal"
 priority.ungrabbed = "normal"
@@ -602,21 +945,20 @@ powerType.powerOff = "hard"
 powerType.powerOn = "hard"
 powerType.suspend = "hard"
 powerType.reset = "hard"
-
-ide0:0.present = "TRUE"
-ide0:0.fileName = "root.vmdk"
-
-ide0:1.present = "TRUE"
-ide0:1.fileName = "swap.vmdk"
-
-ide1:0.present = "TRUE"
-ide1:0.fileName = "opt.vmdk"
-
 floppy0.present = "FALSE"
+
 EOF
 
-		chmod +x vaos.vmx
-		FILES="vaos.vmx root.vmdk opt.vmdk swap.vmdk"
+		chmod +x $HOSTNAME.vmx
+		FILES="$HOSTNAME.vmx"
+		for ((i=0;i<${#DISKIMGS[@]};i++)); do
+			FILES="$FILES ${DISKIMGS[$i]}.vmdk"
+			let "id=$i%2"
+			let "bus=$i/2"
+			echo "ide${bus}:${id}.present = \"TRUE\"">>$HOSTNAME.vmx
+			echo "ide${bus}:${id}.fileName = \"${DISKIMGS[$i]}.vmdk\"">>$HOSTNAME.vmx
+		done
+
 	elif [ $VM = qemu ] || [ $VM = kvm ]
 	then
 		QEMU_IMG_CONVERT_OPTS="-O qcow2 -6"
@@ -627,17 +969,30 @@ EOF
 		else
 			CMD=qemu
 		fi
-        cat > launchjeos <<EOF
+		FILES="$HOSTNAME.$CMD" 
+		IMGFILES=""
+		let diskindex=1
+		curdisk=""
+		for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+			if [ "$curdisk" != "${MOUNTDISKS[$i]}" ]; then
+                        	let diskindex++
+        	                img="${DISKIMGS[$diskindex]}"
+                	        curdisk=${MOUNTDISKS[$i]}
+                		FILES="$FILES $img.qcow2"
+				IMGFILES="$IMGFILES -hd$curdisk $img.qcow2" 
+			fi
+		done
+
+        cat > $HOSTNAME.$CMD <<EOF
 #!/bin/sh
-$CMD -m $MEM -hda root.qcow2 -hdb swap.qcow2 -hdc opt.qcow2 "\$@"
+$CMD -m $MEM $IMGFILES "\$@"
 EOF
-		chmod +x launchjeos
-		FILES="launchjeos root.qcow2 opt.qcow2 swap.qcow2"
+		chmod +x $HOSTNAME.$CMD
 	fi
 
-	qemu-img convert $QEMU_IMG_CONVERT_OPTS root.raw "root${QEMU_IMG_CONVERT_EXTENSION}"
-	qemu-img convert $QEMU_IMG_CONVERT_OPTS swap.raw "swap${QEMU_IMG_CONVERT_EXTENSION}"
-	qemu-img convert $QEMU_IMG_CONVERT_OPTS opt.raw  "opt${QEMU_IMG_CONVERT_EXTENSION}"
+	for ((i=0;i<${#DISKIMGS[@]};i++)); do
+		qemu-img convert $QEMU_IMG_CONVERT_OPTS ${DISKIMGS[$i]}.raw "${DISKIMGS[$i]}${QEMU_IMG_CONVERT_EXTENSION}"
+	done
 
 	test -n "${SUDO_USER}" && chown "$SUDO_USER" $FILES
 	mv $FILES $DESTINATION
@@ -645,9 +1000,19 @@ EOF
 }
 
 do_cleanup () {
-	rm root.raw root.raw.uuid opt.raw opt.raw.uuid swap.raw swap.raw.uuid
+	#unmount the disk loops
+        for ((i=0;i<${#DISKIMGS[@]};i++)); do
+                kpartx -dv ${DISKIMGS[$i]}.raw
+        done
+
+	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+		rm ${MOUNTPOINTS[$i]}.uuid
+	done
+	for ((i=0;i<${#DISKIMGS[@]};i++)); do
+                rm ${DISKIMGS[$i]}.raw 
+        done
 	cd /
-	rmdir "$WORKINGDIR"
+	rm -rf "$WORKINGDIR"
 }
 
 cd "$WORKINGDIR"
@@ -666,6 +1031,7 @@ do_bootloader
 do_kernel_n_friends 
 do_add_remove_packages
 do_add_ssh_key
+do_exec_script
 do_copy_to_disk_images 
 do_target_vm_conversion 
 do_cleanup
