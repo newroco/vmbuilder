@@ -961,7 +961,7 @@ EOF
 
 	elif [ $VM = qemu ] || [ $VM = kvm ]
 	then
-		QEMU_IMG_CONVERT_OPTS="-O qcow2 -6"
+		QEMU_IMG_CONVERT_OPTS="-O qcow2"
 		QEMU_IMG_CONVERT_EXTENSION=".qcow2"
 		if [ $VM = kvm ]
 		then
