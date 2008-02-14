@@ -46,21 +46,20 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
                             [--user username]
                             [--name fullname]
                             [--pass password]
-			    [
-			      [--part partitionfile]
-                            | [--rootsize size]
-                              [--optsize size]
-                              [--swapsize size]
+                            [--part partitionfile]
+                            [--rootsize size]
+                            [--optsize size]
+                            [--swapsize size]
                             [--kernel-flavour <flavour>]
                             [--components <comma separated list of components>]
                             [--ssh-key <public key file>]
                             [--exec <script to execute>]
                             [--ip address [
-                              [--mask value]
-                              [--net value]
-                              [--bcast value]
-                              [--gw address]
-                              [--dns address] ]
+                            [--mask value]
+                            [--net value]
+                            [--bcast value]
+                            [--gw address]
+                            [--dns address] ]
  
 --addpkg PKG       Install PKG into the guest (can be specfied multiple times)
 -a, --arch ARCH    Specify the target architecture. Valid options: i386*
@@ -87,13 +86,13 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
 --pass password    Set the password for the user. Default ubuntu.
 --part partfile    Allows to specify a partition table in partfile
                    each line of partfile should specify (root first):
-		      mountpoint size
-		   where size is in megabytes. You can have up to 4 virtual disks,
+                      mountpoint size
+                   where size is in megabytes. You can have up to 4 virtual disks,
                    a new disk starts on a line with ---
-		   ie :
-		      root 1000
-		      /opt 1000
-		      swap 256
+                   ie :
+                      root 1000
+                      /opt 1000
+                      swap 256
                       ---
                       /var 2000
                       /log 1500
