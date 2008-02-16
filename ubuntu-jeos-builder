@@ -97,7 +97,7 @@ usage: ubuntu-jeos-builder  [--addpkg PKG]
                       ---
                       /var 2000
                       /log 1500
-The following three option are not used if --part is specified:
+The following three options are not used if --part is specified:
 --rootsize size    The size in meg of the root filesystem (default 1000)
 --optsize size     The size in meg of the /opt filesystem (default 4000)
 --swapsize size    The size in meg of the swap partition (default 1000)
@@ -114,7 +114,7 @@ The following three option are not used if --part is specified:
 --ip address       Ip address in dotted form
                    (defaults to dhcp if not specified)
 
-Options belows are discarded if --ip is not specified
+Options below are discarded if --ip is not specified
 --mask value       IP mask in dotted form (default: 255.255.255.0)
 --net value        IP net address (default: X.X.X.0)
 --bcast value      IP broadcast (default: X.X.X.255)
