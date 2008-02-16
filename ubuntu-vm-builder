@@ -31,7 +31,7 @@
 
 usage () {
 	cat <<EOT
-usage: ubuntu-jeos-builder  [--addpkg PKG]
+usage: ubuntu-vm-builder  [--addpkg PKG]
                             [(-a|--arch) i386] 
                             [(-d|--dest) <destination (directory)>]
                             [--domain DOMAIN]
@@ -123,7 +123,7 @@ Options below are discarded if --ip is not specified
 
 ('*' denotes default option)
 
-ubuntu-jeos-builder is Copyright (C) 2007 Canonical Ltd. and
+ubuntu-vm-builder is Copyright (C) 2007 Canonical Ltd. and
 written by Soren Hansen <soren@canonical.com>
 EOT
 }
