@@ -1,4 +1,4 @@
-.TH UBUNTU-VM-BUILDER 1 "Nov 2007"
+.TH UBUNTU-VM-BUILDER 1 "Feb 2008"
 .SH NAME
 ubuntu-vm-builder \- build ubuntu based vm's
 .SH SYNOPSIS
@@ -49,5 +49,77 @@ Use TMPDIR as temporary working area for the image generation. Defaults to $TMPD
 .TP
 .B \-\-vm VM
 Generate image for specified virtualisation software.  Valid choices are: vmw6* vmserver vbox qemu
+.TP
+.B \-\-user username
+Set the name of the user to be added. Default ubuntu.
+.TP
+.B \-\-name fullname
+Set the full name of the user to be added. Default Ubuntu.
+.TP
+.B \-\-pass password
+Set the password for the user. Default ubuntu.
+.TP
+.B \-\-part partfile
+Allows to specify a partition table in partfile each line of partfile should specify (root first):
+.RS
+.RS
+mountpoint size
+.RE
+where size is in megabytes. You can have up to 4 virtual disks, a new disk starts on a line with '---'. 
+ie :
+.RS
+ root 1000
+ /opt 1000
+ swap 256
+ ---
+ /var 2000
+ /log 1500
+.RE
+.RE
+.TP
+The following three options are not used if --part is specified:
+.RS
+.B \-\-rootsize size
+ The size in meg of the root filesystem (default 1000)
+.TP
+.B \-\-optsize size
+The size in meg of the /opt filesystem (default 4000)
+.TP
+.B \-\-swapsize size
+The size in meg of the swap partition (default 1000)
+.RE
+.TP
+.B \-\-kernel-flavour
+The kernel image flavour to install (default: virtual for versions >= gutsy, server otherwise)
+.TP
+.B \-\-components
+A comma seperaed list of distro components to include (e.g. main,universe). This defaults to "main"
+.TP
+.B \-\-ssh-key
+Add the given ssh public key file (absolute path)to root's authorized keys and install openssh-server (WARNING: this has strong security implications)
+.TP
+.B \-\-exec script
+Run the given script file. You can use 'chroot root <cmd>' to execute code in the guest.
+.TP
+.B \-\-ip address
+Ip address in dotted form (defaults to dhcp if not specified)
+.TP
+Options below are discarded if --ip is not specified
+.RS
+.B \-\-mask value
+IP mask in dotted form (default: 255.255.255.0)
+.TP
+.B \-\-net value
+IP net address (default: X.X.X.0)
+.TP
+.B \-\-bcast value
+IP broadcast (default: X.X.X.255)
+.TP
+.B \-\-gw address
+Gateway address (default: X.X.X.1)
+.TP
+.B \-\-dns address
+Name server address (default: X.X.X.1)
+.RE
 .SH AUTHOR
 ubuntu-vm-builder and this man page was written by Soren Hansen <soren@ubuntu.com> and is copyright 2007 Canonical Ltd.
