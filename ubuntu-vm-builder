@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #    Ubuntu Jeos image builder
-#    Copyright (C) 2007  Canonical Ltd.
+#    Copyright (C) 2007-2008 Canonical Ltd.
 #
 #    Authors: Soren Hansen <soren@canonical.com>
 #             Neal McBurnett <neal@mcburnett.org>
@@ -31,7 +31,7 @@
 
 usage () {
 	cat <<EOT
-usage: ubuntu-vm-builder  [--addpkg PKG]
+usage: ubuntu-vm-builder    [--addpkg PKG]
                             [(-a|--arch) i386] 
                             [(-d|--dest) <destination (directory)>]
                             [--domain DOMAIN]
@@ -63,12 +63,13 @@ usage: ubuntu-vm-builder  [--addpkg PKG]
                             [--dns address] ]
 
 --addpkg PKG       Install PKG into the guest (can be specfied multiple times)
--a, --arch ARCH    Specify the target architecture. Valid options: i386*
+-a, --arch ARCH    Specify the target architecture. Valid options: i386*, amd64
 -d, --dest         Specify the destination directory.
-                   Default: ubuntu-jeos-$SUITE-$ARCH
+                   Default: ubuntu-vm-$SUITE-$ARCH
 --domain DOMAIN    Set DOMAIN as the domain name of the guest. Default:
                    The domain of the machine running this script.
 -h, --help         This help text.
+-v, --verbose      Show a lot of information as the vm is generated.
 --hostname NAME    Set NAME as the hostname of the guest. Default: ubuntu
                    Also uses this name as the VM name
 --mem NN           Assign NN megabytes of memory to the guest vm.
@@ -81,10 +82,10 @@ usage: ubuntu-vm-builder  [--addpkg PKG]
 -t, --tmp  TMPDIR  Use TMPDIR as temporary working area for the image
                    generation. Defaults to \$TMPDIR if set, or /tmp if not.
 --vm VM            Generate image for specified virtualisation software.
-                   Valid choices are: vmw6* vmserver vbox qemu kvm
---user username    Set the name of the user to be added. Default ubuntu.
---name fullname    Set the full name of the user to be added. Default Ubuntu.
---pass password    Set the password for the user. Default ubuntu.
+                   Valid choices are: vmw6 vmserver vbox qemu kvm*
+--user username    Set the name of the user to be added. Default: ubuntu.
+--name fullname    Set the full name of the user to be added. Default: Ubuntu.
+--pass password    Set the password for the user. Default: ubuntu.
 --no-opt           Do not build the /opt image
 --part partfile    Allows to specify a partition table in partfile
                    each line of partfile should specify (root first):
@@ -99,12 +100,11 @@ usage: ubuntu-vm-builder  [--addpkg PKG]
                       /var 2000
                       /log 1500
 The following three options are not used if --part is specified:
---rootsize size    The size in meg of the root filesystem (default 1000)
---optsize size     The size in meg of the /opt filesystem (default 4000)
---swapsize size    The size in meg of the swap partition (default 1000)
-
+--rootsize size    The size in MB of the root filesystem (default 1000)
+--optsize size     The size in MB of the /opt filesystem (default 4000)
+--swapsize size    The size in MB of the swap partition (default 1000)
 --kernel-flavour   The kernel image flavour to install (default: virtual for
-                   >=gutsy, server otherwise)
+                   >=gutsy on i386, server otherwise)
 --components       A comma seperaed list of distro components to include 
                    (e.g. main,universe). This defaults to "main"
 --ssh-key          Add the given ssh public key file (absolute path)
@@ -124,9 +124,13 @@ Options below are discarded if --ip is not specified
 
 ('*' denotes default option)
 
-ubuntu-vm-builder is Copyright (C) 2007 Canonical Ltd. and
-written by Soren Hansen <soren@canonical.com>
+ubuntu-vm-builder is Copyright (C) 2007-2008 Canonical Ltd. and
+originally written by Soren Hansen <soren@canonical.com>.
 EOT
+}
+
+info () {
+	test -n "$VERBOSE" && echo "$@"
 }
 
 #
@@ -137,11 +141,11 @@ if [ -z "$TMPDIR" ]
 then
 	TMPDIR="/tmp"
 fi
-VM=vmw6
+VM=kvm
 USER=ubuntu
 NAME=Ubuntu
 PASS=ubuntu
-SUITE="hardy"
+SUITE=hardy
 MIRROR="http://archive.ubuntu.com/ubuntu"
 MEM=128
 HOSTNAME="ubuntu"
@@ -159,7 +163,6 @@ declare -a DISKIMGS
 declare -a DISKSIZES
 declare -a PARTITION_START
 declare -a PARTITION_END
-letters=("a" "b" "c" "d")
 
 TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,no-opt,exec:,  -- "$@"`
 eval set -- "$TEMP"
@@ -168,14 +171,14 @@ while true
 do
 	case "$1" in 
 		--addpkg)
-			echo "Will add $2 to the guest"
+			info "Will add $2 to the guest"
 			PKGCMD="$PKGCMD $2"
 			shift 2
 		;;
 		-a|--arch)
 			if [ "$2" = i386 ] || [ "$2" = amd64 ]
 			then
-				echo "Setting architecture to \"$2\""
+				info "Setting architecture to \"$2\""
 				ARCH="$2"
 			else
 				echo "Invalid architecture: \"$2\". Valid choices are: i386 amd64"
@@ -188,7 +191,7 @@ do
 			then
 				if [ -w "`dirname $2`" ]
 				then
-					echo "Setting destination to \"$2\""
+					info "Setting destination to \"$2\""
 					if [ ! "${2#/}" = "${2}" ]
 					then
 						# Absolute path given
@@ -208,7 +211,7 @@ do
 			shift 2
 		;;
 		--domain)
-			echo "Setting guest domain to $2"
+			info "Setting guest domain to $2"
 			DOMAIN="$2"
 			shift 2
 		;;
@@ -217,29 +220,29 @@ do
 			exit 0
 			;;
 		--hostname)
-			echo "Setting guest hostname to $2"
+			info "Setting guest hostname to $2"
 			HOSTNAME="$2"
 			shift 2
 		;;
 		--mem)
-			echo "Setting guest memory to $2 MB"
+			info "Setting guest memory to $2 MB"
 			MEM="$2"
 			shift 2
 		;;
 		--mirror)
-			echo "Setting Ubuntu mirror to \"$2\""
+			info "Setting Ubuntu mirror to \"$2\""
 			MIRROR="$2"
 			shift 2
 		;;
 		--removepkg)
-			echo "Will remove $2 from the guest"
+			info "Will remove $2 from the guest"
 			PKGCMD="$PKGCMD ${2}-"
 			shift 2
 		;;
 		--s|--suite)
 			if [ "$2" = gutsy ] || [ "$2" = feisty ] || [ "$2" = dapper ] || [ "$2" = hardy ]
 			then
-				echo "Setting Ubuntu version to \"$2\""
+				info "Setting Ubuntu version to \"$2\""
 				SUITE="$2"
 			else
 				echo "Invalid Ubuntu version: \"$2\". Valid choices are: hardy gutsy feisty dapper"
@@ -258,14 +261,14 @@ do
 				echo "\"$2\" is not writable"
 				exit 1
 			fi
-			echo "Setting temporary working dir to \"$2\""
+			info "Setting temporary working dir to \"$2\""
 			TMPDIR="$2"
 			shift 2
 		;;
 		--vm)
 			if [ "$2" = vmw6 ] || [ "$2" = vmserver ] || [ "$2" = vbox ] || [ "$2" = qemu ] || [ "$2" = kvm ]
 			then
-				echo "Setting target vm to \"$2\""
+				info "Setting target vm to \"$2\""
 				VM="$2"
 			else
 				echo "Invalid vm software: \"$2\". Valid choices are: vmw6 vmserver vbox qemu kvm"
@@ -274,93 +277,97 @@ do
 			shift 2
 		;;
 		--user)
-                        echo "Setting username to: \"$2\""
-                        USER="$2"
-                        shift 2
-                ;;
-                --name)
-                        echo "Setting fullname to: \"$2\""
-                        NAME="$2"
-                        shift 2
-                ;;
-                --pass)
-                        echo "Setting password to: \"$2\""
-                        PASS="$2"
-                        shift 2
-                ;;
+			info "Setting username to: \"$2\""
+			USER="$2"
+			shift 2
+		;;
+		--name)
+			info "Setting fullname to: \"$2\""
+			NAME="$2"
+			shift 2
+		;;
+		--pass)
+			info "Setting password to: \"$2\""
+			PASS="$2"
+   			shift 2
+		;;
 		--part)
-			echo "Setting partitions from \"$2\""
+			info "Setting partitions from \"$2\""
 			PARTFILE="$2"
 			shift 2
 		;;
 		--rootsize)
-		        echo "Setting rootsize to \"$2\""
+			info "Setting rootsize to \"$2\""
 			ROOTSIZE="$2"
 			shift 2
 		;;
 		--swapsize)
-                        echo "Setting swapsize to \"$2\""
-                        SWAPSIZE="$2"
-                        shift 2
-                ;;
+			info "Setting swapsize to \"$2\""
+			SWAPSIZE="$2"
+			shift 2
+		;;
 		--optsize)
-                        echo "Setting optsize to \"$2\""
-                        OPTSIZE="$2"
-                        shift 2
-                ;;
+			info "Setting optsize to \"$2\""
+			OPTSIZE="$2"
+			shift 2
+		;;
 		--kernel-flavour)
-		        echo "Setting kernel flavour to \"$2\""
+			info "Setting kernel flavour to \"$2\""
 			KERNEL_FLAVOUR="$2"
 			shift 2
 		;;
 		--components)
-		        echo "Setting compoents to \"$2\""
+	        info "Setting compoents to \"$2\""
 			COMPS="$2"
 			shift 2
 		;;
 		--ssh-key)
-		        echo "Setting ssh-key to \"$2\""
+			info "Setting ssh-key to \"$2\""
 			SSHKEY="$2"
 			shift 2
 		;;
 		--exec)
-			echo "Setting exec script to \"$2\""
+			info "Setting exec script to \"$2\""
 			EXEC="$2"
 			shift 2
 		;;
 		--ip)
-			echo "setting ipaddress to \"$2\""
-			IP=$2
+			info "setting ipaddress to \"$2\""
+			IP="$2"
 			shift 2
 		;;
 		--mask)
-			echo "setting mask to \"$2\""
-			MASK=$2
+			info "setting mask to \"$2\""
+			MASK="$2"
 			shift 2
 		;;
 		--net)
-			echo "setting network to \"$2\""
-			NETWORK=$2
+			info "setting network to \"$2\""
+			NETWORK="$2"
 			shift 2
 		;;
 		--bcast)
-			echo "setting broadcast to \"$2\""
-			BCAST=$2
+			info "setting broadcast to \"$2\""
+			BCAST="$2"
 			shift 2
 		;;
 		--gw)
-			echo "setting gateway to \"$2\""
+			info "setting gateway to \"$2\""
 			GW=$2
 			shift 2
 		;;
 		--dns)
-			echo "setting name server to \"$2\""
+			info "setting name server to \"$2\""
 			DNS=$2
 			shift 2
 		;;
 		--no-opt)
-		        echo "Not building /opt"
+			info "Not building /opt"
 			OPTFS="no"
+			shift 1
+		;;
+		-v|--verbose)
+			VERBOSE="YEAH"
 			shift 1
 		;;
 		--)
@@ -382,6 +389,10 @@ then
 	exit 1
 fi
 
+# DISKIMGS holds the base names of the disk image files.
+# MOUNTPOINTS[i] holds the mountpoint of partition i.
+# MOUNTDISKS[i] holds
+# MOUNTSIZES[i] holds the size of partition i.
 if [ -z "$PARTFILE" ]; then
 	let partstart=0
 	let partid=0
@@ -390,11 +401,7 @@ if [ -z "$PARTFILE" ]; then
 
 	MOUNTPOINTS[$partid]="root" 
 	MOUNTDISKS[$partid]="a"
-	if [ -z "$ROOTSIZE" ]; then
-		MOUNTSIZES[$partid]="1000"
-	else
-		MOUNTSIZES[$partid]="$ROOTSIZE"
-	fi
+	MOUNTSIZES[$partid]="$ROOTSIZE"
 	let PARTITION_START[$partid]=$partstart
 	let PARTITION_END[$partid]=$partstart+MOUNTSIZES[$partid]
 	let partstart=PARTITION_END[$partid]+1
@@ -403,7 +410,7 @@ if [ -z "$PARTFILE" ]; then
 	then
 		let partid=$partid+1
 		MOUNTPOINTS[$partid]="/opt" 
-			MOUNTDISKS[$partid]="a"
+		MOUNTDISKS[$partid]="a"
 		if [ -z "$OPTSIZE" ]; then
 			MOUNTSIZES[$partid]="4000"
 		else
@@ -418,13 +425,13 @@ if [ -z "$PARTFILE" ]; then
 	MOUNTPOINTS[$partid]="swap" 
 	MOUNTDISKS[$partid]="a"
 	if [ -z "$SWAPSIZE" ]; then
-		MOUNTSIZES[$partid2]="1000"
+		MOUNTSIZES[$partid]="1000"
 	else
-		MOUNTSIZES[$partid2]="$SWAPSIZE"
+		MOUNTSIZES[$partid]="$SWAPSIZE"
 	fi
-	let PARTITION_START[$partid2]=$partstart
-	let PARTITION_END[$partid2]=$partstart+MOUNTSIZES[$partid2]
-	let DISKSIZES[0]=PARTITION_END[$partid2]+1
+	let PARTITION_START[$partid]=$partstart
+	let PARTITION_END[$partid]=$partstart+MOUNTSIZES[$partid]
+	let DISKSIZES[0]=PARTITION_END[$partid]+1
 else
 	letters=("a" "b" "c" "d")
 	let index=0
@@ -454,10 +461,10 @@ else
 			let PARTITION_END[$index]=$partstart+MOUNTSIZES[$index]
 			if [ $partnum -eq 0 ]; then
 				DISKIMGS[$diskindex]=`echo "${MOUNTPOINTS[$index]}" | sed 's%\/%%g' | sed 's/[ \t]*$//'`
-				echo " Disk: $diskindex ${DISKIMGS[$diskindex]}"
+				info " Disk: $diskindex ${DISKIMGS[$diskindex]}"
 			fi
 
-			echo "  Partition: $partnum ${MOUNTPOINTS[$index]} start: $partstart end: ${PARTITION_END[$index]} size: ${MOUNTSIZES[$index]}"
+			info "  Partition: $partnum ${MOUNTPOINTS[$index]} start: $partstart end: ${PARTITION_END[$index]} size: ${MOUNTSIZES[$index]}"
 			let partstart=PARTITION_END[$index]+1
 			let index=$index+1
 			let partnum=$partnum+1

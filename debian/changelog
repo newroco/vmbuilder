@@ -1,3 +1,9 @@
+ubuntu-vm-builder (0.2) hardy; urgency=low
+
+  * New release.
+
+ -- Soren Hansen <soren@ubuntu.com>  Thu, 21 Feb 2008 00:34:20 +0100
+
 ubuntu-vm-builder (0.1) hardy; urgency=low
 
   * Initial upload to Ubuntu.
