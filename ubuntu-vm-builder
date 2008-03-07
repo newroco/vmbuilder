@@ -215,10 +215,6 @@ do
 			DOMAIN="$2"
 			shift 2
 		;;
-		-h|--help)
-			usage
-			exit 0
-			;;
 		--hostname)
 			info "Setting guest hostname to $2"
 			HOSTNAME="$2"
@@ -239,7 +235,7 @@ do
 			PKGCMD="$PKGCMD ${2}-"
 			shift 2
 		;;
-		--s|--suite)
+		-s|--suite)
 			if [ "$2" = gutsy ] || [ "$2" = feisty ] || [ "$2" = dapper ] || [ "$2" = hardy ]
 			then
 				info "Setting Ubuntu version to \"$2\""
@@ -374,6 +370,15 @@ do
 			shift
 			break
 		;;
+		-h|--help)
+			usage
+			exit 0
+			;;
+		*)
+			echo "Unknown option: $1"
+			usage
+			exit 1
+			;;
 	esac
 done
 
