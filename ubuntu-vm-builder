@@ -624,7 +624,7 @@ EOF
 
 do_bootloader () {
         updategrub="\/usr\/sbin\/update-grub"
-	if [ "$SUITE" = dapper ]
+	if [ "$SUITE" = dapper -o "$SUITE" = edgy ]
 	then
 	    updategrub="\/sbin\/update-grub"
 	fi
