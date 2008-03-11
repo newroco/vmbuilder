@@ -82,7 +82,7 @@ usage: ubuntu-vm-builder    [--addpkg PKG]
                    is: http://archive.ubuntu.com/ubuntu
 --removepkg PKG    Remove PKG from the guest (can be specfied multiple times)
 -s, --suite SUITE  Use the specified Ubuntu suite. Valid options: hardy, gutsy,
-                   feisty, dapper
+                   feisty, edgy, dapper
 -t, --tmp  TMPDIR  Use TMPDIR as temporary working area for the image
                    generation. Defaults to \$TMPDIR if set, or /tmp if not.
 --vm VM            Generate image for specified virtualisation software.
@@ -241,12 +241,12 @@ do
 			shift 2
 		;;
 		-s|--suite)
-			if [ "$2" = gutsy ] || [ "$2" = feisty ] || [ "$2" = dapper ] || [ "$2" = hardy ]
+			if [ "$2" = gutsy ] || [ "$2" = feisty ] || [ "$2" = "edgy" ] || [ "$2" = dapper ] || [ "$2" = hardy ]
 			then
 				info "Setting Ubuntu version to \"$2\""
 				SUITE="$2"
 			else
-				echo "Invalid Ubuntu version: \"$2\". Valid choices are: hardy gutsy feisty dapper"
+				echo "Invalid Ubuntu version: \"$2\". Valid choices are: hardy gutsy feisty edgy dapper"
 				exit 1
 			fi
 			shift 2
