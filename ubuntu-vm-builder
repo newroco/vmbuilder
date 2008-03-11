@@ -679,10 +679,10 @@ EOF
 	STAGE2_FORCE_LBA=$((0x11))
 	STAGE2_VER_STR_OFFS=$((0x12))
 
-	# *sigh* dapper is a bit special
+	# *sigh* dapper and edgy are a bit special
 	grubroot=root/usr/lib/grub/
 	updategrub=/usr/sbin/update-grub
-	if [ "$SUITE" = dapper ]
+	if [ "$SUITE" = dapper -o "$SUITE" = edgy ]
 	then
 	    grubroot=root/lib/grub
 	    updategrub=/sbin/update-grub
