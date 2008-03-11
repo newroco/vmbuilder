@@ -29,6 +29,9 @@
 #  fix perl locale warnings
 #  review security of running as root, messing with $DESTINATION
 
+# Keep perl inside the chroot quiet
+LANG=C
+
 usage () {
 	cat <<EOT
 usage: ubuntu-vm-builder    [--addpkg PKG]
@@ -55,6 +58,7 @@ usage: ubuntu-vm-builder    [--addpkg PKG]
                             [--components <comma separated list of components>]
                             [--ssh-key <public key file>]
                             [--exec <script to execute>]
+                            [--libvirt <hypervisor uri>]
                             [--ip address [
                             [--mask value]
                             [--net value]
@@ -112,6 +116,7 @@ The following three options are not used if --part is specified:
                    (WARNING: this has strong security implications)
 --exec             Run the given script file. You can use 
                    'chroot root <cmd>' to execute code in the guest.
+--libvirt <uri>    Add resulting VM to the libvirt hypervisor at uri.
 --ip address       Ip address in dotted form
                    (defaults to dhcp if not specified)
 
@@ -164,7 +169,7 @@ declare -a DISKSIZES
 declare -a PARTITION_START
 declare -a PARTITION_END
 
-TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,no-opt,exec:,  -- "$@"`
+TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,no-opt,exec:,libvirt:,  -- "$@"`
 eval set -- "$TEMP"
 
 while true
@@ -366,6 +371,11 @@ do
 			VERBOSE="YEAH"
 			shift 1
 		;;
+		--libvirt)
+			info "Using libvirt uri '$2'"
+			LIBVIRT="$2"
+			shift 2
+		;;
 		--)
 			shift
 			break
@@ -385,6 +395,12 @@ done
 if [ $# -gt 0 ];
 then
 	usage
+	exit 1
+fi
+
+if ! [ -n "$LIBVIRT" -a "$VM" = "kvm" -o "$VM" = "qemu" ];
+then
+	echo "--libvirt is only available for --vm kvm and --vm qemu (not $VM)"
 	exit 1
 fi
 
@@ -480,33 +496,34 @@ else
 	let NUMDISK=$diskindex
 fi
 
-WORKINGDIR=`mktemp -d -p $TMPDIR jeos-builder-XXXXXXXXXX` || exit 1
+WORKINGDIR=`mktemp -p $TMPDIR -d vm-builder-XXXXXXXXXX` || exit 1
 
 if [ -z "$DESTINATION" ]
 then
-        DESTINATION="$PWD/ubuntu-jeos-$SUITE-$ARCH"
+        DESTINATION="$PWD/ubuntu-vm-$SUITE-$ARCH"
 fi
 
 if [ -z "$KERNEL_FLAVOUR" ]
 then
-        if [ "$SUITE" = "gutsy" ] || [ "$SUITE" = "hardy" ]
-        then
-                KERNEL_FLAVOUR="virtual"
-        else
-                KERNEL_FLAVOUR="server"
-        fi
+	if [ "$SUITE" = "gutsy" ] || [ "$SUITE" = "hardy" ]
+	then
+		KERNEL_FLAVOUR="virtual"
+	else
+		KERNEL_FLAVOUR="server"
+	fi
 fi
+info "Using kernel flavour: $KERNEL_FLAVOUR"
 
 if [ -n "${SUDO_USER}" ]; then
-        sudo -u "${SUDO_USER}" mkdir "${DESTINATION}"
+	sudo -u "${SUDO_USER}" mkdir "${DESTINATION}"
 else
-        mkdir "${DESTINATION}"
+	mkdir "${DESTINATION}"
 fi
 
 if [ $? -ne 0 ]; then
-        echo "Error creating directory ${DESTINATION}. Unable to proceed."
-	rm -rf $WORKINGDIR
-        exit 1
+	echo "Error creating directory ${DESTINATION}. Unable to proceed."
+	rm -rf "${WORKINGDIR}"
+	exit 1
 fi
 
 if [ -z "$IP" ]; then
@@ -671,43 +688,43 @@ EOF
 	    updategrub=/sbin/update-grub
 	fi
 	cp $grubroot/$grubarch/stage1 stage1_buffer
-	dd bs=512 count=1 if=root.raw of=old_sect
+	dd bs=512 count=1 if=root.raw of=old_sect 2> /dev/null
 
-	dd bs=1 count=$BOOTSEC_BPB_LENGTH conv=notrunc skip=$BOOTSEC_BPB_OFFSET seek=$BOOTSEC_BPB_OFFSET if=old_sect of=stage1_buffer
-	dd bs=1 count=$(($STAGE1_PARTEND - $STAGE1_WINDOWS_NT_MAGIC)) conv=notrunc skip=$STAGE1_WINDOWS_NT_MAGIC seek=$STAGE1_WINDOWS_NT_MAGIC if=old_sect of=stage1_buffer
+	dd bs=1 count=$BOOTSEC_BPB_LENGTH conv=notrunc skip=$BOOTSEC_BPB_OFFSET seek=$BOOTSEC_BPB_OFFSET if=old_sect of=stage1_buffer 2> /dev/null
+	dd bs=1 count=$(($STAGE1_PARTEND - $STAGE1_WINDOWS_NT_MAGIC)) conv=notrunc skip=$STAGE1_WINDOWS_NT_MAGIC seek=$STAGE1_WINDOWS_NT_MAGIC if=old_sect of=stage1_buffer 2> /dev/null
 
 	# Set boot device to GRUB_UNKNOWN_DEVICE (that's what grub does) and force lba
-	/bin/echo -ne '\xff\01' | dd bs=1 count=2 conv=notrunc seek=$STAGE1_BOOT_DRIVE of=stage1_buffer
+	/bin/echo -ne '\xff\01' | dd bs=1 count=2 conv=notrunc seek=$STAGE1_BOOT_DRIVE of=stage1_buffer 2> /dev/null
 
 	# Hack to workaround buggy bios'es
-	/bin/echo -ne '\x90\x90' | dd bs=1 count=2 conv=notrunc seek=$STAGE1_BOOT_DRIVE_CHECK of=stage1_buffer
+	/bin/echo -ne '\x90\x90' | dd bs=1 count=2 conv=notrunc seek=$STAGE1_BOOT_DRIVE_CHECK of=stage1_buffer 2> /dev/null
 
-	dd if=$grubroot/$grubarch/e2fs_stage1_5 of=stage2_first_buffer bs=512 count=1
-	dd if=$grubroot/$grubarch/e2fs_stage1_5 of=stage2_second_buffer bs=512 count=1 skip=1
+	dd if=$grubroot/$grubarch/e2fs_stage1_5 of=stage2_first_buffer bs=512 count=1 2> /dev/null
+	dd if=$grubroot/$grubarch/e2fs_stage1_5 of=stage2_second_buffer bs=512 count=1 skip=1 2> /dev/null
 
 	# Stage 2 (actually 1.5) is at sector 1 (0-indexed)
-	/bin/echo -ne '\1\0\0\0' | dd bs=1 count=4 conv=notrunc seek=$STAGE1_STAGE2_SECTOR of=stage1_buffer
+	/bin/echo -ne '\1\0\0\0' | dd bs=1 count=4 conv=notrunc seek=$STAGE1_STAGE2_SECTOR of=stage1_buffer 2> /dev/null
 	# Set address and segment accordingly
-	/bin/echo -ne '\0\x20' | dd bs=1 count=2 conv=notrunc seek=$STAGE1_STAGE2_ADDRESS of=stage1_buffer
-	/bin/echo -ne '\0\02' | dd bs=1 count=2 conv=notrunc seek=$STAGE1_STAGE2_SEGMENT of=stage1_buffer
+	/bin/echo -ne '\0\x20' | dd bs=1 count=2 conv=notrunc seek=$STAGE1_STAGE2_ADDRESS of=stage1_buffer 2> /dev/null
+	/bin/echo -ne '\0\02' | dd bs=1 count=2 conv=notrunc seek=$STAGE1_STAGE2_SEGMENT of=stage1_buffer 2> /dev/null
 
-	/bin/echo -ne '\1' | dd bs=1 count=1 conv=notrunc seek=$STAGE2_FORCE_LBA of=stage2_second_buffer
+	/bin/echo -ne '\1' | dd bs=1 count=1 conv=notrunc seek=$STAGE2_FORCE_LBA of=stage2_second_buffer 2> /dev/null
 
 	# These two are unexplained.. 
-	/bin/echo -ne '\x10' | dd bs=1 count=1 conv=notrunc seek=508 of=stage2_first_buffer
-	/bin/echo -ne '\0' | dd bs=1 count=1 conv=notrunc seek=$((0x19)) of=stage2_second_buffer
+	/bin/echo -ne '\x10' | dd bs=1 count=1 conv=notrunc seek=508 of=stage2_first_buffer 2> /dev/null
+	/bin/echo -ne '\0' | dd bs=1 count=1 conv=notrunc seek=$((0x19)) of=stage2_second_buffer 2> /dev/null
 
 	# I couldn't figure out how to reimplement this properly in posix shell, so I'll hardcode the offset for now
 
-	/bin/echo -ne ' /boot/grub/menu.lst\0' | dd bs=1 count=21 conv=notrunc seek=$((0x2c)) of=stage2_second_buffer
+	/bin/echo -ne ' /boot/grub/menu.lst\0' | dd bs=1 count=21 conv=notrunc seek=$((0x2c)) of=stage2_second_buffer 2> /dev/null
 
 	#
 	# Stuff this all back into the disk image
 	#
-	dd bs=512 count=1               if=stage1_buffer                              conv=notrunc of=root.raw
-	dd bs=512 count=1 seek=1        if=stage2_first_buffer                        conv=notrunc of=root.raw
-	dd bs=512 count=1 seek=2        if=stage2_second_buffer                       conv=notrunc of=root.raw
-	dd bs=512         seek=3 skip=2 if=$grubroot/$grubarch/e2fs_stage1_5 conv=notrunc of=root.raw
+	dd bs=512 count=1               if=stage1_buffer                              conv=notrunc of=root.raw 2> /dev/null
+	dd bs=512 count=1 seek=1        if=stage2_first_buffer                        conv=notrunc of=root.raw 2> /dev/null
+	dd bs=512 count=1 seek=2        if=stage2_second_buffer                       conv=notrunc of=root.raw 2> /dev/null
+	dd bs=512         seek=3 skip=2 if=$grubroot/$grubarch/e2fs_stage1_5 conv=notrunc of=root.raw 2> /dev/null
 
 	cp $grubroot/$grubarch/* root/boot/grub/
 
@@ -732,7 +749,7 @@ do_disk_images() {
 	for ((i=0; i<${#DISKIMGS[@]}; i++)); do
 		# create disk image
 		let size=${DISKSIZES[$i]}*1024
-		qemu-img create -f raw ${DISKIMGS[$i]}.raw $size
+		qemu-img create -f raw ${DISKIMGS[$i]}.raw $size > /dev/null
 
 		# label the disk
 		parted --script ${DISKIMGS[$i]}.raw mklabel msdos
@@ -747,11 +764,11 @@ do_disk_images() {
 			let diskindex++
 			img="${DISKIMGS[$diskindex]}"
 			curdisk=${MOUNTDISKS[$i]}
-			echo "Disk: $curdisk $img"
+			info "Disk: $curdisk $img"
 		fi
 
 		# Create partition and format
-		echo "  creating partition ${MOUNTPOINTS[$i]} on $img"
+		info "  creating partition ${MOUNTPOINTS[$i]} on $img"
 		if [ "${MOUNTPOINTS[$i]}" = "swap" ]; then
 			parted --script -- $img.raw mkpartfs primary linux-swap ${PARTITION_START[$i]} ${PARTITION_END[$i]}
 		else
@@ -775,11 +792,11 @@ do_disk_images() {
 			let partindex=1
                 fi
 		if  [ "${MOUNTPOINTS[$i]}" = "swap" ]; then
-			echo formating /dev/mapper/loop${diskindex}p${partindex} as swap for ${MOUNTPOINTS[$i]}
+			info formating /dev/mapper/loop${diskindex}p${partindex} as swap for ${MOUNTPOINTS[$i]}
 			mkswap /dev/mapper/loop${diskindex}p${partindex}	
 		else 
-			echo formating /dev/mapper/loop${diskindex}p${partindex} as ext3 for ${MOUNTPOINTS[$i]}
-			mkfs.ext3 /dev/mapper/loop${diskindex}p${partindex}
+			info formating /dev/mapper/loop${diskindex}p${partindex} as ext3 for ${MOUNTPOINTS[$i]}
+			mkfs.ext3 -q /dev/mapper/loop${diskindex}p${partindex}
 		fi
 		/lib/udev/vol_id --uuid  /dev/mapper/loop${diskindex}p${partindex} >  ${MOUNTPOINTS[$i]}.uuid
 		let partindex++
@@ -921,9 +938,8 @@ do_copy_to_disk_images () {
 	# Copy the debootstrapped filesystem into the partitions
 	#
 	mkdir target 
-	#mount -o loop,offset=16384 root.raw target
 	mount_parts target
-	echo Copy the debootstrapped filesystem 
+	info Copy the debootstrapped filesystem 
 	cp -a root/* target
 	umount_parts target
 	rmdir target
@@ -931,7 +947,7 @@ do_copy_to_disk_images () {
 }
 
 do_target_vm_conversion () {
-	echo Convert to format $VM
+	info Convert to format $VM
 
 	if [ $VM = vmserver ]
 	then
@@ -994,25 +1010,81 @@ EOF
 		else
 			CMD=qemu
 		fi
-		FILES="$HOSTNAME.$CMD" 
-		IMGFILES=""
-		let diskindex=-1
-		curdisk=""
-		for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
-			if [ "$curdisk" != "${MOUNTDISKS[$i]}" ]; then
-                        	let diskindex++
-        	                img="${DISKIMGS[$diskindex]}"
-                	        curdisk=${MOUNTDISKS[$i]}
-                		FILES="$FILES $img.qcow2"
-				IMGFILES="$IMGFILES -hd$curdisk $img.qcow2" 
-			fi
-		done
+	
+		if [ -n "$LIBVIRT" ]
+		then
+			LIBVIRTXML=`mktemp -p $TMPDIR vm-builder-XXXXXXXXXX` || exit 1
+			LIBVIRTNAME="$HOSTNAME"
+			MAC="52:54:00$(hexdump -e '/1 ":%02x"' -n 3 /dev/urandom)"
+			while virsh -c "$LIBVIRT" dumpxml "$LIBVIRTNAME" > /dev/null 2>&1
+			do
+				LIBVIRTNAME="${LIBVIRTNAME}_"
+			done
+			cat > ${LIBVIRTXML} <<EOXML
+<domain type='$VM'>
+  <name>${LIBVIRTNAME}</name>
+  <memory>$(( $MEM * 1024))</memory>
+  <vcpu>1</vcpu>
+  <os>
+    <type>hvm</type>
+    <boot dev='hd'/>
+  </os>
+  <clock offset='utc'/>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>destroy</on_crash>
+  <devices>
+    <emulator>/usr/bin/${VM}</emulator>
+    <interface type='network'>
+      <mac address='${MAC}'/>
+      <source network='default'/>
+    </interface>
+    <input type='mouse' bus='ps2'/>
+    <graphics type='vnc' port='-1' listen='127.0.0.1'/>
+EOXML
+			let diskindex=-1
+			curdisk=""
+			for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+				if [ "$curdisk" != "${MOUNTDISKS[$i]}" ]; then
+					let diskindex++
+					img="${DISKIMGS[$diskindex]}"
+					curdisk=${MOUNTDISKS[$i]}
+   	             	FILES="$FILES $img.qcow2"
+					cat >> ${LIBVIRTXML} << EOXML
 
-        cat > $HOSTNAME.$CMD <<EOF
+    <disk type='file' device='disk'>
+      <source file='${DESTINATION}/${img}.qcow2'/>
+      <target dev='hd${curdisk}'/>
+    </disk>
+EOXML
+				fi
+			done
+			cat >> ${LIBVIRTXML} << EOXML	
+  </devices>
+</domain>
+EOXML
+			virsh -c "${LIBVIRT}" define "${LIBVIRTXML}"
+			rm $LIBVIRTXML
+		else
+	   		FILES="$HOSTNAME.$CMD" 
+			IMGFILES=""
+			let diskindex=-1
+			curdisk=""
+			for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+				if [ "$curdisk" != "${MOUNTDISKS[$i]}" ]; then
+					let diskindex++
+					img="${DISKIMGS[$diskindex]}"
+					curdisk=${MOUNTDISKS[$i]}
+					FILES="$FILES $img.qcow2"
+					IMGFILES="$IMGFILES -hd$curdisk $img.qcow2" 
+				fi
+			done
+			cat > $HOSTNAME.$CMD <<EOF
 #!/bin/sh
 $CMD -m $MEM $IMGFILES "\$@"
 EOF
-		chmod +x $HOSTNAME.$CMD
+			chmod +x $HOSTNAME.$CMD
+		fi
 	fi
 
 	for ((i=0;i<${#DISKIMGS[@]};i++)); do
