@@ -496,7 +496,7 @@ else
 	let NUMDISK=$diskindex
 fi
 
-WORKINGDIR=`mktemp -p $TMPDIR -d vm-builder-XXXXXXXXXX` || exit 1
+WORKINGDIR=`mktemp -d -p $TMPDIR vm-builder-XXXXXXXXXX` || exit 1
 
 if [ -z "$DESTINATION" ]
 then
@@ -505,7 +505,7 @@ fi
 
 if [ -z "$KERNEL_FLAVOUR" ]
 then
-	if [ "$SUITE" = "gutsy" ] || [ "$SUITE" = "hardy" ]
+	if [ "$ARCH" = "i386"] && [ "$SUITE" = "gutsy" -o "$SUITE" = "hardy" ]
 	then
 		KERNEL_FLAVOUR="virtual"
 	else
