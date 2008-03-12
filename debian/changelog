@@ -1,3 +1,16 @@
+ubuntu-vm-builder (0.3) hardy; urgency=low
+
+  * Fix perl locale warnings.
+  * Add missing --libvirt option. (LP: #194242)
+  * Add edgy to the list of supported distros (adding the appropriate quirks).
+  * Don't default to virtual kernel flavour when not installing i386. (LP:
+    #194240)
+  * Remove references to JeOS. (LP: #194233)
+  * Give more useful error messages when people pass unuseful options.
+  * Make the building process much less verbose (and hence less scary).
+
+ -- Soren Hansen <soren@ubuntu.com>  Wed, 12 Mar 2008 01:01:35 +0100
+
 ubuntu-vm-builder (0.2) hardy; urgency=low
 
   * New release.
