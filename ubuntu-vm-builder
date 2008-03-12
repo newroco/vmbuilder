@@ -505,7 +505,7 @@ fi
 
 if [ -z "$KERNEL_FLAVOUR" ]
 then
-	if [ "$ARCH" = "i386"] && [ "$SUITE" = "gutsy" -o "$SUITE" = "hardy" ]
+	if [ "$ARCH" = "i386" ] && [ "$SUITE" = "gutsy" -o "$SUITE" = "hardy" ]
 	then
 		KERNEL_FLAVOUR="virtual"
 	else
