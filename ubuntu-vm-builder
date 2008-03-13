@@ -411,9 +411,11 @@ then
 fi
 
 # DISKIMGS holds the base names of the disk image files.
+# LOOPDEV[i] holds the loop device name for disk image i
 # MOUNTPOINTS[i] holds the mountpoint of partition i.
 # MOUNTDISKS[i] holds
 # MOUNTSIZES[i] holds the size of partition i.
+
 if [ -z "$PARTFILE" ]; then
 	let partstart=0
 	let partid=0
@@ -778,7 +780,8 @@ do_disk_images() {
 	
 	#mount the disk loops
 	for ((i=0;i<${#DISKIMGS[@]};i++)); do
-		kpartx -av ${DISKIMGS[$i]}.raw
+		LOOPDEV[$i]=$(losetup -s -f ${DISKIMGS[$i]}.raw)
+		kpartx -a ${LOOPDEV[$i]} > /dev/null
 	done
 	
 	#format the partitions
@@ -790,15 +793,17 @@ do_disk_images() {
                         img="${DISKIMGS[$diskindex]}"
                         curdisk=${MOUNTDISKS[$i]}
 			let partindex=1
+			mapper=$(echo ${LOOPDEV[$diskindex]} | sed s-/dev/-/dev/mapper/-)
                 fi
+
 		if  [ "${MOUNTPOINTS[$i]}" = "swap" ]; then
-			info formating /dev/mapper/loop${diskindex}p${partindex} as swap for ${MOUNTPOINTS[$i]}
-			mkswap /dev/mapper/loop${diskindex}p${partindex}	
+			info formating ${mapper}p${partindex} as swap for ${MOUNTPOINTS[$i]}
+			mkswap ${mapper}p${partindex}	
 		else 
-			info formating /dev/mapper/loop${diskindex}p${partindex} as ext3 for ${MOUNTPOINTS[$i]}
-			mkfs.ext3 -q /dev/mapper/loop${diskindex}p${partindex}
+			info formating ${mapper}p${partindex} as ext3 for ${MOUNTPOINTS[$i]}
+			mkfs.ext3 -q ${mapper}p${partindex}
 		fi
-		/lib/udev/vol_id --uuid  /dev/mapper/loop${diskindex}p${partindex} >  ${MOUNTPOINTS[$i]}.uuid
+		/lib/udev/vol_id --uuid  ${mapper}p${partindex} >  ${MOUNTPOINTS[$i]}.uuid
 		let partindex++
 	done
 
@@ -908,13 +913,14 @@ mount_parts () {
                         img="${DISKIMGS[$diskindex]}"
                         curdisk=${MOUNTDISKS[$i]}
                         let partindex=1
+			mapper=$(echo ${LOOPDEV[$diskindex]} | sed s-/dev/-/dev/mapper/-)
                 fi
 
                 if  [ "${MOUNTPOINTS[$i]}" = "root" ]; then
-			mount /dev/mapper/loop${diskindex}p${partindex} $base
+			mount ${mapper}p${partindex} $base
 		elif  [ "${MOUNTPOINTS[$i]}" != "swap" ]; then
 			mkdir $base${MOUNTPOINTS[$i]}
-			mount /dev/mapper/loop${diskindex}p${partindex} $base${MOUNTPOINTS[$i]}
+			mount ${mapper}p${partindex} $base${MOUNTPOINTS[$i]}
                 fi
 		let partindex++
         done
@@ -1099,7 +1105,8 @@ EOF
 do_cleanup () {
 	#unmount the disk loops
         for ((i=0;i<${#DISKIMGS[@]};i++)); do
-                kpartx -dv ${DISKIMGS[$i]}.raw
+                kpartx -d ${LOOPDEV[$i]} > /dev/null
+		losetup -d ${LOOPDEV[$i]} 
         done
 
 	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
