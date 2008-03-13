@@ -59,6 +59,7 @@ usage: ubuntu-vm-builder    [--addpkg PKG]
                             [--ssh-key <public key file>]
                             [--exec <script to execute>]
                             [--libvirt <hypervisor uri>]
+			    [--templates <directory>]
                             [--ip address [
                             [--mask value]
                             [--net value]
@@ -117,6 +118,8 @@ The following three options are not used if --part is specified:
 --exec             Run the given script file. You can use 
                    'chroot root <cmd>' to execute code in the guest.
 --libvirt <uri>    Add resulting VM to the libvirt hypervisor at uri.
+--templates <dir>   Specify where libvirt.tmpl and vmware.tmpl are stored.
+                   Uses script directory by default.
 --ip address       Ip address in dotted form
                    (defaults to dhcp if not specified)
 
@@ -161,6 +164,7 @@ SWAPSIZE="1000"
 COMPS="main"
 SSHKEY=""
 OPTFS="yes"
+TEMPLATEDIR=$(dirname $0)
 declare -a MOUNTPOINTS 
 declare -a MOUNTSIZES
 declare -a MOUNTDISKS
@@ -168,8 +172,9 @@ declare -a DISKIMGS
 declare -a DISKSIZES
 declare -a PARTITION_START
 declare -a PARTITION_END
+declare -a LOOPDEV
 
-TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,no-opt,exec:,libvirt:,  -- "$@"`
+TEMP=`getopt -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,no-opt,exec:,libvirt:,templates:,  -- "$@"`
 eval set -- "$TEMP"
 
 while true
@@ -374,6 +379,11 @@ do
 		--libvirt)
 			info "Using libvirt uri '$2'"
 			LIBVIRT="$2"
+			shift 2
+		;;
+		--templates)
+			info "Using templates dir '$2'"
+			TEMPLATEDIR="$2"
 			shift 2
 		;;
 		--)
@@ -975,26 +985,14 @@ do_target_vm_conversion () {
 	if [ "$VM" = vmserver ] || [ "$VM" = vmw6 ]
 	then
 		QEMU_IMG_CONVERT_EXTENSION=".vmdk"
-		cat > $HOSTNAME.vmx << EOF
-config.version = "8"
-virtualHW.version = "$VMHWVERSION"
-scsi0.present = "FALSE"
-scsi0.virtualDev = "lsilogic"
-memsize = "$MEM"
-Ethernet0.virtualDev = "vlance"
-Ethernet0.present = "TRUE"
-Ethernet0.connectionType = "bridged"
-displayName = "$HOSTNAME $ARCH"
-guestOS = "$guestos"
-priority.grabbed = "normal"
-priority.ungrabbed = "normal"
-powerType.powerOff = "hard"
-powerType.powerOn = "hard"
-powerType.suspend = "hard"
-powerType.reset = "hard"
-floppy0.present = "FALSE"
-
-EOF
+		#fill the final template
+		cat $TEMPLATEDIR/vmware.tmpl | \
+			sed -e "s/%VMHWVERSION%/${VMHWVERSION}/g" \
+			-e "s/%HOSTNAME%/${HOSTNAME}/g" \
+			-e "s/%MEM%/${MEM}/g" \
+			-e "s/%ARCH%/${ARCH}/g"  \
+			-e "s/%guestos%/${guestos}/g" \
+		 > $HOSTNAME.vmx 
 
 		chmod +x $HOSTNAME.vmx
 		FILES="$HOSTNAME.vmx"
@@ -1026,49 +1024,42 @@ EOF
 			do
 				LIBVIRTNAME="${LIBVIRTNAME}_"
 			done
-			cat > ${LIBVIRTXML} <<EOXML
-<domain type='$VM'>
-  <name>${LIBVIRTNAME}</name>
-  <memory>$(( $MEM * 1024))</memory>
-  <vcpu>1</vcpu>
-  <os>
-    <type>hvm</type>
-    <boot dev='hd'/>
-  </os>
-  <clock offset='utc'/>
-  <on_poweroff>destroy</on_poweroff>
-  <on_reboot>restart</on_reboot>
-  <on_crash>destroy</on_crash>
-  <devices>
-    <emulator>/usr/bin/${VM}</emulator>
-    <interface type='network'>
-      <mac address='${MAC}'/>
-      <source network='default'/>
-    </interface>
-    <input type='mouse' bus='ps2'/>
-    <graphics type='vnc' port='-1' listen='127.0.0.1'/>
-EOXML
+
+			#retrieve the device part of the templace
+			device=$(cat $TEMPLATEDIR/libvirt.tmpl | sed -n "/%loop%/,/%\/loop%/p" | sed -e "s/%loop%//g;s/%\/loop%//g")
+
+			#fill it in for each disk
 			let diskindex=-1
 			curdisk=""
+			devices=""
 			for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
 				if [ "$curdisk" != "${MOUNTDISKS[$i]}" ]; then
 					let diskindex++
 					img="${DISKIMGS[$diskindex]}"
 					curdisk=${MOUNTDISKS[$i]}
-   	             	FILES="$FILES $img.qcow2"
-					cat >> ${LIBVIRTXML} << EOXML
+					FILES="$FILES $img.qcow2"
 
-    <disk type='file' device='disk'>
-      <source file='${DESTINATION}/${img}.qcow2'/>
-      <target dev='hd${curdisk}'/>
-    </disk>
-EOXML
+					curdev=$(echo $device | sed -e "s|%DESTINATION%|${DESTINATION}|g" \
+						-e "s|%img%|${img}|g" \
+						-e "s|%curdisk%|${curdisk}|g")
+
+					devices="$devices $curdev" 
+						
 				fi
 			done
-			cat >> ${LIBVIRTXML} << EOXML	
-  </devices>
-</domain>
-EOXML
+
+			#fill the final template
+			cat $TEMPLATEDIR/libvirt.tmpl | \
+				sed -e "s/%VM%/${VM}/g" \
+				-e "s/%LIBVIRTNAME%/${LIBVIRTNAME}/g" \
+				-e "s/%MEM%/$(( $MEM * 1024 ))/g" \
+				-e "s/%MAC%/${MAC}/g" | \
+				awk -vrep="$devices" '/%loop%/{print rep}
+/%loop/,/%\/loop%/{next}
+1'> ${LIBVIRTXML} 
+
+
+			
 			virsh -c "${LIBVIRT}" define "${LIBVIRTXML}"
 			rm $LIBVIRTXML
 		else
@@ -1115,11 +1106,11 @@ do_cleanup () {
 	for ((i=0;i<${#DISKIMGS[@]};i++)); do
                 rm ${DISKIMGS[$i]}.raw 
         done
-	cd /
+	popd
 	rm -rf "$WORKINGDIR"
 }
 
-cd "$WORKINGDIR"
+pushd "$WORKINGDIR"
 
 do_disk_images
 do_debootstrap
