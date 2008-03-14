@@ -938,7 +938,7 @@ mount_parts () {
 
 umount_parts () {
 	base="$1"
-        for ((i=${#MOUNTPOINTS[@]};i>-1;i--)); do
+        for ((i=$(( ${#MOUNTPOINTS[@]} -1));i>-1;i--)); do
                 if  [ "${MOUNTPOINTS[$i]}" = "root" ]; then
                         umount  $base
                 elif  [ "${MOUNTPOINTS[$i]}" != "swap" ]; then
