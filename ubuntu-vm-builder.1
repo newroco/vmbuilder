@@ -104,6 +104,12 @@ Add the given ssh public key file (absolute path)to root's authorized keys and i
 .B \-\-exec script
 Run the given script file. You can use 'chroot root <cmd>' to execute code in the guest.
 .TP
+.B \-\-libvirt <uri>  
+Add resulting VM to the libvirt hypervisor at uri.
+.TP
+.B \-\-templates <dir>
+Specify where libvirt.tmpl and vmware.tmpl are stored. Uses script directory by default.
+.TP
 .B \-\-ip address
 Ip address in dotted form (defaults to dhcp if not specified)
 .TP
