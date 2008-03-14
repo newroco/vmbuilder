@@ -1,3 +1,10 @@
+ubuntu-vm-builder (0.4~ppa6) hardy; urgency=low
+
+  * Added template support for vmware and qemu/kvm.
+  * Lots of other small fixes here and there.
+
+ -- Soren Hansen <soren@ubuntu.com>  Fri, 14 Mar 2008 18:14:05 +0100
+
 ubuntu-vm-builder (0.4~ppa5) hardy; urgency=low
 
   * Sort out arch validation.
