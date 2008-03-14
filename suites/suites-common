@@ -20,4 +20,15 @@ EOF
         done
 }
 
+common_write_device_map_with_uuids() {
+	echo "(hd0) UUID=$(cat ${MOUNTPOINTS[0]}.uuid)" >> root/boot/grub/device.map
+}
 
+common_write_device_map_no_uuids() {
+	echo "(hd0) /dev/sd${letters[0]}" >> root/boot/grub/device.map
+}
+
+common_mangle_grub_menu_list_with_uuid() {
+	rep="UUID=$(cat ${MOUNTPOINTS[0]}.uuid)"
+	sed -ie "s/\/dev\/hda1/$rep/g" root/boot/grub/menu.lst
+}

@@ -103,7 +103,7 @@ suite              Use the specified Ubuntu suite.
                       /var 2000
                       /log 1500
 The following three options are not used if --part is specified:
---rootsize size    The size in MB of the root filesystem (default 1024)
+--rootsize size    The size in MB of the root filesystem (default 4096)
 --optsize size     The size in MB of the /opt filesystem (default 4096)
 --swapsize size    The size in MB of the swap partition (default 1024)
 --kernel-flavour   The kernel image flavour to install (default: virtual for
@@ -643,12 +643,7 @@ EOF
 	cat > root/boot/grub/device.map << EOF
 (fd0)	/dev/fd0
 EOF
-	if uuidgrub
-	then
-		echo "(hd0) UUID=$(cat ${MOUNTPOINTS[0]}.uuid)" >> root/boot/grub/device.map
-	else
-		echo "(hd0) /dev/sd${letters[0]}" >> root/boot/grub/device.map
-	fi
+	suite_generate_device_map
 
 	if [ $ARCH = "amd64" ]
 	then
@@ -717,13 +712,7 @@ EOF
 
 	# Hacky-di-hack.. First generate the template, then remove the errant kopt_2_6 (which hardcodes the root device to /dev/hda1) and then rerun update-grub.
 	chroot root $updategrub -y
-	if uuidgrub
-	then
-		rep="UUID=$(cat ${MOUNTPOINTS[0]}.uuid)"
-		sed -ie "s/\/dev\/hda1/$rep/g" root/boot/grub/menu.lst
-	else
-		sed -ie '/^# kopt_2_6/ d' root/boot/grub/menu.lst
-	fi
+	suite_mangle_grub_menu_lst
 	chroot root $updategrub
 	chroot root grub-set-default 0
 	rm old_sect stage1_buffer stage2_first_buffer stage2_second_buffer

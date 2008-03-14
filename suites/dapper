@@ -50,11 +50,6 @@ default_kernel() {
 	esac
 }
 
-uuidgrub() {
-	# No, grub doesn't do uuid
-	return 1
-}
-
 suite_do_fstab() {
 	#
 	# Set up fstab
@@ -76,7 +71,13 @@ EOF
 	done
 }
 
+suite_generate_device_map() {
+	common_write_device_map_no_uuids
+}
 
+suite_mange_grub_menu_lst() {
+	sed -ie '/^# kopt_2_6/ d' root/boot/grub/menu.lst
+}
 
 #
 # Add package names to PKGS

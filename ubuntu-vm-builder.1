@@ -1,15 +1,15 @@
-.TH UBUNTU-VM-BUILDER 1 "Feb 2008"
+.TH UBUNTU-VM-BUILDER 1 "Mar 2008"
 .SH NAME
-ubuntu-vm-builder \- build ubuntu based vm's
+ubuntu-vm-builder \- build ubuntu based virtual machines
 .SH SYNOPSIS
-.B ubuntu-vm-builder
+.B ubuntu-vm-builder <vm> <suite>
 [\fIOPTIONS\fR]...
 .SH DESCRIPTION
 This manual page documents the
 .B ubuntu-vm-builder
 command.
 .B ubuntu-vm-builder
-is a program that builds customized virtual machines based on Ubuntu.
+is a program that builds virtual machines based on Ubuntu.
 .SH OPTIONS
 .TP
 .B NOTE!!! There are many more options than this. See ubuntu-vm-builder --help for more information
@@ -18,7 +18,9 @@ is a program that builds customized virtual machines based on Ubuntu.
 Install PKG into the guest (can be specfied multiple times)
 .TP
 .B \-a, \-\-arch ARCH
-Specify the target architecture. Valid options: i386*, amd64 (only on amd64 hosts)
+Specify the target architecture.
+Valid options: i386 amd64 (amd64 only on amd64 hosts).
+Defaults to the same as the running system.
 .TP
 .B \-d, \-\-dest
 Specify the destination directory.  Default: ubuntu-vm-$SUITE-$ARCH
@@ -27,7 +29,7 @@ Specify the destination directory.  Default: ubuntu-vm-$SUITE-$ARCH
 Set DOMAIN as the domain name of the guest. Default: The domain of the machine running this script.
 .TP
 .B \-h, \-\-help
-This help text.
+Self-explanatory.
 .TP
 .B \-\-hostname NAME
 Set NAME as the hostname of the guest. Default: ubuntu
@@ -36,7 +38,7 @@ Set NAME as the hostname of the guest. Default: ubuntu
 Assign NN megabytes of memory to the guest vm.  Default: 128
 .TP
 .B \-\-mirror URL
-Use Ubuntu mirror at URL. Default: http://se.archive.ubuntu.com/ubuntu
+Use Ubuntu mirror at URL. Default: http://archive.ubuntu.com/ubuntu
 .TP
 .B \-\-removepkg PKG
 Remove PKG from the guest (can be specfied multiple times)
