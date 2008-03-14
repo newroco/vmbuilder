@@ -9,8 +9,12 @@ case "$1" in
 		;;
 esac
 
+vm_getopt_args() {
+	echo 'libvirt:,'
+}
+
 vm_getopt() {
-	TEMP=`getopt -o a --long libvirt:,  -- "$@"`
+	TEMP=`getopt -q -o a --long libvirt:,  -- "$@"`
 	eval set -- "$TEMP"
 	case "$1" in
 		--libvirt)
