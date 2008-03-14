@@ -1,7 +1,7 @@
 . /usr/share/ubuntu-vm-builder/suites/suites-common
 
 updategrub="/sbin/update-grub"
-grubroot=root/lib/grub
+grubroot=/lib/grub
 
 check_kernel_flavour() {
 	case "$ARCH" in
