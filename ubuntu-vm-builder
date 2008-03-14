@@ -631,7 +631,7 @@ do_bootloader () {
 	#
 	# The suite will have defined updategrub
 	#
-	sed -e "s,%UPDATEGRUB%/$updategrub/g" << EOF | cat > target/etc/kernel-img.conf
+	sed -e "s,%UPDATEGRUB%,$updategrub,g" << EOF | cat > target/etc/kernel-img.conf
 do_symlinks = yes
 relative_links = yes
 do_bootfloppy = no
@@ -759,14 +759,14 @@ do_add_remove_packages () {
 }
 
 do_add_ssh_key () {
-        if [ -z "$SSHKEY" ]
+	if [ -z "$SSHKEY" ]
 	then
-	    return
+		return
 	fi
 	if [ ! -f "$SSHKEY" ]
 	then
-	    echo "NO $SSHKEY found"
-	    return
+		echo "NO $SSHKEY found"
+		return
 	fi
 	# we have a key, add it
 	chroot root apt-get install --force-yes -y openssh-server
