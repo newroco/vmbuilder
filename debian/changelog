@@ -1,3 +1,15 @@
+ubuntu-vm-builder (0.4~ppa4) hardy; urgency=low
+
+  * Use new grub installer code
+
+ -- Soren Hansen <soren@ubuntu.com>  Fri, 14 Mar 2008 12:35:23 +0100
+
+ubuntu-vm-builder (0.4~ppa3) hardy; urgency=low
+
+  * Only check kernel flavour once. 
+
+ -- Soren Hansen <soren@ubuntu.com>  Fri, 14 Mar 2008 12:15:03 +0100
+
 ubuntu-vm-builder (0.4~ppa2) hardy; urgency=low
 
   * Make sure vm specific getopt stuff works even though their options are not
