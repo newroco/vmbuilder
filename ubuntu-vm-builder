@@ -190,7 +190,7 @@ do
 			shift 2
 		;;
 		-a|--arch)
-			validite_arch $2
+			validate_arch $2
 			ARCH="$2"
 			shift 2
 		;;
