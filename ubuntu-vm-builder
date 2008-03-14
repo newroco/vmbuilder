@@ -631,7 +631,7 @@ do_bootloader () {
 	#
 	# The suite will have defined updategrub
 	#
-	sed -e "s,%UPDATEGRUB%/$updategrub/g" << EOF | cat > root/etc/kernel-img.conf
+	sed -e "s,%UPDATEGRUB%/$updategrub/g" << EOF | cat > target/etc/kernel-img.conf
 do_symlinks = yes
 relative_links = yes
 do_bootfloppy = no
@@ -642,16 +642,9 @@ postrm_hook = %UPDATEGRUB%
 do_bootloader = no
 EOF
 
-	chroot root apt-get --force-yes -y install grub
+	chroot target apt-get --force-yes -y install grub
 
-	mkdir root/boot/grub
-	#
-	# Create device.map
-	#
-	cat > root/boot/grub/device.map << EOF
-(fd0)	/dev/fd0
-EOF
-	suite_generate_device_map
+	mkdir target/boot/grub
 
 	if [ $ARCH = "amd64" ]
 	then
@@ -659,71 +652,27 @@ EOF
 	else
 		grubarch="i386-pc"
 	fi
-	#
-	# No animals (and only one human) were harmed during the making of the following boot loader installation.
-	#
-
-	# This should replicate pretty closely what grub's stage2 shell does when asked to install
-	BOOTSEC_BPB_OFFSET=$((0x3))
-	BOOTSEC_BPB_LENGTH=$((0x3B))
-	STAGE1_WINDOWS_NT_MAGIC=$((0x1b8))
-	STAGE1_PARTEND=$((0x1fe))
-	STAGE1_BOOT_DRIVE=$((0x40))
-	STAGE1_BOOT_DRIVE_CHECK=$((0x4b))
-	STAGE1_STAGE2_SECTOR=$((0x44))
-	STAGE1_STAGE2_ADDRESS=$((0x42))
-	STAGE1_STAGE2_SEGMENT=$((0x48))
-	STAGE2_FORCE_LBA=$((0x11))
-	STAGE2_VER_STR_OFFS=$((0x12))
-
-	# grubroot and updategrub are set by $SUITE
-	cp $grubroot/$grubarch/stage1 stage1_buffer
-	dd bs=512 count=1 if=root.raw of=old_sect 2> /dev/null
-
-	dd bs=1 count=$BOOTSEC_BPB_LENGTH conv=notrunc skip=$BOOTSEC_BPB_OFFSET seek=$BOOTSEC_BPB_OFFSET if=old_sect of=stage1_buffer 2> /dev/null
-	dd bs=1 count=$(($STAGE1_PARTEND - $STAGE1_WINDOWS_NT_MAGIC)) conv=notrunc skip=$STAGE1_WINDOWS_NT_MAGIC seek=$STAGE1_WINDOWS_NT_MAGIC if=old_sect of=stage1_buffer 2> /dev/null
-
-	# Set boot device to GRUB_UNKNOWN_DEVICE (that's what grub does) and force lba
-	/bin/echo -ne '\xff\01' | dd bs=1 count=2 conv=notrunc seek=$STAGE1_BOOT_DRIVE of=stage1_buffer 2> /dev/null
-
-	# Hack to workaround buggy bios'es
-	/bin/echo -ne '\x90\x90' | dd bs=1 count=2 conv=notrunc seek=$STAGE1_BOOT_DRIVE_CHECK of=stage1_buffer 2> /dev/null
-
-	dd if=$grubroot/$grubarch/e2fs_stage1_5 of=stage2_first_buffer bs=512 count=1 2> /dev/null
-	dd if=$grubroot/$grubarch/e2fs_stage1_5 of=stage2_second_buffer bs=512 count=1 skip=1 2> /dev/null
-
-	# Stage 2 (actually 1.5) is at sector 1 (0-indexed)
-	/bin/echo -ne '\1\0\0\0' | dd bs=1 count=4 conv=notrunc seek=$STAGE1_STAGE2_SECTOR of=stage1_buffer 2> /dev/null
-	# Set address and segment accordingly
-	/bin/echo -ne '\0\x20' | dd bs=1 count=2 conv=notrunc seek=$STAGE1_STAGE2_ADDRESS of=stage1_buffer 2> /dev/null
-	/bin/echo -ne '\0\02' | dd bs=1 count=2 conv=notrunc seek=$STAGE1_STAGE2_SEGMENT of=stage1_buffer 2> /dev/null
-
-	/bin/echo -ne '\1' | dd bs=1 count=1 conv=notrunc seek=$STAGE2_FORCE_LBA of=stage2_second_buffer 2> /dev/null
-
-	# These two are unexplained.. 
-	/bin/echo -ne '\x10' | dd bs=1 count=1 conv=notrunc seek=508 of=stage2_first_buffer 2> /dev/null
-	/bin/echo -ne '\0' | dd bs=1 count=1 conv=notrunc seek=$((0x19)) of=stage2_second_buffer 2> /dev/null
-
-	# I couldn't figure out how to reimplement this properly in posix shell, so I'll hardcode the offset for now
-
-	/bin/echo -ne ' /boot/grub/menu.lst\0' | dd bs=1 count=21 conv=notrunc seek=$((0x2c)) of=stage2_second_buffer 2> /dev/null
+	cp target/$grubroot/$grubarch/* target/boot/grub/
 
 	#
-	# Stuff this all back into the disk image
+	# Create device.map
 	#
-	dd bs=512 count=1               if=stage1_buffer                              conv=notrunc of=root.raw 2> /dev/null
-	dd bs=512 count=1 seek=1        if=stage2_first_buffer                        conv=notrunc of=root.raw 2> /dev/null
-	dd bs=512 count=1 seek=2        if=stage2_second_buffer                       conv=notrunc of=root.raw 2> /dev/null
-	dd bs=512         seek=3 skip=2 if=$grubroot/$grubarch/e2fs_stage1_5 conv=notrunc of=root.raw 2> /dev/null
+	echo "(hd0) ${DISKIMGS[0]}.raw" >> device.map
+	grub --device-map=device.map --batch<<EOT
+root (hd0,0)
+setup (hd0)
+EOT
 
-	cp $grubroot/$grubarch/* root/boot/grub/
+	cat > target/boot/grub/device.map << EOF
+(fd0)	/dev/fd0
+EOF
+	suite_generate_device_map
 
 	# Hacky-di-hack.. First generate the template, then remove the errant kopt_2_6 (which hardcodes the root device to /dev/hda1) and then rerun update-grub.
-	chroot root $updategrub -y
+	chroot target $updategrub -y
 	suite_mangle_grub_menu_lst
-	chroot root $updategrub
-	chroot root grub-set-default 0
-	rm old_sect stage1_buffer stage2_first_buffer stage2_second_buffer
+	chroot target $updategrub
+	chroot target grub-set-default 0
 }
 
 do_disk_images() {
@@ -882,18 +831,24 @@ umount_parts () {
 	done
 }
 
+do_mount_target() {
+	mkdir target 
+	mount_parts target
+}
+
+do_umount_target() {
+	umount_parts target
+	rmdir target
+}
+
 do_copy_to_disk_images () {
 
 	chroot root apt-get clean
 	#
 	# Copy the debootstrapped filesystem into the partitions
 	#
-	mkdir target 
-	mount_parts target
 	info Copy the debootstrapped filesystem 
 	cp -a root/* target
-	umount_parts target
-	rmdir target
 	rm -rf root
 }
 
@@ -935,12 +890,14 @@ do_debootstrap
 suite_do_fstab
 do_initial_user
 do_network_setup
-do_bootloader
 do_kernel_n_friends 
 do_add_remove_packages
 do_add_ssh_key
 do_exec_script
+do_mount_target
 do_copy_to_disk_images 
+do_bootloader
+do_umount_target
 do_target_vm_conversion 
 do_cleanup
 

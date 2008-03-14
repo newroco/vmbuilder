@@ -1,7 +1,7 @@
 . /usr/share/ubuntu-vm-builder/suites/suites-common
 
 updategrub="/sbin/update-grub"
-grubroot=root/lib/grub
+grubroot=/lib/grub
 
 check_kernel_flavour() {
 	case "$ARCH" in
@@ -76,7 +76,7 @@ suite_generate_device_map() {
 }
 
 suite_mange_grub_menu_lst() {
-	sed -ie '/^# kopt_2_6/ d' root/boot/grub/menu.lst
+	sed -ie '/^# kopt_2_6/ d' target/boot/grub/menu.lst
 }
 
 #
