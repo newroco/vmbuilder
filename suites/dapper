@@ -75,7 +75,7 @@ suite_generate_device_map() {
 	common_write_device_map_no_uuids
 }
 
-suite_mange_grub_menu_lst() {
+suite_mangle_grub_menu_lst() {
 	sed -ie '/^# kopt_2_6/ d' target/boot/grub/menu.lst
 }
 

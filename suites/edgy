@@ -58,7 +58,7 @@ suite_generate_device_map() {
 	common_write_device_map_with_uuids
 }
 
-suite_mange_grub_menu_lst() {
+suite_mangle_grub_menu_lst() {
 	common_mangle_grub_menu_list_with_uuid
 }
 
