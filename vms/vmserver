@@ -1,3 +1,7 @@
+vm_getopt_args() {
+	:
+}
+
 vm_getopt() {
 	:
 }
