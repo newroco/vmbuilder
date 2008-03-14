@@ -343,8 +343,6 @@ then
 	fi
 fi
 
-check_kernel_flavour "$KERNEL_FLAVOUR"
-
 if [ -z "$KERNEL_FLAVOUR" ]
 then
 	default_kernel
