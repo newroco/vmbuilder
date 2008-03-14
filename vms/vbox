@@ -1,0 +1,10 @@
+vm_getopt() {
+	:
+}
+
+#
+# Add package names to PKGS
+#
+vm_extra_packages() {
+	:
+}

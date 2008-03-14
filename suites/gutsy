@@ -1,0 +1,67 @@
+. /usr/share/ubuntu-vm-builder/suites/suites-common
+
+updategrub="/usr/sbin/update-grub"
+grubroot=root/usr/lib/grub
+
+check_kernel_flavour() {
+	case "$ARCH" in
+		i386)
+			case "$1" in
+				386|generic|rt|server|virtual)
+					:
+				;;
+				*)
+					echo "Unsupported kernel flavour for Gutsy/i386."
+					echo "Supported flavours are: 386 generic rt server virtual"
+					exit 1
+				;;
+			esac
+			;;
+		amd64)
+			case "$1" in
+				generic|rt|server)
+					:
+				;;
+				*)
+					echo "Unsupported kernel flavour for Gutsy/amd64."
+					echo "Supported flavours are: generic rt server"
+					exit 1
+				;;
+			esac
+			;;
+		*)
+			echo "Unsupported architecture for Gutsy"
+			exit 1
+			;;
+	esac
+}
+
+default_kernel() {
+	case "$ARCH" in
+		i386)
+			KERNEL_FLAVOUR=virtual
+			;;
+		amd64)
+			KERNEL_FLAVOUR=server
+			;;
+		*)
+			echo "Unsupported architecture for Gutsy"
+			exit 1
+	esac
+}
+
+uuidgrub() {
+	# Yes, grub does uuid
+	return 0
+}
+
+suite_do_fstab() {
+	common_do_fstab
+}
+
+#
+# Add package names to PKGS
+#
+suite_extra_packages() {
+	:
+}

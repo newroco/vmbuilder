@@ -1,13 +1,18 @@
-ubuntu-vm-builder (0.4) UNRELEASED; urgency=low
+ubuntu-vm-builder (0.4~ppa1) hardy; urgency=low
 
   [ Nick Barcet ]
   * Fix a bug reported by soren where loop devices could accendentally be
     overwritten.  Was also preventing concurrent runs of the script.
+  * Further quieting of the process.
 
   [ Soren Hansen ]
-  * Fix syntax error in kernel flavour check
+  * Fix syntax error in kernel flavour check.
+  * Massive refactoring.
+  * Make more intelligent default choices based on chosen suite, architecture,
+    kernel flavour, etc.
+  * Further quieting of the process.
 
- -- Soren Hansen <soren@ubuntu.com>  Thu, 13 Mar 2008 15:18:17 +0100
+ -- Soren Hansen <soren@ubuntu.com>  Fri, 14 Mar 2008 02:01:14 +0100
 
 ubuntu-vm-builder (0.3) hardy; urgency=low
 
