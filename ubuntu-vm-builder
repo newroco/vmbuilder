@@ -235,7 +235,7 @@ do
 			shift 2
 		;;
 		--user)
-			USER="$2"
+			VMUSER="$2"
 			shift 2
 		;;
 		--name)
@@ -355,9 +355,9 @@ then
 	TMPDIR="/tmp"
 fi
 
-if [ -z "$USER" ]
+if [ -z "$VMUSER" ]
 then
-	USER=ubuntu
+	VMUSER=ubuntu
 fi
 
 if [ -z "$PASS" ]
@@ -563,13 +563,13 @@ do_initial_user () {
 	# Set up a user with sudo etc.
 	#
 
-	chroot root adduser --disabled-password --gecos "${NAME}" ${USER} > /dev/null
+	chroot root adduser --disabled-password --gecos "${NAME}" ${VMUSER} > /dev/null
 	chroot root chpasswd <<EOF
-${USER}:${PASS}
+${VMUSER}:${PASS}
 EOF
 
 	chroot root addgroup --system admin >/dev/null 2>&1
-	chroot root adduser ${USER} admin >/dev/null 2>&1
+	chroot root adduser ${VMUSER} admin >/dev/null 2>&1
 
 	cat >> root/etc/sudoers << EOF
 
@@ -578,7 +578,7 @@ EOF
 EOF
 
 	for group in adm audio cdrom dialout floppy video plugdev dip netdev powerdev lpadmin scanner; do
-		chroot root adduser ${USER} $group >/dev/null 2>&1
+		chroot root adduser ${VMUSER} $group >/dev/null 2>&1
 	done
 
 }
