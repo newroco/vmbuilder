@@ -1,8 +1,10 @@
 ubuntu-vm-builder (0.4~ppa5) hardy; urgency=low
 
   * Sort out arch validation.
+  * Rename internal USER variable to VMUSER.
+  * Fix call to sed
 
- -- Soren Hansen <soren@ubuntu.com>  Fri, 14 Mar 2008 13:41:55 +0100
+ -- Soren Hansen <soren@ubuntu.com>  Fri, 14 Mar 2008 14:34:23 +0100
 
 ubuntu-vm-builder (0.4~ppa4) hardy; urgency=low
 
