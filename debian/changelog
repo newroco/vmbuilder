@@ -1,3 +1,9 @@
+ubuntu-vm-builder (0.4~ppa7) hardy; urgency=low
+
+  * Actually resolve the conflicts from previous merge. 
+
+ -- Soren Hansen <soren@ubuntu.com>  Sat, 15 Mar 2008 03:46:38 +0100
+
 ubuntu-vm-builder (0.4~ppa6) hardy; urgency=low
 
   * Added template support for vmware and qemu/kvm.
