@@ -28,7 +28,7 @@ vm_getopt() {
 }
 
 
-vm_target_conversion () {
+qemu_common_target_conversion() {
 	QEMU_IMG_CONVERT_OPTS="-O qcow2"
 	QEMU_IMG_CONVERT_EXTENSION=".qcow2"
 
