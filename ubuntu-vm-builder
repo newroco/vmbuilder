@@ -830,6 +830,23 @@ umount_parts () {
 	done
 }
 
+# Taken from debootstrap
+do_avoid_starting_daemons() {
+	mv root/sbin/start-stop-daemon root/sbin/start-stop-daemon.REAL
+	cat <<EOT > root/sbin/start-stop-daemon
+#!/bin/sh
+echo
+echo Warning: Fake start-stop-daemon called, doing nothing
+EOT
+	chmod 755 "root/sbin/start-stop-daemon"
+			
+}
+
+# Taken from debootstrap
+do_undo_avoid_starting_daemons() {
+	mv root/sbin/start-stop-daemon.REAL root/sbin/start-stop-daemon
+}
+
 do_mount_target() {
 	mkdir target 
 	mount_parts target
@@ -889,10 +906,12 @@ do_debootstrap
 suite_do_fstab
 do_initial_user
 do_network_setup
+do_avoid_starting_daemons
 do_kernel_n_friends 
 do_add_remove_packages
 do_add_ssh_key
 do_exec_script
+do_undo_avoid_starting_daemons
 do_mount_target
 do_copy_to_disk_images 
 do_bootloader
