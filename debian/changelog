@@ -1,3 +1,9 @@
+ubuntu-vm-builder (0.4~ppa8) hardy; urgency=low
+
+  * Fix up target vm conversion.
+
+ -- Soren Hansen <soren@ubuntu.com>  Sun, 16 Mar 2008 23:44:15 +0100
+
 ubuntu-vm-builder (0.4~ppa7) hardy; urgency=low
 
   * Actually resolve the conflicts from previous merge. 
