@@ -50,7 +50,6 @@ usage: ubuntu-vm-builder <vm> <suite>
                             [--pass password]
                             [--part partitionfile]
                             [--rootsize size]
-                            [--no-opt]
                             [--optsize size]
                             [--swapsize size]
                             [--kernel-flavour <flavour>]
@@ -89,12 +88,11 @@ suite              Use the specified Ubuntu suite.
 --user username    Set the name of the user to be added. Default: ubuntu.
 --name fullname    Set the full name of the user to be added. Default: Ubuntu.
 --pass password    Set the password for the user. Default: ubuntu.
---no-opt           Do not build the /opt image
 --part partfile    Allows to specify a partition table in partfile
                    each line of partfile should specify (root first):
                       mountpoint size
-                   where size is in megabytes. You can have up to 4 virtual disks,
-                   a new disk starts on a line with ---
+                   where size is in megabytes. You can have up to 4 virtual
+				   disks, a new disk starts on a line with ---
                    ie :
                       root 1000
                       /opt 1000
@@ -104,7 +102,8 @@ suite              Use the specified Ubuntu suite.
                       /log 1500
 The following three options are not used if --part is specified:
 --rootsize size    The size in MB of the root filesystem (default 4096)
---optsize size     The size in MB of the /opt filesystem (default 4096)
+--optsize size     The size in MB of the /opt filesystem. If not set, no /opt
+                   filesystem will be added.
 --swapsize size    The size in MB of the swap partition (default 1024)
 --kernel-flavour   The kernel image flavour to install (default: virtual for
                    >=gutsy on i386, server otherwise)
@@ -301,7 +300,7 @@ do
 			shift 2
 		;;
 		--no-opt)
-			OPTFS="no"
+			echo "Ignored obsolete --no-opt option"
 			shift 1
 		;;
 		-v|--verbose)
@@ -386,10 +385,13 @@ fi
 
 if [ -z "$ROOTSIZE" ]
 then
-	ROOTSIZE="1024"
+	ROOTSIZE="4096"
 fi
 
-SWAPSIZE="1024"
+if [ -z "$SWAPSIZE" ]
+then
+	SWAPSIZE="1024"
+fi
 
 if [ -z "$COMPS" ]
 then
@@ -442,16 +444,12 @@ if [ -z "$PARTFILE" ]; then
 	let PARTITION_END[$partid]=$partstart+MOUNTSIZES[$partid]
 	let partstart=PARTITION_END[$partid]+1
 
-	if [ "$OPTFS" = "yes" ]
+	if [ -n "$OPTSIZE" ]
 	then
 		let partid=$partid+1
 		MOUNTPOINTS[$partid]="/opt" 
 		MOUNTDISKS[$partid]="a"
-		if [ -z "$OPTSIZE" ]; then
-			MOUNTSIZES[$partid]="4000"
-		else
-			MOUNTSIZES[$partid]="$OPTSIZE"
-		fi
+		MOUNTSIZES[$partid]="$OPTSIZE"
 		let PARTITION_START[$partid]=$partstart
 		let PARTITION_END[$partid]=$partstart+MOUNTSIZES[$partid]
 		let partstart=PARTITION_END[$partid]+1
