@@ -900,11 +900,11 @@ do_cleanup () {
 	for ((i=0;i<${#DISKIMGS[@]};i++)); do
                 rm ${DISKIMGS[$i]}.raw 
         done
-	popd
+	popd > /dev/null
 	rm -rf "$WORKINGDIR"
 }
 
-pushd "$WORKINGDIR"
+pushd "$WORKINGDIR" > /dev/null
 
 do_disk_images
 do_debootstrap

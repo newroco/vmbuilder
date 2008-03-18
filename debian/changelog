@@ -1,3 +1,13 @@
+ubuntu-vm-builder (0.4~ppa9) hardy; urgency=low
+
+  * Replace start-stop-daemon for a while to fix problems with daemons
+    expecting to be able to listen on certaing ports, etc.
+  * Unmount volatile tmpfs from lrm.
+  * Make /opt opt-in.
+  * Make default rootsize 4096 (to match documentation).
+
+ -- Soren Hansen <soren@ubuntu.com>  Mon, 17 Mar 2008 00:15:37 +0100
+
 ubuntu-vm-builder (0.4~ppa8) hardy; urgency=low
 
   * Fix up target vm conversion.
