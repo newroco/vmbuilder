@@ -1,74 +1,26 @@
-ubuntu-vm-builder (0.4~ppa9) hardy; urgency=low
+ubuntu-vm-builder (0.4) hardy; urgency=low
 
+  [ Soren Hansen ]
+  * FFe reference: (LP: #208161)
   * Replace start-stop-daemon for a while to fix problems with daemons
     expecting to be able to listen on certaing ports, etc.
   * Unmount volatile tmpfs from lrm.
   * Make /opt opt-in.
   * Make default rootsize 4096 (to match documentation).
-
- -- Soren Hansen <soren@ubuntu.com>  Mon, 17 Mar 2008 00:15:37 +0100
-
-ubuntu-vm-builder (0.4~ppa8) hardy; urgency=low
-
-  * Fix up target vm conversion.
-
- -- Soren Hansen <soren@ubuntu.com>  Sun, 16 Mar 2008 23:44:15 +0100
-
-ubuntu-vm-builder (0.4~ppa7) hardy; urgency=low
-
-  * Actually resolve the conflicts from previous merge. 
-
- -- Soren Hansen <soren@ubuntu.com>  Sat, 15 Mar 2008 03:46:38 +0100
-
-ubuntu-vm-builder (0.4~ppa6) hardy; urgency=low
-
-  * Added template support for vmware and qemu/kvm.
-  * Lots of other small fixes here and there.
-
- -- Soren Hansen <soren@ubuntu.com>  Fri, 14 Mar 2008 18:14:05 +0100
-
-ubuntu-vm-builder (0.4~ppa5) hardy; urgency=low
-
-  * Sort out arch validation.
-  * Rename internal USER variable to VMUSER.
-  * Fix call to sed
-
- -- Soren Hansen <soren@ubuntu.com>  Fri, 14 Mar 2008 14:34:23 +0100
-
-ubuntu-vm-builder (0.4~ppa4) hardy; urgency=low
-
-  * Use new grub installer code
-
- -- Soren Hansen <soren@ubuntu.com>  Fri, 14 Mar 2008 12:35:23 +0100
-
-ubuntu-vm-builder (0.4~ppa3) hardy; urgency=low
-
-  * Only check kernel flavour once. 
-
- -- Soren Hansen <soren@ubuntu.com>  Fri, 14 Mar 2008 12:15:03 +0100
-
-ubuntu-vm-builder (0.4~ppa2) hardy; urgency=low
-
-  * Make sure vm specific getopt stuff works even though their options are not
-    passed as the first ones.
-
- -- Soren Hansen <soren@ubuntu.com>  Fri, 14 Mar 2008 11:50:52 +0100
-
-ubuntu-vm-builder (0.4~ppa1) hardy; urgency=low
-
-  [ Nick Barcet ]
-  * Fix a bug reported by soren where loop devices could accendentally be
-    overwritten.  Was also preventing concurrent runs of the script.
-  * Further quieting of the process.
-
-  [ Soren Hansen ]
+  * New grub installer code.
   * Fix syntax error in kernel flavour check.
   * Massive refactoring.
   * Make more intelligent default choices based on chosen suite, architecture,
     kernel flavour, etc.
   * Further quieting of the process.
 
- -- Soren Hansen <soren@ubuntu.com>  Fri, 14 Mar 2008 02:01:14 +0100
+  [ Nick Barcet ]
+  * Added template support for vmware and qemu/kvm.
+  * Fix a bug reported by soren where loop devices could accendentally be
+    overwritten.  Was also preventing concurrent runs of the script.
+  * Further quieting of the process.
+
+ -- Soren Hansen <soren@ubuntu.com>  Wed, 02 Apr 2008 11:52:35 +0200
 
 ubuntu-vm-builder (0.3) hardy; urgency=low
 
