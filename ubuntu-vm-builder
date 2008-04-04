@@ -360,7 +360,12 @@ fi
 
 if [ -z "$MIRROR" ]
 then
-	MIRROR="http://archive.ubuntu.com/ubuntu"
+	if [ "$ARCH" = "lpia" ]
+	then
+		MIRROR="http://ports.ubuntu.com/ubuntu-ports"
+	else
+		MIRROR="http://archive.ubuntu.com/ubuntu"
+	fi
 fi
 
 if [ -z "$MEM" ]
