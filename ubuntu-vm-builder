@@ -328,12 +328,7 @@ done
 
 if [ -z "$ARCH" ]
 then
-	if [ "`uname -m`" = x86_64 ]
-	then
-		ARCH="amd64"
-	else
-		ARCH="i386"
-	fi
+	ARCH=`dpkg --print-architecture`
 fi
 
 if [ -z "$KERNEL_FLAVOUR" ]

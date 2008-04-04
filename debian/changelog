@@ -1,6 +1,7 @@
 ubuntu-vm-builder (0.4ubuntu1) UNRELEASED; urgency=low
 
   * Fix v / --verbose getopt parsing.
+  * Compute the default ARCH with dpkg --print-architecture.
 
  -- Loic Minier <lool@dooz.org>  Fri, 04 Apr 2008 16:21:29 +0200
 
