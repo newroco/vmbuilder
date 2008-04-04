@@ -1,3 +1,9 @@
+ubuntu-vm-builder (0.4ubuntu1) UNRELEASED; urgency=low
+
+  * Fix v / --verbose getopt parsing.
+
+ -- Loic Minier <lool@dooz.org>  Fri, 04 Apr 2008 16:21:29 +0200
+
 ubuntu-vm-builder (0.4) hardy; urgency=low
 
   [ Soren Hansen ]
