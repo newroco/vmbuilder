@@ -1,7 +1,7 @@
 validate_arch() {
-	if [ "$1" != i386 -a "$1" != amd64 ]
+	if [ "$1" != amd64 -a "$1" != i386 -a "$1" != lpia ]
 	then
-		echo "Invalid architecture: \"$1\". Valid choices are: i386 amd64"
+		echo "Invalid architecture: \"$1\". Valid choices are: amd64 i386 lpia"
 		exit 1
 	fi
 }
