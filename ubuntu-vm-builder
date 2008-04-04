@@ -741,7 +741,7 @@ do_disk_images() {
 
 do_debootstrap() {
 	mkdir root
-	debootstrap --components="$COMPS" --arch $ARCH $SUITE root "$MIRROR"
+	debootstrap --components="$COMPS" --arch $ARCH --keyring /usr/share/keyrings/ubuntu-archive-keyring.gpg $SUITE root "$MIRROR"
 }
 
 do_kernel_n_friends () {

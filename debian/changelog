@@ -6,6 +6,7 @@ ubuntu-vm-builder (0.4ubuntu1) UNRELEASED; urgency=low
     - Allow lpia arch, lpia and lpiacompat kernel flavours.
     - Use http://ports.ubuntu.com/ubuntu-ports as default mirror for lpia.
     - Update help/documentation.
+  * Check Release files against the archive keyring; depend on ubuntu-keyring.
 
  -- Loic Minier <lool@dooz.org>  Fri, 04 Apr 2008 16:21:29 +0200
 
