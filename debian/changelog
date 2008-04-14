@@ -1,3 +1,15 @@
+ubuntu-vm-builder (0.4ubuntu1) UNRELEASED; urgency=low
+
+  * Fix v / --verbose getopt parsing.
+  * Compute the default ARCH with dpkg --print-architecture.
+  * Add support for lpia.
+    - Allow lpia arch, lpia and lpiacompat kernel flavours.
+    - Use http://ports.ubuntu.com/ubuntu-ports as default mirror for lpia.
+    - Update help/documentation.
+  * Check Release files against the archive keyring; depend on ubuntu-keyring.
+
+ -- Loic Minier <lool@dooz.org>  Fri, 04 Apr 2008 16:21:29 +0200
+
 ubuntu-vm-builder (0.4) hardy; urgency=low
 
   [ Soren Hansen ]

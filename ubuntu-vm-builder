@@ -36,7 +36,7 @@ usage () {
 	cat <<EOT
 usage: ubuntu-vm-builder <vm> <suite>   
                             [--addpkg PKG]
-                            [(-a|--arch) [i386,amd64]] 
+                            [(-a|--arch) [(amd64|i386|lpia]]
                             [(-d|--dest) <destination (directory)>]
                             [--domain DOMAIN]
                             [-h|--help]
@@ -69,7 +69,7 @@ suite              Use the specified Ubuntu suite.
                    Valid options: hardy, gutsy, feisty, edgy, dapper
 --addpkg PKG       Install PKG into the guest (can be specfied multiple times)
 -a, --arch ARCH    Specify the target architecture.
-                   Valid options: i386 amd64 (defaults to host architecture)
+                   Valid options: amd64 i386 lpia (defaults to host arch)
 -d, --dest         Specify the destination directory.
                    Default: ubuntu-vm-$SUITE-$ARCH
 --domain DOMAIN    Set DOMAIN as the domain name of the guest. Default:
@@ -81,7 +81,8 @@ suite              Use the specified Ubuntu suite.
 --mem NN           Assign NN megabytes of memory to the guest vm.
                    Default: 128
 --mirror URL       Use Ubuntu mirror at URL instead of the default, which
-                   is: http://archive.ubuntu.com/ubuntu
+                   is http://archive.ubuntu.com/ubuntu for official arches
+                   and http://ports.ubuntu.com/ubuntu-ports otherwise
 --removepkg PKG    Remove PKG from the guest (can be specfied multiple times)
 -t, --tmp  TMPDIR  Use TMPDIR as temporary working area for the image
                    generation. Defaults to \$TMPDIR if set, or /tmp if not.
@@ -106,8 +107,8 @@ The following three options are not used if --part is specified:
                    filesystem will be added.
 --swapsize size    The size in MB of the swap partition (default 1024)
 --kernel-flavour   The kernel image flavour to install (default: virtual for
-                   >=gutsy on i386, server otherwise)
---components       A comma seperaed list of distro components to include 
+                   >= gutsy on i386, lpia on lpia, server otherwise)
+--components       A comma seperated list of distro components to include
                    (e.g. main,universe). This defaults to "main"
 --ssh-key          Add the given ssh public key file (absolute path)
                    to root's authorized keys and install openssh-server
@@ -176,7 +177,7 @@ SUITE="$1"
 . /usr/share/ubuntu-vm-builder/suites/$SUITE
 shift
 
-TEMP=`getopt -q -o a:d:hs:t: --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,no-opt,exec:,$vm_getopt_args  -- "$@"`
+TEMP=`getopt -q -o a:d:hs:t:v --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,no-opt,exec:,verbose,$vm_getopt_args  -- "$@"`
 eval set -- "$TEMP"
 
 while true
@@ -328,12 +329,7 @@ done
 
 if [ -z "$ARCH" ]
 then
-	if [ "`uname -m`" = x86_64 ]
-	then
-		ARCH="amd64"
-	else
-		ARCH="i386"
-	fi
+	ARCH=`dpkg --print-architecture`
 fi
 
 if [ -z "$KERNEL_FLAVOUR" ]
@@ -365,7 +361,12 @@ fi
 
 if [ -z "$MIRROR" ]
 then
-	MIRROR="http://archive.ubuntu.com/ubuntu"
+	if [ "$ARCH" = "lpia" ]
+	then
+		MIRROR="http://ports.ubuntu.com/ubuntu-ports"
+	else
+		MIRROR="http://archive.ubuntu.com/ubuntu"
+	fi
 fi
 
 if [ -z "$MEM" ]
@@ -740,7 +741,7 @@ do_disk_images() {
 
 do_debootstrap() {
 	mkdir root
-	debootstrap --components="$COMPS" --arch $ARCH $SUITE root "$MIRROR"
+	debootstrap --components="$COMPS" --arch $ARCH --keyring /usr/share/keyrings/ubuntu-archive-keyring.gpg $SUITE root "$MIRROR"
 }
 
 do_kernel_n_friends () {

@@ -29,6 +29,18 @@ check_kernel_flavour() {
 				;;
 			esac
 			;;
+		lpia)
+			case "$1" in
+				lpia|lpiacompat)
+					:
+				;;
+				*)
+					echo "Unsupported kernel flavour for Hardy/lpia."
+					echo "Supported flavours are: lpia lpiacompat"
+					exit 1
+				;;
+			esac
+			;;
 		*)
 			echo "Unsupported architecture for Gutsy"
 			exit 1
@@ -43,6 +55,9 @@ default_kernel() {
 			;;
 		amd64)
 			KERNEL_FLAVOUR=server
+			;;
+		lpia)
+			KERNEL_FLAVOUR=lpia
 			;;
 		*)
 			echo "Unsupported architecture for Gutsy"

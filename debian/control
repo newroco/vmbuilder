@@ -8,7 +8,7 @@ Vcs-Bzr: http://bazaar.launchpad.net/~shawarma/ubuntu-jeos/trunk
 
 Package: ubuntu-vm-builder
 Architecture: all
-Depends: qemu, debootstrap, parted, kpartx
+Depends: qemu, debootstrap, parted, kpartx, ubuntu-keyring
 Description: Ubuntu VM builder
  This is the Ubuntu VM builder script which automates the process of creating
  a ready to use VM based on Ubuntu. You can pass command line options to add
