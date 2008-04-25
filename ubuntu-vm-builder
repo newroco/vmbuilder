@@ -625,13 +625,6 @@ EOF
 	fi
 }
 
-do_copy_settings () {
-	#copy the host settings to the new guest (locale, console-setup, tz)
-	cp /etc/default/locale root/etc/default/
-	cp /etc/default/console-setup root/etc/default/
-	cp /etc/timezone root/etc/
-}
-
 do_bootloader () {
 	#
 	# The suite will have defined updategrub
@@ -779,6 +772,17 @@ do_add_ssh_key () {
 	cp "$SSHKEY" root/root/.ssh/authorized_keys
 }
 
+do_copy_settings () {
+        #copy the host settings to the new guest (locale, console-setup, tz)
+        cp /etc/default/locale root/etc/default/
+        cp /etc/default/console-setup root/etc/default/
+        cp /etc/timezone root/etc/
+        chroot root dpkg-reconfigure -pcritical console-setup
+        chroot root dpkg-reconfigure -pcritical tzdata
+	chroot root locale-gen $LANG
+}
+
+
 do_exec_script () {
 	if [ -z "$EXEC" ]
 	then
@@ -919,11 +923,11 @@ do_debootstrap
 suite_do_fstab
 do_initial_user
 do_network_setup
-do_copy_settings
 do_avoid_starting_daemons
 do_kernel_n_friends 
 do_add_remove_packages
 do_add_ssh_key
+do_copy_settings
 do_exec_script
 do_undo_avoid_starting_daemons
 do_unmount_restricted_tmpfs
