@@ -777,9 +777,11 @@ do_copy_settings () {
         cp /etc/default/locale root/etc/default/
         cp /etc/default/console-setup root/etc/default/
         cp /etc/timezone root/etc/
+	LANG=$HOSTLANG
         chroot root dpkg-reconfigure -pcritical console-setup
         chroot root dpkg-reconfigure -pcritical tzdata
-	chroot root locale-gen $HOSTLANG
+	chroot root locale-gen $LANG
+	LANG=C
 }
 
 
