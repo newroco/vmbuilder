@@ -30,6 +30,7 @@
 #  review security of running as root, messing with $DESTINATION
 
 # Keep perl inside the chroot quiet
+HOSTLANG=$LANG
 LANG=C
 
 usage () {
@@ -779,7 +780,7 @@ do_copy_settings () {
         cp /etc/timezone root/etc/
         chroot root dpkg-reconfigure -pcritical console-setup
         chroot root dpkg-reconfigure -pcritical tzdata
-	chroot root locale-gen $LANG
+	chroot root locale-gen $HOSTLANG
 }
 
 
