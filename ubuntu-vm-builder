@@ -26,7 +26,6 @@
 
 # Todo:
 #  create launchjeos command for vmware vm's
-#  fix perl locale warnings
 #  review security of running as root, messing with $DESTINATION
 
 # Keep perl inside the chroot quiet
