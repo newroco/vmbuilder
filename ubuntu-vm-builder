@@ -578,7 +578,9 @@ EOF
 	for group in adm audio cdrom dialout floppy video plugdev dip netdev powerdev lpadmin scanner; do
 		chroot root adduser ${VMUSER} $group >/dev/null 2>&1
 	done
-
+ 	
+	# Lock root account
+ 	chroot root passwd -l root  
 }
 
 do_network_setup () {
