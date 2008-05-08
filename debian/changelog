@@ -1,15 +1,12 @@
-ubuntu-vm-builder (0.4ubuntu2~ppa3) hardy; urgency=low
+ubuntu-vm-builder (0.4ubuntu2~ppa4) hardy; urgency=low
 
   * Fix locale settings and do_copy_settings
   * Lock the root account by default
+  * Add ssh keys to the user account and not to root
+  * Added function do_copy_settings to fix bug LP: #221231
+  * Fix missing ipv6 entries in host file
 
- -- Nicolas Barcet <nicolas.barcet@canonical.com>  Sat, 26 Apr 2008 03:53:05 +0200
-
-ubuntu-vm-builder (0.4ubuntu2) hardy; urgency=low
- 
-  * added function do_copy_settings to fix bug LP: #221231
-
- -- Nicolas Barcet <nicolas.barcet@canonical.com>  Fri, 25 Apr 2008 12:59:00 +0200
+ -- Nicolas Barcet <nicolas.barcet@canonical.com>  Fri, 06 May 2008 18:48:00 +0200
 
 ubuntu-vm-builder (0.4ubuntu1) UNRELEASED; urgency=low
 
