@@ -26,10 +26,10 @@
 
 # Todo:
 #  create launchjeos command for vmware vm's
-#  fix perl locale warnings
 #  review security of running as root, messing with $DESTINATION
 
 # Keep perl inside the chroot quiet
+HOSTLANG=$LANG
 LANG=C
 
 usage () {
@@ -578,9 +578,9 @@ EOF
 	for group in adm audio cdrom dialout floppy video plugdev dip netdev powerdev lpadmin scanner; do
 		chroot root adduser ${VMUSER} $group >/dev/null 2>&1
 	done
- 	
+
 	# Lock root account
- 	chroot root passwd -l root  
+	chroot root passwd -l root >/dev/null 2>&1
 }
 
 do_network_setup () {
@@ -783,6 +783,19 @@ do_add_ssh_key () {
 	chroot root chown -R $VMUSER:$VMUSER /home/$VMUSER/.ssh
 }
 
+do_copy_settings () {
+        #copy the host settings to the new guest (locale, console-setup, tz)
+        cp /etc/default/locale root/etc/default/
+        cp /etc/default/console-setup root/etc/default/
+        cp /etc/timezone root/etc/
+        chroot root dpkg-reconfigure -pcritical tzdata
+	LANG=$HOSTLANG
+	chroot root locale-gen en_US
+	chroot root locale-gen $LANG
+	chroot root dpkg-reconfigure -pcritical locales
+}
+
+
 do_exec_script () {
 	if [ -z "$EXEC" ]
 	then
@@ -921,6 +934,7 @@ pushd "$WORKINGDIR" > /dev/null
 do_disk_images
 do_debootstrap
 suite_do_fstab
+do_copy_settings
 do_initial_user
 do_network_setup
 do_avoid_starting_daemons
