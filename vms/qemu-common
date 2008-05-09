@@ -22,7 +22,7 @@ vm_getopt() {
 		;;
 		--templates)
 			TEMPLATEDIR="$2"
-			shift 2
+			argsused=$(($argsused + 2))
 		;;
 	esac
 }

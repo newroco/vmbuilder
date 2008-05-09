@@ -16,7 +16,7 @@ vm_getopt() {
 	case "$1" in
 		--templates)
 			TEMPLATEDIR="$2"
-			shift 2
+			argsused=$(($argsused + 2))
 		;;
 	esac
 }

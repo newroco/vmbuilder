@@ -1,15 +1,14 @@
 ubuntu-vm-builder (0.4ubuntu2~ppa4) hardy; urgency=low
 
+  [ Nick Barcet ]
   * Fix locale settings and do_copy_settings
   * Lock the root account by default
   * Add ssh keys to the user account and not to root
   * Added function do_copy_settings to fix bug LP: #221231
   * Fix missing ipv6 entries in host file
+  * Fix issue with template arguments fetching. bug LP: #228268
 
- -- Nicolas Barcet <nicolas.barcet@canonical.com>  Fri, 06 May 2008 18:48:00 +0200
-
-ubuntu-vm-builder (0.4ubuntu1) UNRELEASED; urgency=low
-
+  [ Loic Minier ]
   * Fix v / --verbose getopt parsing.
   * Compute the default ARCH with dpkg --print-architecture.
   * Add support for lpia.
@@ -18,7 +17,7 @@ ubuntu-vm-builder (0.4ubuntu1) UNRELEASED; urgency=low
     - Update help/documentation.
   * Check Release files against the archive keyring; depend on ubuntu-keyring.
 
- -- Loic Minier <lool@dooz.org>  Fri, 04 Apr 2008 16:21:29 +0200
+ -- Nicolas Barcet <nicolas.barcet@canonical.com>  Fri, 09 May 2008 09:56:00 +0200
 
 ubuntu-vm-builder (0.4) hardy; urgency=low
 
