@@ -785,14 +785,62 @@ do_add_ssh_key () {
 
 do_sourceslist () {
 	cat > root/etc/apt/sources.list << EOF
-deb ${MIRROR} ${SUITE} main restricted
-#deb-src ${MIRROR} ${SUITE} main restricted
+deb ${MIRROR} ${SUITE} main
+#deb-src ${MIRROR} ${SUITE} main
 
 ## Major bug fix updates produced after the final release of the
 ## distribution.
-deb ${MIRROR} ${SUITE}-updates main restricted
-#deb-src ${MIRROR} ${SUITE}-updates main restricted
+deb ${MIRROR} ${SUITE}-updates main
+#deb-src ${MIRROR} ${SUITE}-updates main 
 
+deb http://security.ubuntu.com/ubuntu ${SUITE}-security main 
+#deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security main 
+EOF
+	
+	## RESTRICTED ##
+
+	if echo $COMPS | grep restricted &> /dev/null 
+	then
+		cat >> root/etc/apt/sources.list << EOF
+deb ${MIRROR} ${SUITE} restricted
+#deb-src ${MIRROR} ${SUITE} restricted
+deb ${MIRROR} ${SUITE}-updates restricted
+#deb-src ${MIRROR} ${SUITE}-updates restricted 
+
+deb http://security.ubuntu.com/ubuntu ${SUITE}-security restricted 
+#deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security restricted 
+EOF
+	else
+		cat >> root/etc/apt/sources.list << EOF
+#deb ${MIRROR} ${SUITE} restricted
+#deb-src ${MIRROR} ${SUITE} restricted
+#deb ${MIRROR} ${SUITE}-updates restricted
+#deb-src ${MIRROR} ${SUITE}-updates restricted 
+
+#deb http://security.ubuntu.com/ubuntu ${SUITE}-security restricted 
+#deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security restricted 
+EOF
+	fi
+
+	## UNIVERSE ##
+
+	if echo $COMPS | grep universe &> /dev/null 
+	then
+		cat >> root/etc/apt/sources.list << EOF
+## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu
+## team, and may not be under a free licence. Please satisfy yourself as to
+## your rights to use the software. Also, please note that software in
+## universe WILL NOT receive any review or updates from the Ubuntu security
+## team.
+deb ${MIRROR} ${SUITE} universe
+#deb-src ${MIRROR} ${SUITE} universe
+deb ${MIRROR} ${SUITE}-updates universe
+#deb-src ${MIRROR} ${SUITE}-updates universe
+deb http://security.ubuntu.com/ubuntu ${SUITE}-security universe
+#deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security universe
+EOF
+	else
+		cat >> root/etc/apt/sources.list << EOF
 ## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu
 ## team, and may not be under a free licence. Please satisfy yourself as to
 ## your rights to use the software. Also, please note that software in
@@ -802,7 +850,30 @@ deb ${MIRROR} ${SUITE}-updates main restricted
 #deb-src ${MIRROR} ${SUITE} universe
 #deb ${MIRROR} ${SUITE}-updates universe
 #deb-src ${MIRROR} ${SUITE}-updates universe
+#deb http://security.ubuntu.com/ubuntu ${SUITE}-security universe
+#deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security universe
+EOF
+	fi
 
+	## MULTIVERSE ##
+		
+	if echo $COMPS | grep multiverse &> /dev/null 
+	then
+		cat >> root/etc/apt/sources.list << EOF	
+## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu 
+## team, and may not be under a free licence. Please satisfy yourself as to 
+## your rights to use the software. Also, please note that software in 
+## multiverse WILL NOT receive any review or updates from the Ubuntu
+## security team.
+deb ${MIRROR} ${SUITE} multiverse
+#deb-src ${MIRROR} ${SUITE} multiverse
+deb ${MIRROR} ${SUITE}-updates multiverse
+#deb-src ${MIRROR} ${SUITE}-updates multiverse
+deb http://security.ubuntu.com/ubuntu ${SUITE}-security multiverse
+#deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security multiverse
+EOF
+	else
+		cat >> root/etc/apt/sources.list << EOF
 ## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu 
 ## team, and may not be under a free licence. Please satisfy yourself as to 
 ## your rights to use the software. Also, please note that software in 
@@ -812,7 +883,11 @@ deb ${MIRROR} ${SUITE}-updates main restricted
 #deb-src ${MIRROR} ${SUITE} multiverse
 #deb ${MIRROR} ${SUITE}-updates multiverse
 #deb-src ${MIRROR} ${SUITE}-updates multiverse
-
+#deb http://security.ubuntu.com/ubuntu ${SUITE}-security multiverse
+#deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security multiverse
+EOF
+	fi
+	cat >> root/etc/apt/sources.list << EOF
 ## Uncomment the following two lines to add software from the 'backports'
 ## repository.
 ## N.B. software from this repository may not have been tested as
@@ -827,15 +902,8 @@ deb ${MIRROR} ${SUITE}-updates main restricted
 ## 'partner' repository. This software is not part of Ubuntu, but is
 ## offered by Canonical and the respective vendors as a service to Ubuntu
 ## users.
-# deb ${MIRROR} ${SUITE} partner
-# deb-src ${MIRROR} ${SUITE} partner
-
-deb http://security.ubuntu.com/ubuntu ${SUITE}-security main restricted
-deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security main restricted
-#deb http://security.ubuntu.com/ubuntu ${SUITE}-security universe
-#deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security universe
-#deb http://security.ubuntu.com/ubuntu ${SUITE}-security multiverse
-#deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security multiverse
+# deb http://archive.canonical.com/ubuntu hardy partner
+# deb-src http://archive.canonical.com/ubuntu hardy partner
 EOF
 }
 
