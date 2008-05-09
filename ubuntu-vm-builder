@@ -979,19 +979,25 @@ umount_parts () {
 
 # Taken from debootstrap
 do_avoid_starting_daemons() {
-	mv root/sbin/start-stop-daemon root/sbin/start-stop-daemon.REAL
-	cat <<EOT > root/sbin/start-stop-daemon
+	cat <<EOT > root/usr/sbin/policy-rc.d
 #!/bin/sh
-echo
-echo Warning: Fake start-stop-daemon called, doing nothing
+
+while true; do
+case "$1" in
+  -*) shift ;;
+  makedev) exit 0;;
+  x11-common) exit 0;;
+  *)  exit 101;;
+esac
+done
 EOT
-	chmod 755 "root/sbin/start-stop-daemon"
+	chmod 755 "root/usr/sbin/policy-rc.d"
 			
 }
 
 # Taken from debootstrap
 do_undo_avoid_starting_daemons() {
-	mv root/sbin/start-stop-daemon.REAL root/sbin/start-stop-daemon
+	rm root/usr/sbin/policy-rc.d
 }
 
 #

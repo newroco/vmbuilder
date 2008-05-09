@@ -1,5 +1,9 @@
 ubuntu-vm-builder (0.4ubuntu2~ppa4) hardy; urgency=low
 
+  [ Michael Vogt ]
+  * patch the way do_avoid_starting_daemons() to write a policy-rc.d file in
+    the same way as pbuilder does. bug LP: #228372
+
   [ Nick Barcet ]
   * Fix locale settings and do_copy_settings
   * Lock the root account by default
@@ -18,7 +22,7 @@ ubuntu-vm-builder (0.4ubuntu2~ppa4) hardy; urgency=low
     - Update help/documentation.
   * Check Release files against the archive keyring; depend on ubuntu-keyring.
 
- -- Nicolas Barcet <nicolas.barcet@canonical.com>  Fri, 09 May 2008 09:56:00 +0200
+ -- Nicolas Barcet <nicolas.barcet@canonical.com>  Fri, 09 May 2008 12:56:00 +0200
 
 ubuntu-vm-builder (0.4) hardy; urgency=low
 
