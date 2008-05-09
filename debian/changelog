@@ -7,6 +7,7 @@ ubuntu-vm-builder (0.4ubuntu2~ppa4) hardy; urgency=low
   * Added function do_copy_settings to fix bug LP: #221231
   * Fix missing ipv6 entries in host file
   * Fix issue with template arguments fetching. bug LP: #228268
+  * Create the /etc/apt/sources.list. bug LP: #218195
 
   [ Loic Minier ]
   * Fix v / --verbose getopt parsing.
