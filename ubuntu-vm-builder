@@ -1056,9 +1056,11 @@ do_cleanup () {
                 rm ${DISKIMGS[$i]}.raw 
         done
 	popd > /dev/null
+	umount "$WORKINGDIR"
 	rm -rf "$WORKINGDIR"
 }
 
+mount -t tmpfs ubuntu-vm-builder -o suid,dev "$WORKINGDIR"
 pushd "$WORKINGDIR" > /dev/null
 
 do_disk_images

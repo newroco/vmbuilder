@@ -1,4 +1,4 @@
-ubuntu-vm-builder (0.4ubuntu2~ppa4) hardy; urgency=low
+ubuntu-vm-builder (0.4ubuntu2~ppa6) hardy; urgency=low
 
   [ Michael Vogt ]
   * patch the way do_avoid_starting_daemons() to write a policy-rc.d file in
@@ -12,6 +12,8 @@ ubuntu-vm-builder (0.4ubuntu2~ppa4) hardy; urgency=low
   * Fix missing ipv6 entries in host file
   * Fix issue with template arguments fetching. bug LP: #228268
   * Create the /etc/apt/sources.list. bug LP: #218195
+  * Use a tmpfs for $WORKINGDIR to avoid case when file system is mounted
+    with no suid. bug LP: #228744
 
   [ Loic Minier ]
   * Fix v / --verbose getopt parsing.
