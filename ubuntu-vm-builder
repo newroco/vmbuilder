@@ -475,6 +475,7 @@ info "Disk"
 partstart=""
 partid=""
 NUMDISKS=""
+letters=("a" "b" "c" "d")
 
 set +e
 if [ -z "$PARTFILE" ]; then
@@ -513,7 +514,6 @@ if [ -z "$PARTFILE" ]; then
 	let PARTITION_END[$partid]=$partstart+MOUNTSIZES[$partid]
 	let DISKSIZES[0]=PARTITION_END[$partid]+1
 else
-	letters=("a" "b" "c" "d")
 	let index=0
 	let diskindex=0
 	let partnum=0
