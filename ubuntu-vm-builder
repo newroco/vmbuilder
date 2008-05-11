@@ -432,6 +432,8 @@ fi
 # MOUNTDISKS[i] holds
 # MOUNTSIZES[i] holds the size of partition i.
 
+letters=("a" "b" "c" "d")
+
 if [ -z "$PARTFILE" ]; then
 	let partstart=0
 	let partid=0
@@ -979,7 +981,7 @@ umount_parts () {
 
 # Taken from debootstrap
 do_avoid_starting_daemons() {
-	cat <<EOT > root/usr/sbin/policy-rc.d
+	cat > root/usr/sbin/policy-rc.d <<EOT
 #!/bin/sh
 
 while true; do
