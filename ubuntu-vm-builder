@@ -28,9 +28,47 @@
 #  create launchjeos command for vmware vm's
 #  review security of running as root, messing with $DESTINATION
 
+# make sure variables are initialized
+set -o nounset
+set -o errexit
+
+# display debug info
+VERBOSE=""
+info () {
+	test ! -z $VERBOSE && echo "$@"
+}
+
 # Keep perl inside the chroot quiet
 HOSTLANG=$LANG
 LANG=C
+
+# Initialize variables
+ARCH=""
+KERNEL_FLAVOUR=""
+TMPDIR=""
+TEMPLATEDIR=""
+VMUSER=""
+PASS=""
+MIRROR=""
+MEM=""
+VMHOSTNAME=""
+NAME="ubuntu"
+DOMAIN=""
+ROOTSIZE=""
+SWAPSIZE=""
+COMPS=""
+PARTFILE=""
+OPTSIZE=""
+IP=""
+MASK=""
+NET=""
+BCAST=""
+GW=""
+DNS=""
+SUITE=""
+PKGCMD=""
+SSHKEY=""
+EXEC=""
 
 usage () {
 	cat <<EOT
@@ -146,12 +184,9 @@ written by Soren Hansen <soren@canonical.com>.
 EOT
 }
 
-info () {
-	test -n "$VERBOSE" && echo "$@"
-}
-
 if [ $# -lt 2 ]
 then
+	echo "Please specify vm and suite"
 	usage
 	exit 1
 fi
@@ -312,7 +347,8 @@ do
 			shift
 			break
 		;;
-		*)
+		*)	
+			argsused=0
 			vm_getopt "$@"
 			if [ $argsused -gt 0 ]
 			then
@@ -326,6 +362,9 @@ do
 			;;
 	esac
 done
+
+info "suite: $SUITE"
+info "vm: $VM"
 
 if [ -z "$ARCH" ]
 then
@@ -431,13 +470,19 @@ fi
 # MOUNTPOINTS[i] holds the mountpoint of partition i.
 # MOUNTDISKS[i] holds
 # MOUNTSIZES[i] holds the size of partition i.
+info "Disk"
 
+partstart=""
+partid=""
+NUMDISKS=""
+
+set +e
 if [ -z "$PARTFILE" ]; then
-	let partstart=0
-	let partid=0
-	let NUMDISKS=0
+	let partstart=0 
+	let partid=0 
+	let NUMDISKS=0 
 	DISKIMGS[0]="root"
-
+	
 	MOUNTPOINTS[$partid]="root" 
 	MOUNTDISKS[$partid]="a"
 	MOUNTSIZES[$partid]="$ROOTSIZE"
@@ -509,6 +554,9 @@ else
 	let DISKSIZES[$diskindex]=$partstart
 	let NUMDISK=$diskindex
 fi
+set -e
+
+info "workingdir"
 
 WORKINGDIR=`mktemp -d -p $TMPDIR vm-builder-XXXXXXXXXX` || exit 1
 
@@ -528,6 +576,8 @@ if [ $? -ne 0 ]; then
 	rm -rf "${WORKINGDIR}"
 	exit 1
 fi
+
+info "ip"
 
 if [ -z "$IP" ]; then
 	IP="DHCP"
@@ -555,6 +605,8 @@ else
 
 
 fi 
+
+info "Param analysis done"
 
 do_initial_user () {
 	#
@@ -684,6 +736,7 @@ EOF
 }
 
 do_disk_images() {
+	info "do_disk_images"
 	#
 	# Create disk images, partitions and format
 	#
@@ -729,7 +782,7 @@ do_disk_images() {
         curdisk=""
         for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
                 if [ "$curdisk" != "${MOUNTDISKS[$i]}" ]; then
-                        let diskindex++
+                        let diskindex++ || true
                         img="${DISKIMGS[$diskindex]}"
                         curdisk=${MOUNTDISKS[$i]}
 			let partindex=1
@@ -746,15 +799,16 @@ do_disk_images() {
 		/lib/udev/vol_id --uuid  ${mapper}p${partindex} >  ${MOUNTPOINTS[$i]}.uuid
 		let partindex++
 	done
-
 }
 
 do_debootstrap() {
 	mkdir root
+	info "debootstrap"
 	debootstrap --components="$COMPS" --arch $ARCH --keyring /usr/share/keyrings/ubuntu-archive-keyring.gpg $SUITE root "$MIRROR"
 }
 
 do_kernel_n_friends () {
+	info "kernel_n_friends"
 	PKGS="linux-$KERNEL_FLAVOUR"
 	vm_extra_packages
 	suite_extra_packages
@@ -762,11 +816,13 @@ do_kernel_n_friends () {
 }
 
 do_add_remove_packages () {
+	info "add_remove_packages"
 	cmd="apt-get --purge install "
 	chroot root apt-get -y --force-yes --purge install $PKGCMD
 }
 
 do_add_ssh_key () {
+	info "add_ssh_key"
 	if [ -z "$SSHKEY" ]
 	then
 		return
@@ -784,6 +840,7 @@ do_add_ssh_key () {
 }
 
 do_sourceslist () {
+	info "sourceslists"
 	cat > root/etc/apt/sources.list << EOF
 deb ${MIRROR} ${SUITE} main
 #deb-src ${MIRROR} ${SUITE} main
@@ -908,6 +965,7 @@ EOF
 }
 
 do_copy_settings () {
+	info "do_copy_settings"
         #copy the host settings to the new guest (locale, console-setup, tz)
         cp /etc/default/locale root/etc/default/
         cp /etc/default/console-setup root/etc/default/
@@ -917,10 +975,13 @@ do_copy_settings () {
 	chroot root locale-gen en_US
 	chroot root locale-gen $LANG
 	chroot root dpkg-reconfigure -pcritical locales
+	chroot root dpkg-reconfigure -pcritical console-setup
+	info "do_copy_settings done"
 }
 
 
 do_exec_script () {
+	info "exec-script"
 	if [ -z "$EXEC" ]
 	then
 		return
@@ -934,10 +995,16 @@ do_exec_script () {
 	#
 	# Execute the script.
 	#
-	"$EXEC"
+	info "Executing $EXEC"
+	"$EXEC" || {
+		echo "Error executing user defined script" 
+		do_cleanup
+		exit 1
+	}
 }
 
 mount_parts () {
+	info "mount_parts"
 	base="$1"
 	if [ "$base" = "" ]; then
 		echo base is empty....  exiting
@@ -965,6 +1032,7 @@ mount_parts () {
 }
 
 umount_parts () {
+	info "umount_parts"
 	base="$1"
 	for ((i=$(( ${#MOUNTPOINTS[@]} -1));i>-1;i--)); do
 		if  [ "${MOUNTPOINTS[$i]}" = "root" ]; then
@@ -979,7 +1047,8 @@ umount_parts () {
 
 # Taken from debootstrap
 do_avoid_starting_daemons() {
-	cat <<EOT > root/usr/sbin/policy-rc.d
+	info "avoid_starting_daemons"
+	cat > root/usr/sbin/policy-rc.d <<EOT
 #!/bin/sh
 
 while true; do
@@ -997,6 +1066,7 @@ EOT
 
 # Taken from debootstrap
 do_undo_avoid_starting_daemons() {
+	info "undo_avoid_starting_daemons"
 	rm root/usr/sbin/policy-rc.d
 }
 
@@ -1004,21 +1074,24 @@ do_undo_avoid_starting_daemons() {
 # linux-restricted-modules unconditionally mounts a tmpfs.
 #
 do_unmount_restricted_tmpfs() {
-	umount root/lib/modules/*/volatile > /dev/null 2>&1
+	info "unmount_restriced_tmpfs"
+	umount root/lib/modules/*/volatile > /dev/null 2>&1 || true
 }
 
 do_mount_target() {
+	info "mount_target"
 	mkdir target 
 	mount_parts target
 }
 
 do_umount_target() {
+	info "unmount_target"
 	umount_parts target
 	rmdir target
 }
 
 do_copy_to_disk_images () {
-
+	info "copy_to_disk_images"
 	chroot root apt-get clean
 	#
 	# Copy the debootstrapped filesystem into the partitions
@@ -1030,7 +1103,7 @@ do_copy_to_disk_images () {
 
 do_target_vm_conversion () {
 	info Convert to format $VM
-
+	FILES=""
 	vm_target_conversion
 
 	for ((i=0;i<${#DISKIMGS[@]};i++)); do
@@ -1043,6 +1116,7 @@ do_target_vm_conversion () {
 }
 
 do_cleanup () {
+	info "Cleaning up..."
 	#unmount the disk loops
         for ((i=0;i<${#DISKIMGS[@]};i++)); do
                 kpartx -d ${LOOPDEV[$i]} > /dev/null
@@ -1060,17 +1134,34 @@ do_cleanup () {
 	rm -rf "$WORKINGDIR"
 }
 
+function errorHandler () {
+	echo "Error"
+	do_cleanup
+	exit $?
+}
+
+function interruptHandler () {
+	echo "User interupt"
+	do_cleanup
+	exit 2
+}
+
+info "main"
+
 mount -t tmpfs ubuntu-vm-builder -o suid,dev "$WORKINGDIR"
 pushd "$WORKINGDIR" > /dev/null
 
 do_disk_images
+set +e
+trap errorHandler ERR 
+trap interruptHandler SIGINT SIGTERM
 do_debootstrap
 suite_do_fstab
+do_avoid_starting_daemons
 do_copy_settings
 do_initial_user
 do_network_setup
-do_avoid_starting_daemons
-do_kernel_n_friends 
+do_kernel_n_friends
 do_add_remove_packages
 do_add_ssh_key
 do_sourceslist
@@ -1081,7 +1172,9 @@ do_mount_target
 do_copy_to_disk_images 
 do_bootloader
 do_umount_target
-do_target_vm_conversion 
+do_target_vm_conversion
+trap - ERR
+set -e
 do_cleanup
 
 exit 0
