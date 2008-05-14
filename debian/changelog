@@ -2,28 +2,28 @@ ubuntu-vm-builder (0.4ubuntu2~ppa7) hardy; urgency=low
 
   [ Michael Vogt ]
   * patch the way do_avoid_starting_daemons() to write a policy-rc.d file in
-    the same way as pbuilder does. bug LP: #228372
+    the same way as pbuilder does (LP: #228372)
 
   [ Nick Barcet ]
-  * Fix locale settings and do_copy_settings
-  * Lock the root account by default
-  * Add ssh keys to the user account and not to root
+  * Lock the root account by default (LP: #230291)
+  * Add ssh keys to the user account and not to root (LP: #230291)
   * Added function do_copy_settings to fix bug LP: #221231
-  * Fix missing ipv6 entries in host file
-  * Fix issue with template arguments fetching. bug LP: #228268
-  * Create the /etc/apt/sources.list. bug LP: #218195
+  * Fix missing ipv6 entries in host file (LP: #230299)
+  * Fix issue with template arguments fetching (LP: #228268)
+  * Create the /etc/apt/sources.list properly (LP: #218195)
   * Use a tmpfs for $WORKINGDIR to avoid case when file system is mounted
-    with no suid. bug LP: #228744
-  * unproper letters variable initialization
+    with no suid (LP: #228744)
+  * Unproper letters variable initialization (LP: #230312)
 
   [ Loic Minier ]
-  * Fix v / --verbose getopt parsing.
-  * Compute the default ARCH with dpkg --print-architecture.
+  * Fix v / --verbose getopt parsing. (LP: #230319)
+  * Compute the default ARCH with dpkg --print-architecture. (LP: #230323)
   * Add support for lpia.
     - Allow lpia arch, lpia and lpiacompat kernel flavours.
     - Use http://ports.ubuntu.com/ubuntu-ports as default mirror for lpia.
     - Update help/documentation.
   * Check Release files against the archive keyring; depend on ubuntu-keyring.
+    (LP: #230334)
 
  -- Nicolas Barcet <nicolas.barcet@canonical.com>  Fri, 09 May 2008 12:56:00 +0200
 
