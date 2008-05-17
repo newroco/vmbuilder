@@ -71,6 +71,8 @@ SSHKEY=""
 EXEC=""
 # array to hold list of raw "files" to use
 declare -a RAW
+declare -i NUMRAW
+let NUMRAW=0 || true
 
 usage () {
 	cat <<EOT
@@ -302,7 +304,8 @@ do
 			shift 2
 		;;
 		--raw)
-			RAW[${RAW[@]}]="$2"
+			RAW[$NUMRAW]="$2"
+			let NUMRAW=NUMRAW+1 
 			shift 2
 		;;
 		--kernel-flavour)
@@ -492,9 +495,9 @@ if [ -z "$PARTFILE" ]; then
 	let partstart=0 
 	let partid=0 
 	let NUMDISKS=0 
-	if [ ${RAW[@]} -gt 0 ]; then
+	if [ $NUMRAW -gt 0 ]; then
 		DISKIMGS[0]=${RAW[0]}
-	elif
+	else
 		DISKIMGS[0]="root.raw"
 	fi
 	
@@ -554,9 +557,9 @@ else
 			let PARTITION_START[$index]=$partstart
 			let PARTITION_END[$index]=$partstart+MOUNTSIZES[$index]
 			if [ $partnum -eq 0 ]; then
-				if [ ${RAW[@]} -ge $diskindex ]; then
+				if [ $NUMRAW -gt $diskindex ]; then
 					DISKIMGS[$diskindex]=${RAW[$diskindex]}
-				elif
+				else
 					DISKIMGS[$diskindex]=`echo "${MOUNTPOINTS[$index]}" | sed 's%\/%%g' | sed 's/[ \t]*$//'`".raw"
 				fi
 				info " Disk: $diskindex ${DISKIMGS[$diskindex]}"
@@ -571,7 +574,7 @@ else
 	done 
 	let DISKSIZES[$diskindex]=$partstart
 	let NUMDISK=$diskindex
-	if [ $diskindex -gt ${RAW[@]} && ${RAW[@]} -gt 0 ]; then
+	if [ $diskindex -gt $NUMRAW && $NUMRAW -gt 0 ]; then
 		echo "Sorry, --raw should match --part number of disks"
 		exit 1
 	fi
@@ -764,7 +767,7 @@ do_disk_images() {
 	#
 
 	for ((i=0; i<${#DISKIMGS[@]}; i++)); do
-		if [ ${RAW[@]} -le 0 ]; then
+		if [ $NUMRAW -eq 0 ]; then
 			# create disk image
 			let size=${DISKSIZES[$i]}*1024
 			qemu-img create -f raw ${DISKIMGS[$i]} $size > /dev/null
@@ -1126,15 +1129,15 @@ do_copy_to_disk_images () {
 }
 
 do_target_vm_conversion () {
+	info Convert to format $VM
+	FILES=""
+	vm_target_conversion
+	
 	#do image conversion if not asked to do raw images
-	if  [ ${RAW[@]} -le 0 ]; then
-		info Convert to format $VM
-		FILES=""
-		vm_target_conversion
-
+	if  [ $NUMRAW -eq 0 ]; then
 		for ((i=0;i<${#DISKIMGS[@]};i++)); do
-			imgname = $( echo ${DISKIMGS[$i]} | sed s/.raw// )
-			qemu-img convert $QEMU_IMG_CONVERT_OPTS ${DISKIMGS[$i]} "$imgname${QEMU_IMG_CONVERT_EXTENSION}"
+			img=$( echo ${DISKIMGS[$i]} | sed s/.raw// )
+			qemu-img convert $QEMU_IMG_CONVERT_OPTS ${DISKIMGS[$i]} "$img${QEMU_IMG_CONVERT_EXTENSION}"
 		done
 
 		test -n "${SUDO_USER}" && chown "$SUDO_USER" $FILES
@@ -1157,7 +1160,7 @@ do_cleanup () {
 	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
 		rm ${MOUNTPOINTS[$i]}.uuid
 	done
-	if  [ ${RAW[@]} -le 0 ]; then
+	if  [ $NUMRAW -eq 0 ]; then
 		for ((i=0;i<${#DISKIMGS[@]};i++)); do
                 	rm ${DISKIMGS[$i]} 
         	done

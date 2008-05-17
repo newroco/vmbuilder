@@ -35,8 +35,13 @@ vmware_common_target_conversion () {
 	else
 		guestos="ubuntu"
 	fi
-
-	QEMU_IMG_CONVERT_EXTENSION=".vmdk"
+	if [ $NUMRAW -gt 0 ]; then
+                QEMU_IMG_CONVERT_OPTS=""
+                QEMU_IMG_CONVERT_EXTENSION=".raw"
+        else
+                QEMU_IMG_CONVERT_OPTS=""
+                QEMU_IMG_CONVERT_EXTENSION=".vmdk"
+        fi
 	cat $TEMPLATEDIR/vmware.tmpl | \
 		sed -e "s/%VMHWVERSION%/${VMHWVERSION}/g" \
 		-e "s/%HOSTNAME%/${VMHOSTNAME}/g" \
@@ -48,11 +53,12 @@ vmware_common_target_conversion () {
 	chmod +x $VMHOSTNAME.vmx
 	FILES="$VMHOSTNAME.vmx"
 	for ((i=0;i<${#DISKIMGS[@]};i++)); do
-		FILES="$FILES ${DISKIMGS[$i]}.vmdk"
+		img = $( ${DISKIMGS[$i]} | sed s/.raw// )
+		FILES="$FILES $img$QEMU_IMG_CONVERT_EXTENSION"
 		let "id=$i%2"
 		let "bus=$i/2"
 		echo "ide${bus}:${id}.present = \"TRUE\"">>$VMHOSTNAME.vmx
-		echo "ide${bus}:${id}.fileName = \"${DISKIMGS[$i]}.vmdk\"">>$VMHOSTNAME.vmx
+		echo "ide${bus}:${id}.fileName = \"$img$QEMU_IMG_CONVERT_EXTENSION\"">>$VMHOSTNAME.vmx
 	done
 
 }
