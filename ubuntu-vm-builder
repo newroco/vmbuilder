@@ -28,7 +28,7 @@
 #  create launchjeos command for vmware vm's
 #  review security of running as root, messing with $DESTINATION
 
-# make sure variables are initialized
+# make sure variables are initialized and script quits when error are encountered
 set -o nounset
 set -o errexit
 
@@ -69,6 +69,8 @@ SUITE=""
 PKGCMD=""
 SSHKEY=""
 EXEC=""
+# array to hold list of raw "files" to use
+declare -a RAW
 
 usage () {
 	cat <<EOT
@@ -127,6 +129,10 @@ suite              Use the specified Ubuntu suite.
 --user username    Set the name of the user to be added. Default: ubuntu.
 --name fullname    Set the full name of the user to be added. Default: Ubuntu.
 --pass password    Set the password for the user. Default: ubuntu.
+--raw path         Specify a raw file or device to install in.  Can be specified
+                   multiple time in conjunction with --part, paths will be used in
+		   the order presented. In any case you are to insure that the raw
+		   element(s) specified have enough free space.
 --part partfile    Allows to specify a partition table in partfile
                    each line of partfile should specify (root first):
                       mountpoint size
@@ -212,7 +218,7 @@ SUITE="$1"
 . /usr/share/ubuntu-vm-builder/suites/$SUITE
 shift
 
-TEMP=`getopt -q -o a:d:hs:t:v --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,no-opt,exec:,verbose,$vm_getopt_args  -- "$@"`
+TEMP=`getopt -q -o a:d:hs:t:v --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,raw:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,no-opt,exec:,verbose,$vm_getopt_args  -- "$@"`
 eval set -- "$TEMP"
 
 while true
@@ -293,6 +299,10 @@ do
 		;;
 		--optsize)
 			OPTSIZE="$2"
+			shift 2
+		;;
+		--raw)
+			RAW[${RAW[@]}]="$2"
 			shift 2
 		;;
 		--kernel-flavour)
@@ -482,7 +492,11 @@ if [ -z "$PARTFILE" ]; then
 	let partstart=0 
 	let partid=0 
 	let NUMDISKS=0 
-	DISKIMGS[0]="root"
+	if [ ${RAW[@]} -gt 0 ]; then
+		DISKIMGS[0]=${RAW[0]}
+	elif
+		DISKIMGS[0]="root.raw"
+	fi
 	
 	MOUNTPOINTS[$partid]="root" 
 	MOUNTDISKS[$partid]="a"
@@ -540,7 +554,11 @@ else
 			let PARTITION_START[$index]=$partstart
 			let PARTITION_END[$index]=$partstart+MOUNTSIZES[$index]
 			if [ $partnum -eq 0 ]; then
-				DISKIMGS[$diskindex]=`echo "${MOUNTPOINTS[$index]}" | sed 's%\/%%g' | sed 's/[ \t]*$//'`
+				if [ ${RAW[@]} -ge $diskindex ]; then
+					DISKIMGS[$diskindex]=${RAW[$diskindex]}
+				elif
+					DISKIMGS[$diskindex]=`echo "${MOUNTPOINTS[$index]}" | sed 's%\/%%g' | sed 's/[ \t]*$//'`".raw"
+				fi
 				info " Disk: $diskindex ${DISKIMGS[$diskindex]}"
 			fi
 
@@ -553,6 +571,10 @@ else
 	done 
 	let DISKSIZES[$diskindex]=$partstart
 	let NUMDISK=$diskindex
+	if [ $diskindex -gt ${RAW[@]} && ${RAW[@]} -gt 0 ]; then
+		echo "Sorry, --raw should match --part number of disks"
+		exit 1
+	fi
 fi
 set -e
 
@@ -717,7 +739,7 @@ EOF
 	#
 	# Create device.map
 	#
-	echo "(hd0) ${DISKIMGS[0]}.raw" >> device.map
+	echo "(hd0) ${DISKIMGS[0]}" >> device.map
 	grub --device-map=device.map --batch<<EOT
 root (hd0,0)
 setup (hd0)
@@ -742,12 +764,14 @@ do_disk_images() {
 	#
 
 	for ((i=0; i<${#DISKIMGS[@]}; i++)); do
-		# create disk image
-		let size=${DISKSIZES[$i]}*1024
-		qemu-img create -f raw ${DISKIMGS[$i]}.raw $size > /dev/null
+		if [ ${RAW[@]} -le 0 ]; then
+			# create disk image
+			let size=${DISKSIZES[$i]}*1024
+			qemu-img create -f raw ${DISKIMGS[$i]} $size > /dev/null
+		fi
 
 		# label the disk
-		parted --script ${DISKIMGS[$i]}.raw mklabel msdos
+		parted --script ${DISKIMGS[$i]} mklabel msdos
 	done
 	
 	let diskindex=-1
@@ -755,7 +779,7 @@ do_disk_images() {
 
 	# create the partitions
 	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
-		if [ "$curdisk" != "${MOUNTDISKS[$i]i}" ]; then
+		if [ "$curdisk" != "${MOUNTDISKS[$i]}" ]; then
 			let diskindex++
 			img="${DISKIMGS[$diskindex]}"
 			curdisk=${MOUNTDISKS[$i]}
@@ -765,15 +789,15 @@ do_disk_images() {
 		# Create partition and format
 		info "  creating partition ${MOUNTPOINTS[$i]} on $img"
 		if [ "${MOUNTPOINTS[$i]}" = "swap" ]; then
-			parted --script -- $img.raw mkpartfs primary linux-swap ${PARTITION_START[$i]} ${PARTITION_END[$i]}
+			parted --script -- $img mkpartfs primary linux-swap ${PARTITION_START[$i]} ${PARTITION_END[$i]}
 		else
-			parted --script -- $img.raw mkpartfs primary ext2 ${PARTITION_START[$i]} ${PARTITION_END[$i]}
+			parted --script -- $img mkpartfs primary ext2 ${PARTITION_START[$i]} ${PARTITION_END[$i]}
 		fi
 	done
 	
 	#mount the disk loops
 	for ((i=0;i<${#DISKIMGS[@]};i++)); do
-		LOOPDEV[$i]=$(losetup -s -f ${DISKIMGS[$i]}.raw)
+		LOOPDEV[$i]=$(losetup -s -f ${DISKIMGS[$i]})
 		kpartx -a ${LOOPDEV[$i]} > /dev/null
 	done
 	
@@ -1102,17 +1126,24 @@ do_copy_to_disk_images () {
 }
 
 do_target_vm_conversion () {
-	info Convert to format $VM
-	FILES=""
-	vm_target_conversion
+	#do image conversion if not asked to do raw images
+	if  [ ${RAW[@]} -le 0 ]; then
+		info Convert to format $VM
+		FILES=""
+		vm_target_conversion
 
-	for ((i=0;i<${#DISKIMGS[@]};i++)); do
-		qemu-img convert $QEMU_IMG_CONVERT_OPTS ${DISKIMGS[$i]}.raw "${DISKIMGS[$i]}${QEMU_IMG_CONVERT_EXTENSION}"
-	done
+		for ((i=0;i<${#DISKIMGS[@]};i++)); do
+			imgname = $( echo ${DISKIMGS[$i]} | sed s/.raw// )
+			qemu-img convert $QEMU_IMG_CONVERT_OPTS ${DISKIMGS[$i]} "$imgname${QEMU_IMG_CONVERT_EXTENSION}"
+		done
 
-	test -n "${SUDO_USER}" && chown "$SUDO_USER" $FILES
-	mv $FILES $DESTINATION
-	echo "Done.  Images are in ${DESTINATION}."
+		test -n "${SUDO_USER}" && chown "$SUDO_USER" $FILES
+		mv $FILES $DESTINATION
+		echo "Done.  Images are in ${DESTINATION}."
+	else 
+		echo "Done, raw images/devices ready."
+	fi
+
 }
 
 do_cleanup () {
@@ -1126,9 +1157,11 @@ do_cleanup () {
 	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
 		rm ${MOUNTPOINTS[$i]}.uuid
 	done
-	for ((i=0;i<${#DISKIMGS[@]};i++)); do
-                rm ${DISKIMGS[$i]}.raw 
-        done
+	if  [ ${RAW[@]} -le 0 ]; then
+		for ((i=0;i<${#DISKIMGS[@]};i++)); do
+                	rm ${DISKIMGS[$i]} 
+        	done
+	fi
 	popd > /dev/null
 	umount "$WORKINGDIR"
 	rm -rf "$WORKINGDIR"

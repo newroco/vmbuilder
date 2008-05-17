@@ -1,10 +1,11 @@
 ubuntu-vm-builder (0.5ubuntu1~ppa1) intrepid; urgency=low
-
+ 
   * Adding an error handler to fix LP: #217950
   * Lots of sanitization to allow for error handler
   * Add an interrupt handler to cleanup if user interrupts script
   * Stop on error in user script to fix LP: #228675
   * unproper initialization of letters variable
+  * Added --raw option to install on raw devices/files
 
  -- Nicolas Barcet <nicolas.barcet@canonical.com>  Fri, 10 May 2008 00:01:00 +0200
 
