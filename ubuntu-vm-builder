@@ -702,7 +702,7 @@ postrm_hook = %UPDATEGRUB%
 do_bootloader = no
 EOF
 
-	chroot target apt-get --force-yes -y install grub
+	chroot target apt-get --force-yes -y install grub 
 
 	mkdir target/boot/grub
 
@@ -818,7 +818,7 @@ do_kernel_n_friends () {
 do_add_remove_packages () {
 	info "add_remove_packages"
 	cmd="apt-get --purge install "
-	chroot root apt-get -y --force-yes --purge install $PKGCMD
+	chroot root apt-get -y --force-yes --purge install $PKGCMD || true
 }
 
 do_add_ssh_key () {
@@ -833,7 +833,7 @@ do_add_ssh_key () {
 		return
 	fi
 	# we have a key, add it
-	chroot root apt-get install --force-yes -y openssh-server
+	chroot root apt-get install --force-yes -y openssh-server || true
 	mkdir root/home/$VMUSER/.ssh
 	cp "$SSHKEY" root/home/$VMUSER/.ssh/authorized_keys
 	chroot root chown -R $VMUSER:$VMUSER /home/$VMUSER/.ssh
