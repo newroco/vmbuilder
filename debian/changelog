@@ -6,6 +6,9 @@ ubuntu-vm-builder (0.5ubuntu1~ppa1) intrepid; urgency=low
   * Stop on error in user script to fix LP: #228675
   * unproper initialization of letters variable
   * Added --raw option to install on raw devices/files
+    WARNING: the variables used in template files for disk definition have been
+    modified.  Please insure that locally created templates are updated to
+    reflect this change.
 
  -- Nicolas Barcet <nicolas.barcet@canonical.com>  Fri, 10 May 2008 00:01:00 +0200
 

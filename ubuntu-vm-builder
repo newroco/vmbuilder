@@ -90,6 +90,7 @@ usage: ubuntu-vm-builder <vm> <suite>
                             [--user username]
                             [--name fullname]
                             [--pass password]
+			    [--raw path]
                             [--part partitionfile]
                             [--rootsize size]
                             [--optsize size]
