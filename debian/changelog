@@ -14,6 +14,7 @@ ubuntu-vm-builder (0.4ubuntu2~ppa7) hardy; urgency=low
   * Use a tmpfs for $WORKINGDIR to avoid case when file system is mounted
     with no suid (LP: #228744)
   * Unproper letters variable initialization (LP: #230312)
+  * Option --net failed other than for Class C (LP: #232361)
 
   [ Loic Minier ]
   * Fix v / --verbose getopt parsing. (LP: #230319)
