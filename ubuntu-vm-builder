@@ -69,6 +69,7 @@ GW=""
 DNS=""
 SUITE=""
 PKGCMD=""
+DESTINATION=""
 SSHKEY=""
 EXEC=""
 
