@@ -1,3 +1,10 @@
+ubuntu-vm-builder (0.5ubuntu1~ppa2) UNRELEASED; urgency=low
+
+  * Call sh -c "$EXEC_SCRIPT" instead of "$EXEC_SCRIPT"; allows to pass
+    arguments to the script; also remove check that EXEC_SCRIPT exists.
+
+ -- Loic Minier <lool@dooz.org>  Thu, 22 May 2008 12:05:52 +0200
+
 ubuntu-vm-builder (0.5ubuntu1~ppa1) intrepid; urgency=low
 
   * Adding an error handler to fix LP: #217950
