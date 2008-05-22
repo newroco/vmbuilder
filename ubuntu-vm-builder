@@ -35,7 +35,9 @@ set -o errexit
 # display debug info
 VERBOSE=""
 info () {
-	test ! -z $VERBOSE && echo "$@"
+    if [ -n "$VERBOSE" ]; then
+        echo "$@"
+    fi
 }
 
 # Keep perl inside the chroot quiet
