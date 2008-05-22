@@ -582,7 +582,9 @@ EOF
 	done
 
 	# Lock root account
-	chroot root passwd -l root >/dev/null 2>&1
+	chroot root chpasswd <<EOF
+root:!
+EOF
 }
 
 do_network_setup () {
