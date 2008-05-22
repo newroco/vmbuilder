@@ -1,12 +1,10 @@
-ubuntu-vm-builder (0.4ubuntu2~ppa7) hardy; urgency=low
+ubuntu-vm-builder (0.4-0ubuntu0.2) hardy-proposed; urgency=low
 
   [ Michael Vogt ]
   * patch the way do_avoid_starting_daemons() to write a policy-rc.d file in
     the same way as pbuilder does (LP: #228372)
 
   [ Nick Barcet ]
-  * Lock the root account by default (LP: #230291)
-  * Add ssh keys to the user account and not to root (LP: #230291)
   * Added function do_copy_settings to fix bug LP: #221231
   * Fix missing ipv6 entries in host file (LP: #230299)
   * Fix issue with template arguments fetching (LP: #228268)
@@ -25,7 +23,16 @@ ubuntu-vm-builder (0.4ubuntu2~ppa7) hardy; urgency=low
   * Check Release files against the archive keyring; depend on ubuntu-keyring.
     (LP: #230334)
 
- -- Nicolas Barcet <nicolas.barcet@canonical.com>  Fri, 09 May 2008 12:56:00 +0200
+  [ Soren Hansen ]
+  * Fix root ssh login. (LP: #234062)
+
+ -- Soren Hansen <soren@ubuntu.com>  Thu, 22 May 2008 18:40:44 +0200
+
+ubuntu-vm-builder (0.4-0ubuntu0.1) hardy-security; urgency=low
+
+  * SECURITY UPDATE: adjust ubuntu-vm-builder to lock root account by default
+
+ -- Nicolas Barcet <nicolas.barcet@canonical.com>  Mon, 28 Apr 2008 14:02:01 +0200
 
 ubuntu-vm-builder (0.4) hardy; urgency=low
 
