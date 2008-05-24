@@ -76,6 +76,7 @@ SSHUKEY=""
 EXEC=""
 FIRSTBOOT=""
 FIRSTLOGIN=""
+TMPFS=""
 
 # array to hold list of raw "files" to use
 declare -a RAW
@@ -95,6 +96,7 @@ usage: ubuntu-vm-builder <vm> <suite>
                             [--mirror URL]
                             [--removepkg PKG]
                             [(-t|--tmp) temp_dir]
+			    [--tmpfs size]
                             [--user username]
                             [--name fullname]
                             [--pass password]
@@ -144,7 +146,10 @@ suite              Use the specified Ubuntu suite.
 		   available on the iso, obviously.
 --removepkg PKG    Remove PKG from the guest (can be specfied multiple times)
 -t, --tmp  TMPDIR  Use TMPDIR as temporary working area for the image
-                   generation. Defaults to \$TMPDIR if set, or /tmp if not.
+                   generation. Defaults to the same directory as -d if specified
+		   with a full path or the current directory if not.
+--tmpfs options    Use a tmpfs as the working directory, specifying its size or
+                   "-" to use tmpfs default (suid,dev,size=1G).
 --user username    Set the name of the user to be added. Default: ubuntu.
 --name fullname    Set the full name of the user to be added. Default: Ubuntu.
 --pass password    Set the password for the user. Default: ubuntu.
@@ -245,7 +250,7 @@ SUITE="$1"
 . /usr/share/ubuntu-vm-builder/suites/$SUITE
 shift
 
-TEMP=`getopt -q -o a:d:hs:t:v --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,iso:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,raw:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,ssh-user-key:,no-opt,exec:,firstboot:,firstlogin:,verbose,$vm_getopt_args  -- "$@"`
+TEMP=`getopt -q -o a:d:hs:t:v --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,iso:,removepkg:,suite:,tmp:,tmpfs:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,raw:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,ssh-user-key:,no-opt,exec:,firstboot:,firstlogin:,verbose,$vm_getopt_args  -- "$@"`
 eval set -- "$TEMP"
 
 while true
@@ -298,6 +303,10 @@ do
 		;;
 		-t|--tmp)
 			TMPDIR="$2"
+			shift 2
+		;;
+		--tmpfs)
+			TMPFS="$2"
 			shift 2
 		;;
 		--vm)
@@ -413,7 +422,7 @@ do
 				usage
 				exit 1
 			fi
-			;;
+		;;
 	esac
 done
 
@@ -434,7 +443,11 @@ fi
 
 if [ -z "$TMPDIR" ]
 then
-	TMPDIR="/tmp"
+	if [ ! "${DESTINATION#/}" = "${DESTINATION}" ]; then
+		TMPDIR=`echo $DESTINATION | sed "s,\(.*\)/.*$,\1,"`
+	else
+		TMPDIR="${PWD}"
+	fi
 fi
 
 if [ -z "$TEMPLATEDIR" ]
@@ -623,8 +636,6 @@ else
 	fi
 fi
 set -e
-
-info "workingdir"
 
 WORKINGDIR=`mktemp -d -p $TMPDIR vm-builder-XXXXXXXXXX` || exit 1
 
@@ -1311,7 +1322,9 @@ do_cleanup () {
 	popd > /dev/null
 
 	#unmount and remove working directory
-	umount "$WORKINGDIR"
+	if [ ! -z $TMPFS ]; then
+		umount "$WORKINGDIR"
+	fi
 	rm -rf "$WORKINGDIR"
 }
 
@@ -1328,8 +1341,14 @@ function interruptHandler () {
 }
 
 info "main"
-
-mount -t tmpfs ubuntu-vm-builder -o suid,dev "$WORKINGDIR"
+if [ ! -z $TMPFS ]; then
+	if [ "$TMPFS" = "-" ]; then
+		mount -t tmpfs ubuntu-vm-builder -o suid,dev,size=1G "$WORKINGDIR"
+	else
+		mount -t tmpfs ubuntu-vm-builder -o $TMPFS "$WORKINGDIR"
+	fi
+fi
+info "Working in $WORKINGDIR"
 pushd "$WORKINGDIR" > /dev/null
 
 do_disk_images
