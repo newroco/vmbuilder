@@ -29,8 +29,13 @@ vm_getopt() {
 
 
 qemu_common_target_conversion() {
-	QEMU_IMG_CONVERT_OPTS="-O qcow2"
-	QEMU_IMG_CONVERT_EXTENSION=".qcow2"
+	if [ $NUMRAW -gt 0 ]; then
+		QEMU_IMG_CONVERT_OPTS=""
+		QEMU_IMG_CONVERT_EXTENSION=".raw"
+	else
+		QEMU_IMG_CONVERT_OPTS="-O qcow2"
+		QEMU_IMG_CONVERT_EXTENSION=".qcow2"
+	fi
 
 	if [ -n "$LIBVIRT" ]
 	then
@@ -52,12 +57,16 @@ qemu_common_target_conversion() {
 		for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
 			if [ "$curdisk" != "${MOUNTDISKS[$i]}" ]; then
 				let diskindex++
-				img="${DISKIMGS[$diskindex]}"
+				if [ $NUMRAW -eq 0 ]; then
+					img=$( echo ${DISKIMGS[$diskindex]} | sed s/.raw// )
+					img="$img$QEMU_IMG_CONVERT_EXTENSION"
+				else
+					img=${DISKIMGS[$diskindex]}
+				fi
 				curdisk=${MOUNTDISKS[$i]}
-   	           	FILES="$FILES $img.qcow2"
+   	           		FILES="$FILES $img"
 
-				curdev=$(echo $device | sed -e "s|%DESTINATION%|${DESTINATION}|g" \
-					-e "s|%img%|${img}|g" \
+				curdev=$(echo $device | sed -e "s|%img%|$DESTINATION/${img}|g" \
 					-e "s|%curdisk%|${curdisk}|g")
 
 				devices="$devices $curdev" 
@@ -85,10 +94,10 @@ qemu_common_target_conversion() {
 		for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
 			if [ "$curdisk" != "${MOUNTDISKS[$i]}" ]; then
 				let diskindex++
-				img="${DISKIMGS[$diskindex]}"
+				img=$( echo ${DISKIMGS[$diskindex]} | sed s/.raw// )
 				curdisk=${MOUNTDISKS[$i]}
-				FILES="$FILES $img.qcow2"
-				IMGFILES="$IMGFILES -hd$curdisk $img.qcow2" 
+				FILES="$FILES $img$QEMU_IMG_CONVERT_EXTENSION"
+				IMGFILES="$IMGFILES -hd$curdisk $img$QEMU_IMG_CONVERT_EXTENSION" 
 			fi
 		done
 		cat > $VMHOSTNAME.$CMD <<EOF

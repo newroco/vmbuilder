@@ -23,7 +23,7 @@
     <graphics type='vnc' port='-1' listen='127.0.0.1'/>
 %loop%
     <disk type='file' device='disk'>
-      <source file='%DESTINATION%/%img%.qcow2'/>
+      <source file='%img%'/>
       <target dev='hd%curdisk%'/>
     </disk>
 %/loop%

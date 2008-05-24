@@ -11,11 +11,15 @@ ubuntu-vm-builder (0.5ubuntu1~ppa2) UNRELEASED; urgency=low
   * Stop on error in user script to fix LP: #228675
   * unproper initialization of letters variable
   * --ssh-key adds key to root and --ssh-user-key adds key to user
+  * Added --raw option to install on raw devices/files.
+    WARNING: the variables used in template files for disk definition have been
+    modified.  Please insure that locally created templates are updated to
+    reflect this change. 
 
   [Soren Hansen]
   * Fix for LP: #234062 ssh root login broken
 
- -- Nicolas Barcet <nicolas.barcet@canonical.com>  Fri, 18 May 2008 13:27:00 +0200
+ -- Nicolas Barcet <nicolas.barcet@canonical.com>  Fri, 24 May 2008 00:01:00 +0200
 
 ubuntu-vm-builder (0.4ubuntu2~ppa7) hardy; urgency=low
 
