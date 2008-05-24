@@ -331,7 +331,7 @@ do
 			shift 2
 		;;
 		--net)
-			NETWORK="$2"
+			NET="$2"
 			shift 2
 		;;
 		--bcast)
