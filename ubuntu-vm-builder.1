@@ -63,6 +63,12 @@ Set the password for the user. Default: ubuntu.
 .TP
 .B \-\-raw path
 Specify a raw file or device to install in.  Can be specified multiple time in conjunction with --part, paths will be used in the order presented. In any case you are to insure that the raw element(s) specified have enough free space.
+.TP
+.B \-\-iso path
+Use an iso image as the source for installation of file. Full path to the iso must be provided. 
+If --mirror is also provided, it will be used in the final sources.list of the vm.
+This requires suite and kernel parameter to match what is available on the iso, obviously.
+.TP
 .B \-\-no\-opt
 Do not build the /opt partition
 .TP

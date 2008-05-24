@@ -17,6 +17,9 @@ ubuntu-vm-builder (0.5ubuntu1~ppa2) UNRELEASED; urgency=low
   * Add --firstboot and --firstlogin options
   * First login always execute "sudo dpkg-reconfigure console-setup" so
     that the local keyboard setting is taken into account.
+  * Adding the --iso parameter to create image from an iso. This requires
+    suite and kernel-flavour parameters to match what is available on the iso,
+    obviously.
 
   [Soren Hansen]
   * Fix for LP: #234062 ssh root login broken
