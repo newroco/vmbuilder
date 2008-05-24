@@ -35,7 +35,9 @@ set -o errexit
 # display debug info
 VERBOSE=""
 info () {
-	test ! -z $VERBOSE && echo "$@"
+    if [ -n "$VERBOSE" ]; then
+        echo "$@"
+    fi
 }
 
 # Keep perl inside the chroot quiet
@@ -67,6 +69,7 @@ GW=""
 DNS=""
 SUITE=""
 PKGCMD=""
+DESTINATION=""
 SSHKEY=""
 EXEC=""
 
@@ -987,16 +990,11 @@ do_exec_script () {
 		return
 	fi
 
-	if [ ! -f "$EXEC" ]
-	then
-		echo "Script '$EXEC' not found."
-		return
-	fi
 	#
 	# Execute the script.
 	#
 	info "Executing $EXEC"
-	"$EXEC" || {
+	sh -c "$EXEC" || {
 		echo "Error executing user defined script" 
 		do_cleanup
 		exit 1
