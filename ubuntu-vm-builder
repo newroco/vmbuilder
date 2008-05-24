@@ -77,6 +77,7 @@ EXEC=""
 FIRSTBOOT=""
 FIRSTLOGIN=""
 TMPFS=""
+OVERWRITE=""
 
 # array to hold list of raw "files" to use
 declare -a RAW
@@ -89,6 +90,7 @@ usage: ubuntu-vm-builder <vm> <suite>
                             [--addpkg PKG]
                             [(-a|--arch) [(amd64|i386|lpia]]
                             [(-d|--dest) <destination (directory)>]
+                            [(-o|--overwrite)]
                             [--domain DOMAIN]
                             [-h|--help]
                             [--hostname NAME]
@@ -127,7 +129,8 @@ suite              Use the specified Ubuntu suite.
 -a, --arch ARCH    Specify the target architecture.
                    Valid options: amd64 i386 lpia (defaults to host arch)
 -d, --dest         Specify the destination directory.
-                   Default: ubuntu-vm-$SUITE-$ARCH
+                   Default: ubuntu-vm-$SUITE-$ARCH-$HOSTNAME
+-o, --overwrite    Force overwrite of destination directory if it already exist
 --domain DOMAIN    Set DOMAIN as the domain name of the guest. Default:
                    The domain of the machine running this script.
 -h, --help         This help text.
@@ -251,7 +254,7 @@ SUITE="$1"
 shift
 
 set +e; trap "usage;exit 1" ERR
-TEMP=`getopt -o a:d:hs:t:v --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,iso:,removepkg:,suite:,tmp:,tmpfs:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,raw:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,ssh-user-key:,no-opt,exec:,firstboot:,firstlogin:,verbose,$vm_getopt_args  -- "$@"` 
+TEMP=`getopt -o a:d:ohs:t:v --long addpkg:,arch:,dest:,overwrite,domain:,help,hostname:,mem:,mirror:,iso:,removepkg:,suite:,tmp:,tmpfs:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,raw:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,ssh-user-key:,no-opt,exec:,firstboot:,firstlogin:,verbose,$vm_getopt_args  -- "$@"` 
 trap - ERR; set -e
 eval set -- "$TEMP"
 
@@ -278,6 +281,10 @@ do
 				DESTINATION="${PWD}/$2"
 			fi
 			shift 2
+		;;
+		-o|--overwrite)
+			OVERWRITE="YEAH"
+			shift 1
 		;;
 		--domain)
 			DOMAIN="$2"
@@ -652,17 +659,24 @@ then
 	fi
 fi
 
+set +e
 if [ -n "${SUDO_USER}" ]; then
-	sudo -u "${SUDO_USER}" mkdir "${DESTINATION}"
+	sudo -u "${SUDO_USER}" mkdir "${DESTINATION}" 
 else
-	mkdir "${DESTINATION}"
+	mkdir "${DESTINATION}" 
 fi
 
 if [ $? -ne 0 ]; then
-	echo "Error creating directory ${DESTINATION}. Unable to proceed."
-	rm -rf "${WORKINGDIR}"
-	exit 1
+	if [ -z $OVERWRITE ]; then
+		echo "Error creating directory ${DESTINATION}. Unable to proceed."
+		rmdir  "${WORKINGDIR}"
+		exit 1
+	else
+		info "Overwriting content of ${DESTINATION}"
+		rm $DESTINATION/*
+	fi
 fi
+set -e
 
 info "ip"
 
@@ -1344,7 +1358,6 @@ function interruptHandler () {
 	exit 2
 }
 
-info "main"
 if [ ! -z $TMPFS ]; then
 	if [ "$TMPFS" = "-" ]; then
 		mount -t tmpfs ubuntu-vm-builder -o suid,dev,size=1G "$WORKINGDIR"
@@ -1356,8 +1369,7 @@ info "Working in $WORKINGDIR"
 pushd "$WORKINGDIR" > /dev/null
 
 do_disk_images
-set +e
-trap errorHandler ERR 
+set +e; trap errorHandler ERR 
 trap interruptHandler SIGINT SIGTERM
 do_source $WORKINGDIR ""
 do_debootstrap
@@ -1382,8 +1394,7 @@ do_bootloader
 do_source "-" "target"
 do_umount_target
 do_target_vm_conversion
-trap - ERR
-set -e
+trap - ERR; set -e
 do_cleanup
 
 exit 0
