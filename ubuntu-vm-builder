@@ -1268,7 +1268,7 @@ do_target_vm_conversion () {
 do_cleanup () {
 	info "Cleaning up..."
 	if [ ! -z $VERBOSE ]; then
-		echo "Press any key to go ahead with cleanup"
+		echo "Press return to go ahead with cleanup"
 		read
 	fi
 	#unmount iso if present
