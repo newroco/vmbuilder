@@ -5,6 +5,7 @@ ubuntu-vm-builder (0.5ubuntu1~ppa1) intrepid; urgency=low
   * Add an interrupt handler to cleanup if user interrupts script
   * Stop on error in user script to fix LP: #228675
   * unproper initialization of letters variable
+  * Adding the --iso parameter to create image from an iso
 
  -- Nicolas Barcet <nicolas.barcet@canonical.com>  Fri, 10 May 2008 00:01:00 +0200
 
