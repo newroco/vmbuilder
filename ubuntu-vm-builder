@@ -630,7 +630,11 @@ WORKINGDIR=`mktemp -d -p $TMPDIR vm-builder-XXXXXXXXXX` || exit 1
 
 if [ -z "$DESTINATION" ]
 then
-        DESTINATION="$PWD/ubuntu-vm-$SUITE-$ARCH"
+	if [ ! -z "$VMHOSTNAME" ] && [ ! "$VMHOSTNAME" = "ubuntu" ] ; then
+        	DESTINATION="$PWD/ubuntu-vm-$SUITE-$ARCH-$VMHOSTNAME"
+	else
+		DESTINATION="$PWD/ubuntu-vm-$SUITE-$ARCH"
+	fi
 fi
 
 if [ -n "${SUDO_USER}" ]; then
@@ -1119,7 +1123,7 @@ EOT
 do_firstlogin () {
         info "firstlogin"
 	dofirst=true
-        if [ -z "$FIRSTLOGIN" ]; then
+        if [ ! -z "$FIRSTLOGIN" ]; then
 		dofirst=false
         elif [ ! -f "$FIRSTLOGIN" ]; then
                 echo "Script '$FIRSTLOGIN' not found."
