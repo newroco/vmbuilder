@@ -25,11 +25,13 @@ ubuntu-vm-builder (0.5ubuntu1~ppa2) UNRELEASED; urgency=low
   * Place the working directory in the same directory as destination by
     default
   * Added --tmpfs option to specify usage of a tmpfs for the working directory 
+  * VM specific parameters do not need to be the last ones anymore
+  * Unknown parameters now return an error and prints usage
 
   [Soren Hansen]
   * Fix for LP: #234062 ssh root login broken
 
- -- Nicolas Barcet <nicolas.barcet@canonical.com>  Fri, 24 May 2008 00:01:00 +0200
+ -- Nicolas Barcet <nicolas.barcet@canonical.com>  Fri, 25 May 2008 00:01:00 +0200
 
 ubuntu-vm-builder (0.4ubuntu2~ppa7) hardy; urgency=low
 

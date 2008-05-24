@@ -96,7 +96,7 @@ usage: ubuntu-vm-builder <vm> <suite>
                             [--mirror URL]
                             [--removepkg PKG]
                             [(-t|--tmp) temp_dir]
-			    [--tmpfs size]
+			    [--tmpfs options]
                             [--user username]
                             [--name fullname]
                             [--pass password]
@@ -250,7 +250,9 @@ SUITE="$1"
 . /usr/share/ubuntu-vm-builder/suites/$SUITE
 shift
 
-TEMP=`getopt -q -o a:d:hs:t:v --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,iso:,removepkg:,suite:,tmp:,tmpfs:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,raw:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,ssh-user-key:,no-opt,exec:,firstboot:,firstlogin:,verbose,$vm_getopt_args  -- "$@"`
+set +e; trap "usage;exit 1" ERR
+TEMP=`getopt -o a:d:hs:t:v --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,iso:,removepkg:,suite:,tmp:,tmpfs:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,raw:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,ssh-user-key:,no-opt,exec:,firstboot:,firstlogin:,verbose,$vm_getopt_args  -- "$@"` 
+trap - ERR; set -e
 eval set -- "$TEMP"
 
 while true
@@ -412,11 +414,12 @@ do
 		;;
 		*)	
 			argsused=0
-			vm_getopt "$@"
+			vm_getopt "$@" || true
 			if [ $argsused -gt 0 ]
 			then
 				shift $argsused
 			else
+				# This code will never be used as getopt will have caught it
 				# The vm had no clue what this was either
 				echo "Unknown option: $1"
 				usage
@@ -440,6 +443,7 @@ then
 else
 	check_kernel_flavour "$KERNEL_FLAVOUR"
 fi
+info "kernel: $KERNEL_FLAVOUR"
 
 if [ -z "$TMPDIR" ]
 then

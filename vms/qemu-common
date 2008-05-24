@@ -12,8 +12,8 @@ vm_getopt_args="libvirt:,templates:,"
 vm_getopt() {
 	# We don't really handle -a, but getopt complains if it doesn't get any short
 	# options to handle. 
-	TEMP=`getopt -q -o a --long $vm_getopt_args -- "$@"`
-	eval set -- "$TEMP"
+	TEMP2=`getopt -q -o a --long $vm_getopt_args -- "$@"`
+	eval set -- "$TEMP2" 
 	case "$1" in
 		--libvirt)
 			info "Using libvirt uri '$2'"
