@@ -73,6 +73,9 @@ DESTINATION=""
 SSHKEY=""
 SSHUKEY=""
 EXEC=""
+FIRSTBOOT=""
+FIRSTLOGIN=""
+
 # array to hold list of raw "files" to use
 declare -a RAW
 declare -i NUMRAW
@@ -104,6 +107,8 @@ usage: ubuntu-vm-builder <vm> <suite>
                             [--ssh-key <public key file>]
 			    [--ssh-user-key <public key file>]
                             [--exec <script to execute>]
+			    [--firstboot <script to execute>]
+			    [--firstlogin <script to execute>]
                             [--ip address [
                             [--mask value]
                             [--net value]
@@ -169,6 +174,12 @@ The following three options are not used if --part is specified:
 		   to the user's authorized key and install openssh-server.
 --exec             Run the given script file. You can use 
                    'chroot root <cmd>' to execute code in the guest.
+--firstboot        Specify a script that will be copied into the guest and
+                   executed the first time the machine boots.  This script
+		   must not be interactive.
+--firstlogin       Specify a script that will be copied into the guest and
+                   will be executed the first time the user logs in. This
+		   script can be interactive.
 --ip address       Ip address in dotted form
                    (defaults to dhcp if not specified)
 
@@ -228,7 +239,7 @@ SUITE="$1"
 . /usr/share/ubuntu-vm-builder/suites/$SUITE
 shift
 
-TEMP=`getopt -q -o a:d:hs:t:v --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,raw:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,ssh-user-key:,no-opt,exec:,verbose,$vm_getopt_args  -- "$@"`
+TEMP=`getopt -q -o a:d:hs:t:v --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,raw:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,ssh-user-key:,no-opt,exec:,firstboot:,firstlogin:,verbose,$vm_getopt_args  -- "$@"`
 eval set -- "$TEMP"
 
 while true
@@ -334,6 +345,14 @@ do
 		;;
 		--exec)
 			EXEC="$2"
+			shift 2
+		;;
+		--firstboot)
+			FIRSTBOOT="$2"
+			shift 2
+		;;
+		--firstlogin)
+			FIRSTLOGIN="$2"
 			shift 2
 		;;
 		--ip)
@@ -1036,7 +1055,7 @@ do_copy_settings () {
 
 
 do_exec_script () {
-	info "exec-script"
+	info "exec_script"
 	if [ -z "$EXEC" ]
 	then
 		return
@@ -1051,6 +1070,62 @@ do_exec_script () {
 		do_cleanup
 		exit 1
 	}
+}
+
+do_firstboot () {
+	info "firstboot"
+	if [ -z "$FIRSTBOOT" ]; then
+		return	
+	elif [ ! -f "$FIRSTBOOT" ]; then
+		echo "Script '$FIRSTBOOT' not found."
+		return
+	fi
+	#
+	# Install the script to be executed
+	#
+	cp $FIRSTBOOT root/root/firstboot.sh
+	chmod a+x root/root/firstboot.sh
+	mv root/etc/rc.local root/etc/rc.local.orig
+	cat > root/etc/rc.local <<EOT
+#!/bin/sh -e
+#execute firstboot.sh only once
+if [ ! -e /root/firstboot_done ]; then
+	if [ -e /root/firstboot.sh ]; then
+		/root/firstboot.sh
+	fi
+	touch /root/firstboot_done
+fi
+exit 0
+EOT
+	chmod a+x root/etc/rc.local
+}
+
+do_firstlogin () {
+        info "firstlogin"
+	dofirst=true
+        if [ -z "$FIRSTLOGIN" ]; then
+		dofirst=false
+        elif [ ! -f "$FIRSTLOGIN" ]; then
+                echo "Script '$FIRSTLOGIN' not found."
+		dofirst=false
+        fi
+        #
+        # Install the script to be executed
+        #
+	if [ $dofirst ]; then 
+		cp $FIRSTLOGIN root/root/firstlogin.sh
+		chmot a+x root/root/firstlogin.sh
+	fi
+	cp root/etc/bash.bashrc root/etc/bash.bashrc.orig
+	cat >> root/etc/bash.bashrc <<EOT
+if [ ! -e /root/firstlogin_done ]; then
+	if [ -e /root/firstlogin.sh ]; then
+		/root/firstlogin.sh
+	fi
+	sudo dpkg-reconfigure -p critical console-setup &> /dev/null
+	sudo touch /root/firstlogin_done
+fi
+EOT
 }
 
 mount_parts () {
@@ -1225,6 +1300,8 @@ do_add_remove_packages
 do_add_ssh_key
 do_sourceslist
 do_exec_script
+do_firstboot
+do_firstlogin
 do_undo_avoid_starting_daemons
 do_unmount_restricted_tmpfs
 do_mount_target
