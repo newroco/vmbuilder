@@ -166,9 +166,10 @@ Specify where libvirt.tmpl is stored. Uses /usr/share/ubuntu-vm-builder/template
 Specify where vmware.tmpl is stored. Uses /usr/share/ubuntu-vm-builder/templates directory by default.
 .RE
 .SH EXEC EXPLANATIONS
-The --exec parameter allows to specify the full path name of a script that will be executed after the base system is installed (except grub) whose files hierarchy is in a directory named 'root' and has not yet been copied to the target virtual devices.
+ The --exec parameter allows to specify the full path name of a script that will be executed after the base system is installed (except grub) whose files hierarchy is in a directory named 'root' and has not yet been copied to the target virtual devices.
  The script is not in a chroot by default, so you can still copy file from the host file system (using full path name) to the destination files hierarchy which is in a subdirectory of the current working directory ($PWD) named 'root'.
  To execute commands in the target system's environment, you will need to prefix it with 'chroot root'.
+ If the script returns an error, ubuntu-vm-builder will not continue to build the vm. 
  It is recommended to keep this script non interactive.
 .TP
 .B Sample script
@@ -177,6 +178,7 @@ The --exec parameter allows to specify the full path name of a script that will 
  cp -a ~/.gnome root/home/ubuntu/
  #Execute a command in the target system
  chroot root touch /var/log/syslog
+ exit 0
 .RE
 .SH AUTHOR
 ubuntu-vm-builder and this man page was written by Soren Hansen <soren@canonical.com> and is copyright 2007-2008 Canonical Ltd.

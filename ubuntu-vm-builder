@@ -909,8 +909,11 @@ do_disk_images() {
 do_source() {
 	info "do_source $1 $2"
 	if [ ! -z $ISO ]; then
+		# source is an ISO file
 		if [ -e $ISO ]; then
+			# the file exists
 			if [ ! -z "$2" ]; then
+				# this is not the first time: need to unmount the previous first
 				umount $2/isomnt || true
 				rmdir $2/isomnt
 				MIRROR="file:///isomnt"
@@ -918,6 +921,7 @@ do_source() {
 				MIRROR="file://$1/isomnt"
 			fi
 			if [ ! "$1" = "-" ]; then
+				# we have something to mount
 				mkdir $1/isomnt
 				mount -o loop -t iso9660 $ISO $1/isomnt
 			fi
@@ -927,11 +931,14 @@ do_source() {
 		fi
 	fi
 	if [ ! -z $2 ]; then
+		# this is not the first time, update the source.list on the target
 		if [ "$1" = "-" ]; then
+			# this the last time we are called, push the --mirror info
 			do_sourceslist $ORIGMIRROR $2
 		else
 			do_sourceslist $MIRROR $1
 		fi
+		# Update the cache
 		sudo chroot $1 apt-get update &> /dev/null || true
 	fi
 }
@@ -1171,6 +1178,7 @@ if [ ! -e /root/firstlogin_done ]; then
 	if [ -e /root/firstlogin.sh ]; then
 		/root/firstlogin.sh
 	fi
+	echo "Setting up your keyboard, will need sudo password."
 	sudo dpkg-reconfigure -p critical console-setup &> /dev/null
 	sudo touch /root/firstlogin_done
 fi
