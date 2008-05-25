@@ -211,10 +211,10 @@ FIRSTLOGIN=""
 OVERWRITE=""
 
 # VERBOSE is the equivalent --verbose
-# Any non empty string cause the of a lot of information which are mainly interesting
-# while debugging.
+# Any non empty string cause the display of a lot of information which are mainly 
+# interesting while debugging.
 VERBOSE=""
 EOF
-	test -n "${SUDO_USER}" && chown "$SUDO_USER" $configfile
-	chmod 700 $configfile
+	test -n "${SUDO_USER}" && chown "$SUDO_USER":"$SUDO_USER" $configfile
+	chmod 600 $configfile
 fi
