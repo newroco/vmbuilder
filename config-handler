@@ -79,11 +79,6 @@ NAME="Ubuntu"
 # Also uses this name as the VM name
 VMHOSTNAME=""
 
-# DOMAIN is the equivalent of --domain
-# Set DOMAIN as the domain name of the guest. 
-# Default: The domain of the machine running this script.
-DOMAIN=""
-
 # MEM is the equivalent of --mem
 # Assign NN megabytes of memory to the guest vm.
 # Default: 128
@@ -91,6 +86,11 @@ MEM=""
 
 
 ### GUEST NETWORKING ###
+# DOMAIN is the equivalent of --domain
+# Set DOMAIN as the domain name of the guest. 
+# Default: The domain of the machine running this script.
+DOMAIN=""
+
 # IP is the equivalent of --ip
 # IP address in dotted form (defaults to dhcp)
 IP=""

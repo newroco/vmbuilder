@@ -1,4 +1,4 @@
-.TH UBUNTU-VM-BUILDER 1 "Mar 2008"
+.TH UBUNTU-VM-BUILDER 0.5 "May 2008"
 .SH NAME
 ubuntu-vm-builder \- build ubuntu based virtual machines
 .SH SYNOPSIS
@@ -10,7 +10,7 @@ This manual page documents the
 command.
 .B ubuntu-vm-builder
 is a program that builds virtual machines based on Ubuntu.
-.SH OPTIONS
+.SH PARAMETERS AND OPTIONS
 .TP
 .B NOTE 
 There may be many more options than this. See ubuntu-vm-builder --help for more information
@@ -20,49 +20,25 @@ Generate images for the specified virtualisation software
 .TP
 .B <suite>
 Use the specified Ubuntu suite (ie: hardy, gutsy, etc....)
+
+
+.SS Guest definition options
+.TP
+.B \-\-kernel-flavour FLAVOUR
+The kernel image flavour to install from: virtual, server, generic or others availble kernels (default: virtual for versions >= gutsy on i386, server otherwise)
+.TP
+.B \-\-components COMP1,COMP2,...,COMPN
+A comma seperaed list of distro components to include (e.g. main,universe). This defaults to "main"
 .TP
 .B \-\-addpkg PKG
 Install PKG into the guest (can be specfied multiple times)
 .TP
-.B \-a, \-\-arch ARCH
-Specify the target architecture.
-Valid options: i386 amd64 lpia. Defaults to the same as the running system.
-.TP
-.B \-d, \-\-dest
-Specify the destination directory.  Default: ubuntu-vm-$SUITE-$ARCH
-.TP
-.B \-o, \-\-overwrite
-Force overwrite of destination dirctory if it already exists.
-.TP
-.B \-\-domain DOMAIN
-Set DOMAIN as the domain name of the guest. Default: The domain of the machine running this script.
-.TP
-.B \-h, \-\-help
-Self-explanatory.
-.TP
-.B \-\-hostname NAME
-Set NAME as the hostname of the guest. Default: ubuntu
-.TP
-.B \-\-mem NN
-Assign NN megabytes of memory to the guest vm.  Default: 128
-.TP
-.B \-\-mirror URL
-Use Ubuntu mirror at URL. Default: http://archive.ubuntu.com/ubuntu for official architectures and http://ports.ubuntu.com/ubuntu-ports otherwise.
-.TP
 .B \-\-removepkg PKG
 Remove PKG from the guest (can be specfied multiple times)
 .TP
-.B \-s, \-\-suite SUITE
-Use the specified Ubuntu suite. Valid options: hardy*, gutsy, feisty, dapper
-.TP
-.B \-t, \-\-tmp PATH
-Use TMPDIR as temporary working area for the image generation. Defaults to the same directory as --dest if it has been specified with a full path or to the current directory otherwise.
-.TP
-.B \-\-tmpfs OPTIONS
-Use a tmpfs as the working directory, specifying its options 
-or "-" to use tmpfs default when no options are passed (different from the 
-defaults below, see tmpfs manual)
- Defaults: suid,dev,size=1G
+.B \-a, \-\-arch ARCH
+Specify the target architecture.
+Valid options: i386 amd64 lpia. Defaults to the same as the running system.
 .TP
 .B \-\-user USERNAME
 Set the name of the user to be added. Default: ubuntu.
@@ -73,17 +49,43 @@ Set the full name of the user to be added. Default: Ubuntu.
 .B \-\-pass PASSWORD
 Set the password for the user. Default: ubuntu.
 .TP
+.B \-\-hostname NAME
+Set NAME as the hostname of the guest. Default: ubuntu
+.TP
+.B \-\-mem NN
+Assign NN megabytes of memory to the guest vm.  Default: 128
+
+
+.SS Guest networking options
+.TP
+.B \-\-domain DOMAIN
+Set DOMAIN as the domain name of the guest. Default: The domain of the machine running this script.
+.TP
+.B \-\-ip ADDRESS
+Ip address in dotted form (defaults to dhcp if not specified)
+.TP
+Options below are discarded if --ip is not specified
+.RS
+.B \-\-mask VALUE
+IP mask in dotted form (default: 255.255.255.0)
+.TP
+.B \-\-net VALUE
+IP net address (default: X.X.X.0)
+.TP
+.B \-\-bcast VALUE
+IP broadcast (default: X.X.X.255)
+.TP
+.B \-\-gw ADDRESS
+Gateway address (default: X.X.X.1)
+.TP
+.B \-\-dns ADDRESS
+Name server address (default: X.X.X.1)
+.RE
+
+.SS Guest partitioning options
+.TP
 .B \-\-raw PATH
-Specify a raw file or device to install in.  Can be specified multiple time in conjunction with --part, paths will be used in the order presented. Make sure that the raw element(s) specified have enough free space.
-.TP
-.B \-\-iso PATH
-Use an iso image as the source for installation of file. Full path to the iso must be provided. 
-If --mirror is also provided, it will be used in the final sources.list of the vm.
-This requires suite and kernel parameter to match what is available on the iso, obviously.
-.TP
-.B \-\-no\-opt
-OBSOLETE - /opt partition is not created by default anymore
-.TP
+Specify the path to a raw file or device to install in.  Can be specified multiple time in conjunction with --part, paths will be used in the order presented. Make sure that the raw element(s) specified have enough free space.
 .B \-\-part PATH
 Allows to specify a partition table in partfile each line of partfile should specify (root first):
 .RS
@@ -113,12 +115,28 @@ The size in MB of the /opt filesystem (default 4000)
 .B \-\-swapsize SIZE
 The size in MB of the swap partition (default 1000)
 .RE
+
+.SS Environment definitions options
 .TP
-.B \-\-kernel-flavour FLAVOUR
-The kernel image flavour to install from: virtual, server, generic or others availble kernels (default: virtual for versions >= gutsy on i386, server otherwise)
+.B \-d, \-\-dest
+Specify the destination directory.  Default: ubuntu-vm-$SUITE-$ARCH
 .TP
-.B \-\-components COMP1,COMP2,...,COMPN
-A comma seperaed list of distro components to include (e.g. main,universe). This defaults to "main"
+.B \-t, \-\-tmp PATH
+Use TMPDIR as temporary working area for the image generation. Defaults to the same directory as --dest if it has been specified with a full path or to the current directory otherwise.
+.TP
+.B \-\-tmpfs OPTIONS
+Use a tmpfs as the working directory, specifying its options 
+or "-" to use tmpfs default when no options are passed (different from the 
+defaults below, see tmpfs manual)
+ Defaults: suid,dev,size=1G
+.TP
+.B \-\-iso PATH
+Use an iso image as the source for installation of file. Full path to the iso must be provided. 
+If --mirror is also provided, it will be used in the final sources.list of the vm.
+This requires suite and kernel parameter to match what is available on the iso, obviously.
+.TP
+.B \-\-mirror URL
+Use Ubuntu mirror at URL. Default: http://archive.ubuntu.com/ubuntu for official architectures and http://ports.ubuntu.com/ubuntu-ports otherwise.
 .TP
 .B \-\-ssh-key PATH
 Add the given ssh public key file (absolute path) to the root's authorized keys and install openssh-server (WARNING: this has strong security implications)
@@ -134,28 +152,27 @@ Specify a script that will be copied into the guest and executed the first time 
 .TP
 .B \-\-firstlogin PATH
 Specify a script that will be copied into the guest and will be executed the first time the user logs in. This script can be interactive.
+
+.SS Utilities
 .TP
-.B \-\-ip ADDRESS
-Ip address in dotted form (defaults to dhcp if not specified)
+.B \-o, \-\-overwrite
+Force overwrite of destination dirctory if it already exists.
 .TP
-Options below are discarded if --ip is not specified
-.RS
-.B \-\-mask VALUE
-IP mask in dotted form (default: 255.255.255.0)
+.B \-h, \-\-help
+Self-explanatory.
 .TP
-.B \-\-net VALUE
-IP net address (default: X.X.X.0)
+.B \-v, \-\-verbose
+Causes the display of a lot of information which are mainly interesting while debugging.
+
+
+.SS Obsolete
 .TP
-.B \-\-bcast VALUE
-IP broadcast (default: X.X.X.255)
+.B \-\-no\-opt
+OBSOLETE - /opt partition is not created by default anymore
+
+
+.SS Virtual Machine Specific options
 .TP
-.B \-\-gw ADDRESS
-Gateway address (default: X.X.X.1)
-.TP
-.B \-\-dns ADDRESS
-Name server address (default: X.X.X.1)
-.RE
-.SH VIRTUAL MACHINE SPECIFIC OPTIONS
 .B kvm, qemu:
 .RS
 .TP
@@ -171,6 +188,12 @@ Specify where libvirt.tmpl is stored. Uses /usr/share/ubuntu-vm-builder/template
 .B \-\-templates DIR
 Specify where vmware.tmpl is stored. Uses /usr/share/ubuntu-vm-builder/templates directory by default.
 .RE
+
+.SH CONFIGURATION FILE
+ Most parameters can also be defined in the user's configuration file which can be found at ~/.ubuntu-vm-builder.
+ The file is automatically generated with default values the first time ubuntu-vm-builder is ran. See comments in the config file for more details on possible values, it should be pretty much self explanatory.
+ In most cases, parameters have precedence over the configuration file, with the exception of list type parameters (COMPS and PKGCMD).
+
 .SH EXEC EXPLANATIONS
  The --exec parameter allows to specify the full path name of a script that will be executed after the base system is installed (except grub) whose files hierarchy is in a directory named 'root' and has not yet been copied to the target virtual devices.
  The script is not in a chroot by default, so you can still copy file from the host file system (using full path name) to the destination files hierarchy which is in a subdirectory of the current working directory ($PWD) named 'root'.
