@@ -58,6 +58,12 @@ Use the specified Ubuntu suite. Valid options: hardy*, gutsy, feisty, dapper
 .B \-t, \-\-tmp PATH
 Use TMPDIR as temporary working area for the image generation. Defaults to the same directory as --dest if it has been specified with a full path or to the current directory otherwise.
 .TP
+.B \-\-tmpfs OPTIONS
+Use a tmpfs as the working directory, specifying its options 
+or "-" to use tmpfs default when no options are passed (different from the 
+defaults below, see tmpfs manual)
+ Defaults: suid,dev,size=1G
+.TP
 .B \-\-user USERNAME
 Set the name of the user to be added. Default: ubuntu.
 .TP

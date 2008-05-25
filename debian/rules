@@ -10,4 +10,5 @@ install/ubuntu-vm-builder::
 	install -d -m 775    debian/ubuntu-vm-builder/usr/share/ubuntu-vm-builder/templates
 	install    -m 775 -t debian/ubuntu-vm-builder/usr/share/ubuntu-vm-builder/templates templates/* 
 	install -D -m 775    sanity-checks debian/ubuntu-vm-builder/usr/share/ubuntu-vm-builder/sanity-checks
+	install -D -m 775    config-handler debian/ubuntu-vm-builder/usr/share/ubuntu-vm-builder/config-handler
 	install -D -m 775    ubuntu-vm-builder debian/ubuntu-vm-builder/usr/bin/ubuntu-vm-builder

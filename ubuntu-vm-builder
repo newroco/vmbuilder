@@ -35,7 +35,7 @@ set -o errexit
 # display debug info
 VERBOSE=""
 info () {
-    if [ -n "$VERBOSE" ]; then
+    if [ ! -z "$VERBOSE" ]; then
         echo "$@"
     fi
 }
@@ -44,40 +44,8 @@ info () {
 HOSTLANG=$LANG
 LANG=C
 
-# Initialize variables
-ARCH=""
-KERNEL_FLAVOUR=""
-TMPDIR=""
-TEMPLATEDIR=""
-VMUSER=""
-PASS=""
-MIRROR=""
-ISO=""
-MEM=""
-VMHOSTNAME=""
-NAME="ubuntu"
-DOMAIN=""
-ROOTSIZE=""
-SWAPSIZE=""
-COMPS=""
-PARTFILE=""
-OPTSIZE=""
-IP=""
-MASK=""
-NET=""
-BCAST=""
-GW=""
-DNS=""
-SUITE=""
-PKGCMD=""
-DESTINATION=""
-SSHKEY=""
-SSHUKEY=""
-EXEC=""
-FIRSTBOOT=""
-FIRSTLOGIN=""
-TMPFS=""
-OVERWRITE=""
+# read default config from ~/.ubuntu-vm-builder and initialize variables
+. /usr/share/ubuntu-vm-builder/config-handler
 
 # array to hold list of raw "files" to use
 declare -a RAW
@@ -129,7 +97,7 @@ suite              Use the specified Ubuntu suite.
 -a, --arch ARCH    Specify the target architecture.
                    Valid options: amd64 i386 lpia (defaults to host arch)
 -d, --dest         Specify the destination directory.
-                   Default: ubuntu-vm-$SUITE-$ARCH-$HOSTNAME
+                   Default: ubuntu-vm-<SUITE>-<ARCH>-<HOSTNAME>
 -o, --overwrite    Force overwrite of destination directory if it already exist
 --domain DOMAIN    Set DOMAIN as the domain name of the guest. Default:
                    The domain of the machine running this script.
@@ -142,7 +110,7 @@ suite              Use the specified Ubuntu suite.
 --mirror URL       Use Ubuntu mirror at URL instead of the default, which
                    is http://archive.ubuntu.com/ubuntu for official arches
                    and http://ports.ubuntu.com/ubuntu-ports otherwise
---iso path         Use an iso image as the source for installation of file.
+--iso PATH         Use an iso image as the source for installation of file.
                    Full path to the iso must be provided. If --mirror is also
 		   provided, it will be used in the final sources.list of the vm.
                    This requires suite and kernel parameter to match what is 
@@ -151,16 +119,16 @@ suite              Use the specified Ubuntu suite.
 -t, --tmp  TMPDIR  Use TMPDIR as temporary working area for the image
                    generation. Defaults to the same directory as -d if specified
 		   with a full path or the current directory if not.
---tmpfs options    Use a tmpfs as the working directory, specifying its size or
+--tmpfs OPTIONS    Use a tmpfs as the working directory, specifying its size or
                    "-" to use tmpfs default (suid,dev,size=1G).
---user username    Set the name of the user to be added. Default: ubuntu.
---name fullname    Set the full name of the user to be added. Default: Ubuntu.
---pass password    Set the password for the user. Default: ubuntu.
---raw path         Specify a raw file or device to install in.  Can be specified
+--user USERNAME    Set the name of the user to be added. Default: ubuntu.
+--name FULLNAME    Set the full name of the user to be added. Default: Ubuntu.
+--pass PASSWORD    Set the password for the user. Default: ubuntu.
+--raw PATH         Specify a raw file or device to install in.  Can be specified
                    multiple time in conjunction with --part, paths will be used in
 		   the order presented. In any case you are to insure that the raw
 		   element(s) specified have enough free space.
---part partfile    Allows to specify a partition table in partfile
+--part PATH        Allows to specify a partition table in partfile pointed by PATH
                    each line of partfile should specify (root first):
                       mountpoint size
                    where size is in megabytes. You can have up to 4 virtual
@@ -173,36 +141,39 @@ suite              Use the specified Ubuntu suite.
                       /var 2000
                       /log 1500
 The following three options are not used if --part is specified:
---rootsize size    The size in MB of the root filesystem (default 4096)
---optsize size     The size in MB of the /opt filesystem. If not set, no /opt
+--rootsize SIZE    The size in MB of the root filesystem (default 4096)
+--optsize SIZE     The size in MB of the /opt filesystem. If not set, no /opt
                    filesystem will be added.
---swapsize size    The size in MB of the swap partition (default 1024)
---kernel-flavour   The kernel image flavour to install (default: virtual for
+--swapsize SIZE    The size in MB of the swap partition (default 1024)
+--kernel-flavour FLAVOUR
+                   The kernel image flavour to install (default: virtual for
                    >= gutsy on i386, lpia on lpia, server otherwise)
---components       A comma seperated list of distro components to include
+--components COMP  A comma seperated list of distro components to include
                    (e.g. main,universe). This defaults to "main"
---ssh-key path     Add the given ssh public key file (absolute path)
+--ssh-key PATH     Add the given ssh public key file (absolute path)
                    to root's authorized keys and install openssh-server
                    (WARNING: this has strong security implications)
---ssh-user-key path Add the given ssh key file (absolute path)
+--ssh-user-key PATH 
+                   Add the given ssh key file (absolute path)
 		   to the user's authorized key and install openssh-server.
---exec             Run the given script file. You can use 
+--exec PATH        Run the given script file. You can use 
                    'chroot root <cmd>' to execute code in the guest.
---firstboot        Specify a script that will be copied into the guest and
+		   See 'man ubuntu-vm-builder' for more explanations
+--firstboot PATH   Specify a script that will be copied into the guest and
                    executed the first time the machine boots.  This script
 		   must not be interactive.
---firstlogin       Specify a script that will be copied into the guest and
+--firstlogin PATH  Specify a script that will be copied into the guest and
                    will be executed the first time the user logs in. This
 		   script can be interactive.
---ip address       Ip address in dotted form
+--ip ADDRESS       Ip address in dotted form
                    (defaults to dhcp if not specified)
 
 Options below are discarded if --ip is not specified
---mask value       IP mask in dotted form (default: 255.255.255.0)
---net value        IP net address (default: X.X.X.0)
---bcast value      IP broadcast (default: X.X.X.255)
---gw address       Gateway address (default: X.X.X.1)
---dns address      Name server address (default: X.X.X.1)
+--mask VALUE       IP mask in dotted form (default: 255.255.255.0)
+--net VALUE       IP net address (default: X.X.X.0)
+--bcast VALUE      IP broadcast (default: X.X.X.255)
+--gw ADDRESS       Gateway address (default: X.X.X.1)
+--dns ADDRESS      Name server address (default: X.X.X.1)
 
 ('*' denotes default option)
 
@@ -283,7 +254,7 @@ do
 			shift 2
 		;;
 		-o|--overwrite)
-			OVERWRITE="YEAH"
+			OVERWRITE="YES"
 			shift 1
 		;;
 		--domain)
@@ -412,7 +383,7 @@ do
 			shift 1
 		;;
 		-v|--verbose)
-			VERBOSE="YEAH"
+			VERBOSE="YES"
 			shift 1
 		;;
 		--)
@@ -575,7 +546,7 @@ if [ -z "$PARTFILE" ]; then
 	let PARTITION_END[$partid]=$partstart+MOUNTSIZES[$partid]
 	let partstart=PARTITION_END[$partid]+1
 
-	if [ -n "$OPTSIZE" ]
+	if [ ! -z "$OPTSIZE" ]
 	then
 		let partid=$partid+1
 		MOUNTPOINTS[$partid]="/opt" 
@@ -678,8 +649,6 @@ if [ $? -ne 0 ]; then
 fi
 set -e
 
-info "ip"
-
 if [ -z "$IP" ]; then
 	IP="DHCP"
 else
@@ -706,8 +675,6 @@ else
 
 
 fi 
-
-info "Param analysis done"
 
 do_initial_user () {
 	#
@@ -907,7 +874,7 @@ do_disk_images() {
 }
 
 do_source() {
-	info "do_source $1 $2"
+	info "do_source $1 $2, iso: $ISO"
 	if [ ! -z $ISO ]; then
 		# source is an ISO file
 		if [ -e $ISO ]; then
@@ -965,30 +932,27 @@ do_add_remove_packages () {
 
 do_add_ssh_key () {
 	info "add_ssh_key"
-	sshinstalled=false
-	if [ -z "$SSHKEY" && -z "$SSHUKEY" ]
-	then
-		return
-	fi
+	sshinstalled=""
+	test -z "$SSHKEY" && test -z "$SSHUKEY" && return
 	if [ -f "$SSHKEY" ]
 	then
 		mkdir root/root/.ssh
 	        cp "$SSHKEY" root/root/.ssh/authorized_keys
 	        chroot root chown -R root:root /root/.ssh
-		sshinstalled=true
+		sshinstalled="true"
 	else
-		echo "NO $SSHKEY found"
+		test ! -z $SSHKEY && echo "No ssh root key found: $SSHKEY"
 	fi
 	if [ -f "$SSHUKEY" ]
         then
                 mkdir root/home/$VMUSER/.ssh
                 cp "$SSHUKEY" root/home/$VMUSER/.ssh/authorized_keys
                 chroot root chown -R $VMUSER:$VMUSER /home/$VMUSER/.ssh
-		sshinstalled=true
+		sshinstalled="true"
         else
-                echo "NO $SSHUKEY found"
+                test ! -z $SSHUKEY && echo "No ssh user key found: $SSHUKEY"
         fi
-	if [ $sshinstalled ]; then
+	if [ ! -z $sshinstalled ]; then
 		chroot root apt-get install --force-yes -y openssh-server || true
 	fi
 }
@@ -1158,17 +1122,17 @@ EOT
 
 do_firstlogin () {
         info "firstlogin"
-	dofirst=true
-        if [ ! -z "$FIRSTLOGIN" ]; then
-		dofirst=false
+	dofirst="YES"
+        if [ -z "$FIRSTLOGIN" ]; then
+		dofirst=""
         elif [ ! -f "$FIRSTLOGIN" ]; then
                 echo "Script '$FIRSTLOGIN' not found."
-		dofirst=false
+		dofirst=""
         fi
         #
         # Install the script to be executed
         #
-	if [ $dofirst ]; then 
+	if [ ! -z $dofirst ]; then 
 		cp $FIRSTLOGIN root/root/firstlogin.sh
 		chmot a+x root/root/firstlogin.sh
 	fi
@@ -1404,5 +1368,3 @@ do_umount_target
 do_target_vm_conversion
 trap - ERR; set -e
 do_cleanup
-
-exit 0
