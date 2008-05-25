@@ -12,18 +12,27 @@ command.
 is a program that builds virtual machines based on Ubuntu.
 .SH OPTIONS
 .TP
-.B NOTE!!! There are many more options than this. See ubuntu-vm-builder --help for more information
+.B NOTE 
+There may be many more options than this. See ubuntu-vm-builder --help for more information
+.TP
+.B <vm>
+Generate images for the specified virtualisation software
+.TP
+.B <suite>
+Use the specified Ubuntu suite (ie: hardy, gutsy, etc....)
 .TP
 .B \-\-addpkg PKG
 Install PKG into the guest (can be specfied multiple times)
 .TP
 .B \-a, \-\-arch ARCH
 Specify the target architecture.
-Valid options: i386 amd64 (amd64 only on amd64 hosts).
-Defaults to the same as the running system.
+Valid options: i386 amd64 lpia. Defaults to the same as the running system.
 .TP
 .B \-d, \-\-dest
 Specify the destination directory.  Default: ubuntu-vm-$SUITE-$ARCH
+.TP
+.B \-o, \-\-overwrite
+Force overwrite of destination dirctory if it already exists.
 .TP
 .B \-\-domain DOMAIN
 Set DOMAIN as the domain name of the guest. Default: The domain of the machine running this script.
@@ -38,7 +47,7 @@ Set NAME as the hostname of the guest. Default: ubuntu
 Assign NN megabytes of memory to the guest vm.  Default: 128
 .TP
 .B \-\-mirror URL
-Use Ubuntu mirror at URL. Default: http://archive.ubuntu.com/ubuntu
+Use Ubuntu mirror at URL. Default: http://archive.ubuntu.com/ubuntu for official architectures and http://ports.ubuntu.com/ubuntu-ports otherwise.
 .TP
 .B \-\-removepkg PKG
 Remove PKG from the guest (can be specfied multiple times)
@@ -46,33 +55,30 @@ Remove PKG from the guest (can be specfied multiple times)
 .B \-s, \-\-suite SUITE
 Use the specified Ubuntu suite. Valid options: hardy*, gutsy, feisty, dapper
 .TP
-.B \-t, \-\-tmp  TMPDIR
-Use TMPDIR as temporary working area for the image generation. Defaults to $TMPDIR if set, or /tmp if not.
+.B \-t, \-\-tmp PATH
+Use TMPDIR as temporary working area for the image generation. Defaults to the same directory as --dest if it has been specified with a full path or to the current directory otherwise.
 .TP
-.B \-\-vm VM
-Generate image for specified virtualisation software.  Valid choices are: vmw6 vmserver vbox qemu kvm*
-.TP
-.B \-\-user username
+.B \-\-user USERNAME
 Set the name of the user to be added. Default: ubuntu.
 .TP
-.B \-\-name fullname
+.B \-\-name FULLNAME
 Set the full name of the user to be added. Default: Ubuntu.
 .TP
-.B \-\-pass password
+.B \-\-pass PASSWORD
 Set the password for the user. Default: ubuntu.
 .TP
-.B \-\-raw path
-Specify a raw file or device to install in.  Can be specified multiple time in conjunction with --part, paths will be used in the order presented. In any case you are to insure that the raw element(s) specified have enough free space.
+.B \-\-raw PATH
+Specify a raw file or device to install in.  Can be specified multiple time in conjunction with --part, paths will be used in the order presented. Make sure that the raw element(s) specified have enough free space.
 .TP
-.B \-\-iso path
+.B \-\-iso PATH
 Use an iso image as the source for installation of file. Full path to the iso must be provided. 
 If --mirror is also provided, it will be used in the final sources.list of the vm.
 This requires suite and kernel parameter to match what is available on the iso, obviously.
 .TP
 .B \-\-no\-opt
-Do not build the /opt partition
+OBSOLETE - /opt partition is not created by default anymore
 .TP
-.B \-\-part partfile
+.B \-\-part PATH
 Allows to specify a partition table in partfile each line of partfile should specify (root first):
 .RS
 .RS
@@ -92,62 +98,85 @@ ie :
 .TP
 The following three options are not used if --part is specified:
 .RS
-.B \-\-rootsize size
- The size in MB of the root filesystem (default 1000)
+.B \-\-rootsize SIZE
+The size in MB of the root filesystem (default 1000)
 .TP
-.B \-\-optsize size
+.B \-\-optsize SIZE
 The size in MB of the /opt filesystem (default 4000)
 .TP
-.B \-\-swapsize size
+.B \-\-swapsize SIZE
 The size in MB of the swap partition (default 1000)
 .RE
 .TP
-.B \-\-kernel-flavour
-The kernel image flavour to install (default: virtual for versions >= gutsy on i386, server otherwise)
+.B \-\-kernel-flavour FLAVOUR
+The kernel image flavour to install from: virtual, server, generic or others availble kernels (default: virtual for versions >= gutsy on i386, server otherwise)
 .TP
-.B \-\-components
+.B \-\-components COMP1,COMP2,...,COMPN
 A comma seperaed list of distro components to include (e.g. main,universe). This defaults to "main"
 .TP
-.B \-\-ssh-key
-Add the given ssh public key file (absolute path)to the root's authorized keys and install openssh-server (WARNING: this has strong security implications)
+.B \-\-ssh-key PATH
+Add the given ssh public key file (absolute path) to the root's authorized keys and install openssh-server (WARNING: this has strong security implications)
 .TP
-.B \-\-ssh-user-key
-Add the given ssh public key file (absolute path)to the user's authorized keys and install openssh-server (WARNING: this has strong security implications)
+.B \-\-ssh-user-key PATH
+Add the given ssh public key file (absolute path) to the user's authorized keys and install openssh-server (WARNING: this has strong security implications)
 .TP
-.B \-\-exec script
-Run the given script file. You can use 'chroot root <cmd>' to execute code in the guest.
+.B \-\-exec PATH
+Run the given script file specified by PATH. You can use 'chroot root <cmd>' to execute code in the guest. See additional details in the 'EXEC EXPLANATIONS' chapter.
 .TP
-.B \-\-firstboot script
+.B \-\-firstboot PATH
 Specify a script that will be copied into the guest and executed the first time the machine boots.  This script must not be interactive.
 .TP
-.B \-\-firstlogin script
+.B \-\-firstlogin PATH
 Specify a script that will be copied into the guest and will be executed the first time the user logs in. This script can be interactive.
 .TP
-.B \-\-libvirt <uri>  
-Add resulting VM to the libvirt hypervisor at uri.
-.TP
-.B \-\-templates <dir>
-Specify where libvirt.tmpl and vmware.tmpl are stored. Uses script directory by default.
-.TP
-.B \-\-ip address
+.B \-\-ip ADDRESS
 Ip address in dotted form (defaults to dhcp if not specified)
 .TP
 Options below are discarded if --ip is not specified
 .RS
-.B \-\-mask value
+.B \-\-mask VALUE
 IP mask in dotted form (default: 255.255.255.0)
 .TP
-.B \-\-net value
+.B \-\-net VALUE
 IP net address (default: X.X.X.0)
 .TP
-.B \-\-bcast value
+.B \-\-bcast VALUE
 IP broadcast (default: X.X.X.255)
 .TP
-.B \-\-gw address
+.B \-\-gw ADDRESS
 Gateway address (default: X.X.X.1)
 .TP
-.B \-\-dns address
+.B \-\-dns ADDRESS
 Name server address (default: X.X.X.1)
+.RE
+.SH VIRTUAL MACHINE SPECIFIC OPTIONS
+.B kvm, qemu:
+.RS
+.TP
+.B \-\-libvirt URI
+Add resulting VM to the libvirt hypervisor at uri.
+.TP
+.B \-\-templates DIR
+Specify where libvirt.tmpl is stored. Uses /usr/share/ubuntu-vm-builder/templates directory by default.
+.RE
+.B vmserver, wmw6:
+.RS
+.TP
+.B \-\-templates DIR
+Specify where vmware.tmpl is stored. Uses /usr/share/ubuntu-vm-builder/templates directory by default.
+.RE
+.SH EXEC EXPLANATIONS
+The --exec parameter allows to specify the full path name of a script that will be executed after the base system is installed (except grub) whose files hierarchy is in a directory named 'root' and has not yet been copied to the target virtual devices.
+ The script is not in a chroot by default, so you can still copy file from the host file system (using full path name) to the destination files hierarchy which is in a subdirectory of the current working directory ($PWD) named 'root'.
+ To execute commands in the target system's environment, you will need to prefix it with 'chroot root'.
+ It is recommended to keep this script non interactive.
+.TP
+.B Sample script
+.RS
+ #Copy some file from the users home to the target user's home 
+ cp -a ~/.gnome root/home/ubuntu/
+ #Execute a command in the target system
+ chroot root touch /var/log/syslog
 .RE
 .SH AUTHOR
 ubuntu-vm-builder and this man page was written by Soren Hansen <soren@canonical.com> and is copyright 2007-2008 Canonical Ltd.
