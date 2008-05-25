@@ -42,10 +42,18 @@ qemu_common_target_conversion() {
 		LIBVIRTXML=`mktemp -p $TMPDIR vm-builder-XXXXXXXXXX` || exit 1
 		LIBVIRTNAME="$VMHOSTNAME"
 		MAC="52:54:00$(hexdump -e '/1 ":%02x"' -n 3 /dev/urandom)"
-		while virsh -c "$LIBVIRT" dumpxml "$LIBVIRTNAME" > /dev/null 2>&1
-		do
-			LIBVIRTNAME="${LIBVIRTNAME}_"
-		done
+
+		if [ ! -z $OVERWRITE ]; then
+                	if virsh -c "$LIBVIRT" dumpxml "$LIBVIRTNAME" > /dev/null 2>&1 
+			then
+				virsh -c "${LIBVIRT}" undefine ${LIBVIRTNAME}
+			fi
+                else
+			while virsh -c "$LIBVIRT" dumpxml "$LIBVIRTNAME" > /dev/null 2>&1
+			do
+				LIBVIRTNAME="${LIBVIRTNAME}_"
+			done
+		fi
 
 		#retrieve the device part of the templace
 		device=$(cat $TEMPLATEDIR/libvirt.tmpl | sed -n "/%loop%/,/%\/loop%/p" | sed -e "s/%loop%//g;s/%\/loop%//g")
