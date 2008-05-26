@@ -9,7 +9,9 @@ This manual page documents the
 .B ubuntu-vm-builder
 command.
 .B ubuntu-vm-builder
-is a program that builds virtual machines based on Ubuntu.
+is a program that builds virtual machines based on Ubuntu. You can pass command line options to add extra packages, remove packages, choose which version of Ubuntu, which mirror etc. On recent hardware with plenty of RAM, tmpdir in /dev/shm or using a tmpfs, and a local mirror, you can bootstrap a vm in less than a minute.
+
+
 .SH PARAMETERS AND OPTIONS
 .TP
 .B NOTE 
@@ -192,7 +194,7 @@ Specify where vmware.tmpl is stored. Uses /usr/share/ubuntu-vm-builder/templates
 .SH CONFIGURATION FILE
  Most parameters can also be defined in the user's configuration file which can be found at ~/.ubuntu-vm-builder.
  The file is automatically generated with default values the first time ubuntu-vm-builder is ran. See comments in the config file for more details on possible values, it should be pretty much self explanatory.
- In most cases, parameters have precedence over the configuration file, with the exception of list type parameters (COMPS and PKGCMD).
+ In most cases, parameters have precedence over the configuration file, with the exception of list type parameters (ie: PKGCMD) which will see parameters added to the list predefined in the configuration file.
 
 .SH EXEC EXPLANATIONS
  The --exec parameter allows to specify the full path name of a script that will be executed after the base system is installed (except grub) whose files hierarchy is in a directory named 'root' and has not yet been copied to the target virtual devices.
