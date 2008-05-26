@@ -1,4 +1,4 @@
-ubuntu-vm-builder (0.5ubuntu1~ppa2) UNRELEASED; urgency=low
+ubuntu-vm-builder (0.5ubuntu1~ppa4) intrepid; urgency=low
 
   [Loic Minier]
   * Call sh -c "$EXEC_SCRIPT" instead of "$EXEC_SCRIPT"; allows to pass
@@ -22,8 +22,7 @@ ubuntu-vm-builder (0.5ubuntu1~ppa2) UNRELEASED; urgency=low
     obviously.
   * Include hostname in default destination directory if defined
   * Do not use a tmpfs by default anymore
-  * Place the working directory in the same directory as destination by
-    default
+  * Place the working directory in the same directory as dest if using --tmp -
   * Added --tmpfs option to specify usage of a tmpfs for the working directory 
   * VM specific parameters do not need to be the last ones anymore
   * Unknown parameters now return an error and prints usage
@@ -35,7 +34,7 @@ ubuntu-vm-builder (0.5ubuntu1~ppa2) UNRELEASED; urgency=low
   [Soren Hansen]
   * Fix for LP: #234062 ssh root login broken
 
- -- Nicolas Barcet <nicolas.barcet@canonical.com>  Fri, 25 May 2008 00:01:00 +0200
+ -- Nicolas Barcet <nicolas.barcet@canonical.com>  Fri, 26 May 2008 00:01:00 +0200
 
 ubuntu-vm-builder (0.4ubuntu2~ppa7) hardy; urgency=low
 

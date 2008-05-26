@@ -1,8 +1,7 @@
 Source: ubuntu-vm-builder
 Section: utils
 Priority: extra
-Maintainer: Ubuntu MOTU
-Orig-maintainer: Soren Hansen <soren@ubuntu.com>
+Maintainer: Soren Hansen <soren@ubuntu.com>
 Build-Depends: cdbs, debhelper
 Standards-Version: 3.7.3
 Vcs-Bzr: http://bazaar.launchpad.net/~shawarma/ubuntu-jeos/trunk

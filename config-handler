@@ -2,7 +2,7 @@
 
 ARCH=""
 KERNEL_FLAVOUR=""
-TMPDIR=""
+VMTMPDIR=""
 TEMPLATEDIR=""
 VMUSER=""
 PASS=""
@@ -148,11 +148,12 @@ OPTSIZE=""
 # /!\ Must be a full path here (no trailing /)
 DESTINATION=""
 
-# TMPDIR is the equivalent of --tmp
-# Use TMPDIR as temporary working area for the image generation. 
-# Defaults to the same directory as -d if specified with a full path 
-# or the current directory if not.
-TMPDIR=""
+# VMTMPDIR is the equivalent of --tmp
+# Use VMTMPDIR as temporary working area for the image generation. 
+# Defaults to \$TMPDIR or /tmp if \$TMPDIR is not defined.
+# if VMTMPDIR is set to "-" data the data will go the same directory as -d 
+# if specified with a full path or the current directory if not.
+VMTMPDIR=""
 
 # TMPFS is the equivalent of --tmpfs
 # Use a tmpfs as the working directory if not "", specifying its options 

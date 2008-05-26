@@ -1,4 +1,4 @@
-.TH UBUNTU-VM-BUILDER 0.5 "May 2008"
+.TH UBUNTU-VM-BUILDER 1 "May 2008"
 .SH NAME
 ubuntu-vm-builder \- build ubuntu based virtual machines
 .SH SYNOPSIS
@@ -124,7 +124,9 @@ The size in MB of the swap partition (default 1000)
 Specify the destination directory.  Default: ubuntu-vm-$SUITE-$ARCH
 .TP
 .B \-t, \-\-tmp PATH
-Use TMPDIR as temporary working area for the image generation. Defaults to the same directory as --dest if it has been specified with a full path or to the current directory otherwise.
+Use PATH as temporary working area for the image generation. 
+Defaults to $TMPDIR or /tmp if $TMPDIR is not defined.  
+If it is set to "-" data the data will go the same directory as -d if specified with a full path or the current directory if not.
 .TP
 .B \-\-tmpfs OPTIONS
 Use a tmpfs as the working directory, specifying its options 

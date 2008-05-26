@@ -39,7 +39,7 @@ qemu_common_target_conversion() {
 
 	if [ -n "$LIBVIRT" ]
 	then
-		LIBVIRTXML=`mktemp -p $TMPDIR vm-builder-XXXXXXXXXX` || exit 1
+		LIBVIRTXML=`mktemp -p $VMTMPDIR vm-builder-XXXXXXXXXX` || exit 1
 		LIBVIRTNAME="$VMHOSTNAME"
 		MAC="52:54:00$(hexdump -e '/1 ":%02x"' -n 3 /dev/urandom)"
 

@@ -28,6 +28,7 @@
 #  create launchjeos command for vmware vm's
 #  review security of running as root, messing with $DESTINATION
 
+test -n "$TMPDIR" || TMPDIR=""
 # make sure variables are initialized and script quits when error are encountered
 set -o nounset
 set -o errexit
@@ -35,7 +36,7 @@ set -o errexit
 # display debug info
 VERBOSE=""
 info () {
-    if [ ! -z "$VERBOSE" ]; then
+    if [ -n "$VERBOSE" ]; then
         echo "$@"
     fi
 }
@@ -117,8 +118,9 @@ suite              Use the specified Ubuntu suite.
 		   available on the iso, obviously.
 --removepkg PKG    Remove PKG from the guest (can be specfied multiple times)
 -t, --tmp  TMPDIR  Use TMPDIR as temporary working area for the image
-                   generation. Defaults to the same directory as -d if specified
-		   with a full path or the current directory if not.
+                   generation. Defaults \$TMPDIR if it is defined, or /tmp otherwise.
+		   If it is set to "-", working data will go in same directory as -d 
+		   if specified with a full path or the current directory if not.
 --tmpfs OPTIONS    Use a tmpfs as the working directory, specifying its size or
                    "-" to use tmpfs default (suid,dev,size=1G).
 --user USERNAME    Set the name of the user to be added. Default: ubuntu.
@@ -282,7 +284,7 @@ do
 			shift 2
 		;;
 		-t|--tmp)
-			TMPDIR="$2"
+			VMTMPDIR="$2"
 			shift 2
 		;;
 		--tmpfs)
@@ -423,12 +425,20 @@ else
 fi
 info "kernel: $KERNEL_FLAVOUR"
 
-if [ -z "$TMPDIR" ]
+if [ -n "$VMTMPDIR" ]
 then
-	if [ ! "${DESTINATION#/}" = "${DESTINATION}" ]; then
-		TMPDIR=`echo $DESTINATION | sed "s,\(.*\)/.*$,\1,"`
+	if [ "$VMTMPDIR" = "-" ]; then
+		if [ ! "${DESTINATION#/}" = "${DESTINATION}" ]; then
+			VMTMPDIR=$(dirname $DESTINATION)
+		else
+			VMTMPDIR="${PWD}"
+		fi
+	fi
+else
+	if [ -n "$TMPDIR" ]; then
+		VMTMPDIR=$TMPDIR
 	else
-		TMPDIR="${PWD}"
+		VMTMPDIR="/tmp"
 	fi
 fi
 
@@ -546,7 +556,7 @@ if [ -z "$PARTFILE" ]; then
 	let PARTITION_END[$partid]=$partstart+MOUNTSIZES[$partid]
 	let partstart=PARTITION_END[$partid]+1
 
-	if [ ! -z "$OPTSIZE" ]
+	if [ -n "$OPTSIZE" ]
 	then
 		let partid=$partid+1
 		MOUNTPOINTS[$partid]="/opt" 
@@ -619,11 +629,12 @@ else
 fi
 set -e
 
-WORKINGDIR=`mktemp -d -p $TMPDIR vm-builder-XXXXXXXXXX` || exit 1
+info "VMTMPDIR: $VMTMPDIR"
+WORKINGDIR=$(mktemp -d -p $VMTMPDIR vm-builder-XXXXXXXXXX) || exit 1
 
 if [ -z "$DESTINATION" ]
 then
-	if [ ! -z "$VMHOSTNAME" ] && [ ! "$VMHOSTNAME" = "ubuntu" ] ; then
+	if [ -n "$VMHOSTNAME" ] && [ ! "$VMHOSTNAME" = "ubuntu" ] ; then
         	DESTINATION="$PWD/ubuntu-vm-$SUITE-$ARCH-$VMHOSTNAME"
 	else
 		DESTINATION="$PWD/ubuntu-vm-$SUITE-$ARCH"
@@ -875,11 +886,11 @@ do_disk_images() {
 
 do_source() {
 	info "do_source $1 $2, iso: $ISO"
-	if [ ! -z $ISO ]; then
+	if [ -n "$ISO" ]; then
 		# source is an ISO file
-		if [ -e $ISO ]; then
+		if [ -e "$ISO" ]; then
 			# the file exists
-			if [ ! -z "$2" ]; then
+			if [ -n "$2" ]; then
 				# this is not the first time: need to unmount the previous first
 				umount $2/isomnt || true
 				rmdir $2/isomnt
@@ -897,7 +908,7 @@ do_source() {
 			echo "$ISO not found, using $MIRROR"
 		fi
 	fi
-	if [ ! -z $2 ]; then
+	if [ -n "$2" ]; then
 		# this is not the first time, update the source.list on the target
 		if [ "$1" = "-" ]; then
 			# this the last time we are called, push the --mirror info
@@ -941,7 +952,7 @@ do_add_ssh_key () {
 	        chroot root chown -R root:root /root/.ssh
 		sshinstalled="true"
 	else
-		test ! -z $SSHKEY && echo "No ssh root key found: $SSHKEY"
+		test -n "$SSHKEY" && echo "No ssh root key found: $SSHKEY"
 	fi
 	if [ -f "$SSHUKEY" ]
         then
@@ -950,9 +961,9 @@ do_add_ssh_key () {
                 chroot root chown -R $VMUSER:$VMUSER /home/$VMUSER/.ssh
 		sshinstalled="true"
         else
-                test ! -z $SSHUKEY && echo "No ssh user key found: $SSHUKEY"
+                test -n "$SSHUKEY" && echo "No ssh user key found: $SSHUKEY"
         fi
-	if [ ! -z $sshinstalled ]; then
+	if [ -n "$sshinstalled" ]; then
 		chroot root apt-get install --force-yes -y openssh-server || true
 	fi
 }
@@ -1132,7 +1143,7 @@ do_firstlogin () {
         #
         # Install the script to be executed
         #
-	if [ ! -z $dofirst ]; then 
+	if [ -n "$dofirst" ]; then 
 		cp $FIRSTLOGIN root/root/firstlogin.sh
 		chmot a+x root/root/firstlogin.sh
 	fi
@@ -1272,7 +1283,7 @@ do_target_vm_conversion () {
 
 do_cleanup () {
 	info "Cleaning up..."
-	if [ ! -z $VERBOSE ]; then
+	if [ -n "$VERBOSE" ]; then
 		echo "Press return to go ahead with cleanup"
 		read
 	fi
@@ -1312,7 +1323,7 @@ do_cleanup () {
 	popd > /dev/null
 
 	#unmount and remove working directory
-	if [ ! -z $TMPFS ]; then
+	if [ -n "$TMPFS" ]; then
 		umount "$WORKINGDIR"
 	fi
 	rm -rf "$WORKINGDIR"
@@ -1330,7 +1341,7 @@ function interruptHandler () {
 	exit 2
 }
 
-if [ ! -z $TMPFS ]; then
+if [ -n "$TMPFS" ]; then
 	if [ "$TMPFS" = "-" ]; then
 		mount -t tmpfs ubuntu-vm-builder -o suid,dev,size=1G "$WORKINGDIR"
 	else
