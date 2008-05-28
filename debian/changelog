@@ -1,3 +1,9 @@
+ubuntu-vm-builder (0.6) intrepid; urgency=low
+
+  * Release into Ubuntu proper.
+
+ -- Soren Hansen <soren@ubuntu.com>  Wed, 28 May 2008 11:36:02 +0200
+
 ubuntu-vm-builder (0.5ubuntu1~ppa4) intrepid; urgency=low
 
   [Loic Minier]
