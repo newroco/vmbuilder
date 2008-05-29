@@ -1,3 +1,10 @@
+ubuntu-vm-builder (0.6ubuntu1) UNRELEASED; urgency=low
+
+  * Fix unchecked usage of $SUDO_USER which might be unset when creating the
+    configuration.
+
+ -- Loic Minier <lool@dooz.org>  Thu, 29 May 2008 23:18:50 +0200
+
 ubuntu-vm-builder (0.6) intrepid; urgency=low
 
   * Release into Ubuntu proper.
