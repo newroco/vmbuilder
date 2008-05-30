@@ -1,3 +1,11 @@
+ubuntu-vm-builder (0.7~ppa1) intrepid; urgency=low
+
+  [Michael Vogt]
+  * Add Intrepid to the suites
+
+ -- Nicolas Barcet <nicolas.barcet@canonical.com>  Fri, 31 May 2008 00:10:00 +0200
+
+
 ubuntu-vm-builder (0.6) intrepid; urgency=low
 
   * Release into Ubuntu proper.
@@ -49,8 +57,6 @@ ubuntu-vm-builder (0.4ubuntu2~ppa7) hardy; urgency=low
     the same way as pbuilder does (LP: #228372)
 
   [ Nick Barcet ]
-  * Lock the root account by default (LP: #230291)
-  * Add ssh keys to the user account and not to root (LP: #230291)
   * Added function do_copy_settings to fix bug LP: #221231
   * Fix missing ipv6 entries in host file (LP: #230299)
   * Fix issue with template arguments fetching (LP: #228268)
@@ -70,7 +76,18 @@ ubuntu-vm-builder (0.4ubuntu2~ppa7) hardy; urgency=low
   * Check Release files against the archive keyring; depend on ubuntu-keyring.
     (LP: #230334)
 
- -- Nicolas Barcet <nicolas.barcet@canonical.com>  Fri, 09 May 2008 12:56:00 +0200
+  [ Soren Hansen ]
+  * Fix root ssh login. (LP: #234062)
+  * Fix network address handling. (LP: #232361) Thanks to Kevin Traas
+    for the patch.
+
+ -- Soren Hansen <soren@ubuntu.com>  Fri, 23 May 2008 09:52:22 +0200
+
+ubuntu-vm-builder (0.4-0ubuntu0.1) hardy-security; urgency=low
+
+  * SECURITY UPDATE: adjust ubuntu-vm-builder to lock root account by default
+
+ -- Nicolas Barcet <nicolas.barcet@canonical.com>  Mon, 28 Apr 2008 14:02:01 +0200
 
 ubuntu-vm-builder (0.4) hardy; urgency=low
 
