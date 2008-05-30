@@ -1,0 +1,136 @@
+.TH UBUNTU-VM-BUILDER 1 "Mar 2008"
+.SH NAME
+ubuntu-vm-builder \- build ubuntu based virtual machines
+.SH SYNOPSIS
+.B ubuntu-vm-builder <vm> <suite>
+[\fIOPTIONS\fR]...
+.SH DESCRIPTION
+This manual page documents the
+.B ubuntu-vm-builder
+command.
+.B ubuntu-vm-builder
+is a program that builds virtual machines based on Ubuntu.
+.SH OPTIONS
+.TP
+.B NOTE!!! There are many more options than this. See ubuntu-vm-builder --help for more information
+.TP
+.B \-\-addpkg PKG
+Install PKG into the guest (can be specfied multiple times)
+.TP
+.B \-a, \-\-arch ARCH
+Specify the target architecture.
+Valid options: i386 amd64 (amd64 only on amd64 hosts).
+Defaults to the same as the running system.
+.TP
+.B \-d, \-\-dest
+Specify the destination directory.  Default: ubuntu-vm-$SUITE-$ARCH
+.TP
+.B \-\-domain DOMAIN
+Set DOMAIN as the domain name of the guest. Default: The domain of the machine running this script.
+.TP
+.B \-h, \-\-help
+Self-explanatory.
+.TP
+.B \-\-hostname NAME
+Set NAME as the hostname of the guest. Default: ubuntu
+.TP
+.B \-\-mem NN
+Assign NN megabytes of memory to the guest vm.  Default: 128
+.TP
+.B \-\-mirror URL
+Use Ubuntu mirror at URL. Default: http://archive.ubuntu.com/ubuntu
+.TP
+.B \-\-removepkg PKG
+Remove PKG from the guest (can be specfied multiple times)
+.TP
+.B \-s, \-\-suite SUITE
+Use the specified Ubuntu suite. Valid options: hardy*, gutsy, feisty, dapper
+.TP
+.B \-t, \-\-tmp  TMPDIR
+Use TMPDIR as temporary working area for the image generation. Defaults to $TMPDIR if set, or /tmp if not.
+.TP
+.B \-\-vm VM
+Generate image for specified virtualisation software.  Valid choices are: vmw6 vmserver vbox qemu kvm*
+.TP
+.B \-\-user username
+Set the name of the user to be added. Default: ubuntu.
+.TP
+.B \-\-name fullname
+Set the full name of the user to be added. Default: Ubuntu.
+.TP
+.B \-\-pass password
+Set the password for the user. Default: ubuntu.
+.TP
+.B \-\-no\-opt
+Do not build the /opt partition
+.TP
+.B \-\-part partfile
+Allows to specify a partition table in partfile each line of partfile should specify (root first):
+.RS
+.RS
+mountpoint size
+.RE
+where size is in megabytes. You can have up to 4 virtual disks, a new disk starts on a line with '---'. 
+ie :
+.RS
+ root 1000
+ /opt 1000
+ swap 256
+ ---
+ /var 2000
+ /log 1500
+.RE
+.RE
+.TP
+The following three options are not used if --part is specified:
+.RS
+.B \-\-rootsize size
+ The size in MB of the root filesystem (default 1000)
+.TP
+.B \-\-optsize size
+The size in MB of the /opt filesystem (default 4000)
+.TP
+.B \-\-swapsize size
+The size in MB of the swap partition (default 1000)
+.RE
+.TP
+.B \-\-kernel-flavour
+The kernel image flavour to install (default: virtual for versions >= gutsy on i386, server otherwise)
+.TP
+.B \-\-components
+A comma seperaed list of distro components to include (e.g. main,universe). This defaults to "main"
+.TP
+.B \-\-ssh-key
+Add the given ssh public key file (absolute path)to the user's authorized keys and install openssh-server (WARNING: this has strong security implications)
+.TP
+.B \-\-exec script
+Run the given script file. You can use 'chroot root <cmd>' to execute code in the guest.
+.TP
+.B \-\-libvirt <uri>  
+Add resulting VM to the libvirt hypervisor at uri.
+.TP
+.B \-\-templates <dir>
+Specify where libvirt.tmpl and vmware.tmpl are stored. Uses script directory by default.
+.TP
+.B \-\-ip address
+Ip address in dotted form (defaults to dhcp if not specified)
+.TP
+Options below are discarded if --ip is not specified
+.RS
+.B \-\-mask value
+IP mask in dotted form (default: 255.255.255.0)
+.TP
+.B \-\-net value
+IP net address (default: X.X.X.0)
+.TP
+.B \-\-bcast value
+IP broadcast (default: X.X.X.255)
+.TP
+.B \-\-gw address
+Gateway address (default: X.X.X.1)
+.TP
+.B \-\-dns address
+Name server address (default: X.X.X.1)
+.RE
+.SH AUTHOR
+ubuntu-vm-builder and this man page was written by Soren Hansen <soren@canonical.com> and is copyright 2007-2008 Canonical Ltd.

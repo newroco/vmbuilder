@@ -1,0 +1,67 @@
+validate_arch() {
+	if [ "$1" != amd64 -a "$1" != i386 -a "$1" != lpia ]
+	then
+		echo "Invalid architecture: \"$1\". Valid choices are: amd64 i386 lpia"
+		exit 1
+	fi
+}
+
+check_dest_dir() {
+	if ! [ -d "`dirname "$1"`" ]
+	then
+		echo "`dirname "$1"` does not exist or is not a directory, so $1 cannot be created"
+		exit 1
+	fi
+	if ! [ -w "`dirname "$1"`" ]
+	then
+		echo "`dirname "$1"` is not writable, so $1 cannot be created"
+		exit 1
+	fi
+}
+
+check_tmp_dir() {
+	if [ ! -d "$1" ]
+	then
+		echo "\"$1\" is not a directory"
+		exit 1
+	fi
+	if [ ! -w "$1" ]
+	then
+		echo "\"$1\" is not writable"
+		exit 1
+	fi
+}
+
+#
+# Will verify that $1 is a valid Ubuntu suite,
+# and if not, give the user the list of supported ones
+# and bail out.
+#
+check_suite() {
+	if ! [ -f /usr/share/ubuntu-vm-builder/suites/"$1" ]
+	then
+		usage
+		echo
+		echo "Error: \"$1\" is not a supported suite"
+		echo "Supported suites are:"
+		ls /usr/share/ubuntu-vm-builder/suites/ | cat
+		exit 1
+	fi
+}
+
+#
+# Will verify that $1 is a valid virtualisatin solution,
+# and if not, give the user the list of supported ones
+# and bail out.
+#
+check_vm() {
+	if ! [ -f /usr/share/ubuntu-vm-builder/vms/"$1" ]
+	then
+		usage
+		echo
+		echo "Error: \"$1\" is not a supported vm"
+		echo "Supported vms are:"
+		ls /usr/share/ubuntu-vm-builder/vms/ | cat
+		exit 1
+	fi
+}

@@ -1,0 +1,70 @@
+. /usr/share/ubuntu-vm-builder/suites/suites-common
+
+updategrub="/sbin/update-grub"
+grubroot=/lib/grub
+
+check_kernel_flavour() {
+	case "$ARCH" in
+		i386)
+			case "$1" in
+				386|686|686-smp|generic|k7|k7-smp|server|server-bigiron)
+					:
+				;;
+				*)
+					echo "Unsupported kernel flavour for Edgy/i386."
+					echo "Supported flavours are: 386 686 686-smp k7 k7-smp server server-bigiron"
+					exit 1
+				;;
+			esac
+			;;
+		amd64)
+			case "$1" in
+				amd64-generic|amd64-k8|amd64-k8-smp|amd64-server|amd64-xeon|server)
+					:
+				;;
+				*)
+					echo "Unsupported kernel flavour for Edgy/amd64."
+					echo "Supported flavours are: amd64-generic amd64-k8 amd64-k8-smp amd64-server amd64-xeon"
+					exit 1
+				;;
+			esac
+			;;
+		*)
+			echo "Unsupported architecture for Edgy"
+			exit 1
+			;;
+	esac
+}
+
+default_kernel() {
+	case "$ARCH" in
+		i386)
+			KERNEL_FLAVOUR=server
+			;;
+		amd64)
+			KERNEL_FLAVOUR=server
+			;;
+		*)
+			echo "Unsupported architecture for Edgy"
+			exit 1
+	esac
+}
+
+suite_do_fstab() {
+	common_do_fstab
+}
+
+suite_generate_device_map() {
+	common_write_device_map_with_uuids
+}
+
+suite_mangle_grub_menu_lst() {
+	common_mangle_grub_menu_list_with_uuid
+}
+
+#
+# Add package names to PKGS
+#
+suite_extra_packages() {
+	:
+}

@@ -1,0 +1,1091 @@
+#!/bin/bash
+#
+#    Ubuntu Jeos image builder
+#    Copyright (C) 2007-2008 Canonical Ltd.
+#
+#    Authors: Soren Hansen <soren@canonical.com>
+#             Neal McBurnett <neal@mcburnett.org>
+#             Michael Vogt <michael.vogt@ubuntu.com>
+#             Mike Frisch
+#             Nick Barcet <nick.barcet@canonical.com>
+#             Onno Benschop <onno@itmaze.com.au>
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License along
+#    with this program; if not, write to the Free Software Foundation, Inc.,
+#    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+# Todo:
+#  create launchjeos command for vmware vm's
+#  review security of running as root, messing with $DESTINATION
+
+# Keep perl inside the chroot quiet
+HOSTLANG=$LANG
+LANG=C
+
+usage () {
+	cat <<EOT
+usage: ubuntu-vm-builder <vm> <suite>   
+                            [--addpkg PKG]
+                            [(-a|--arch) [(amd64|i386|lpia]]
+                            [(-d|--dest) <destination (directory)>]
+                            [--domain DOMAIN]
+                            [-h|--help]
+                            [--hostname NAME]
+                            [--mem num]
+                            [--mirror URL]
+                            [--removepkg PKG]
+                            [(-t|--tmp) temp_dir]
+                            [--user username]
+                            [--name fullname]
+                            [--pass password]
+                            [--part partitionfile]
+                            [--rootsize size]
+                            [--optsize size]
+                            [--swapsize size]
+                            [--kernel-flavour <flavour>]
+                            [--components <comma separated list of components>]
+                            [--ssh-key <public key file>]
+                            [--exec <script to execute>]
+                            [--ip address [
+                            [--mask value]
+                            [--net value]
+                            [--bcast value]
+                            [--gw address]
+                            [--dns address] ]
+
+vm                 Generate image for the specified virtualisation software.
+                   Valid choices are: vmw6 vmserver vbox qemu kvm
+suite              Use the specified Ubuntu suite.
+                   Valid options: hardy, gutsy, feisty, edgy, dapper
+--addpkg PKG       Install PKG into the guest (can be specfied multiple times)
+-a, --arch ARCH    Specify the target architecture.
+                   Valid options: amd64 i386 lpia (defaults to host arch)
+-d, --dest         Specify the destination directory.
+                   Default: ubuntu-vm-$SUITE-$ARCH
+--domain DOMAIN    Set DOMAIN as the domain name of the guest. Default:
+                   The domain of the machine running this script.
+-h, --help         This help text.
+-v, --verbose      Show a lot of information as the vm is generated.
+--hostname NAME    Set NAME as the hostname of the guest. Default: ubuntu
+                   Also uses this name as the VM name
+--mem NN           Assign NN megabytes of memory to the guest vm.
+                   Default: 128
+--mirror URL       Use Ubuntu mirror at URL instead of the default, which
+                   is http://archive.ubuntu.com/ubuntu for official arches
+                   and http://ports.ubuntu.com/ubuntu-ports otherwise
+--removepkg PKG    Remove PKG from the guest (can be specfied multiple times)
+-t, --tmp  TMPDIR  Use TMPDIR as temporary working area for the image
+                   generation. Defaults to \$TMPDIR if set, or /tmp if not.
+--user username    Set the name of the user to be added. Default: ubuntu.
+--name fullname    Set the full name of the user to be added. Default: Ubuntu.
+--pass password    Set the password for the user. Default: ubuntu.
+--part partfile    Allows to specify a partition table in partfile
+                   each line of partfile should specify (root first):
+                      mountpoint size
+                   where size is in megabytes. You can have up to 4 virtual
+				   disks, a new disk starts on a line with ---
+                   ie :
+                      root 1000
+                      /opt 1000
+                      swap 256
+                      ---
+                      /var 2000
+                      /log 1500
+The following three options are not used if --part is specified:
+--rootsize size    The size in MB of the root filesystem (default 4096)
+--optsize size     The size in MB of the /opt filesystem. If not set, no /opt
+                   filesystem will be added.
+--swapsize size    The size in MB of the swap partition (default 1024)
+--kernel-flavour   The kernel image flavour to install (default: virtual for
+                   >= gutsy on i386, lpia on lpia, server otherwise)
+--components       A comma seperated list of distro components to include
+                   (e.g. main,universe). This defaults to "main"
+--ssh-key          Add the given ssh public key file (absolute path)
+                   to user's authorized keys and install openssh-server
+                   (WARNING: this has strong security implications)
+--exec             Run the given script file. You can use 
+                   'chroot root <cmd>' to execute code in the guest.
+--ip address       Ip address in dotted form
+                   (defaults to dhcp if not specified)
+
+Options below are discarded if --ip is not specified
+--mask value       IP mask in dotted form (default: 255.255.255.0)
+--net value        IP net address (default: X.X.X.0)
+--bcast value      IP broadcast (default: X.X.X.255)
+--gw address       Gateway address (default: X.X.X.1)
+--dns address      Name server address (default: X.X.X.1)
+
+('*' denotes default option)
+
+EOT
+
+	#
+	# Emit usage info specific to each vm type
+	#
+	for vm in /usr/share/ubuntu-vm-builder/vms/*
+	do
+		vm="`basename "$vm"`"
+		echo "Options specific for vm type $vm:"
+		/usr/share/ubuntu-vm-builder/vms/$vm usage
+	done
+
+cat <<EOT
+
+ubuntu-vm-builder is Copyright (C) 2007-2008 Canonical Ltd. and
+written by Soren Hansen <soren@canonical.com>.
+EOT
+}
+
+info () {
+	test -n "$VERBOSE" && echo "$@"
+}
+
+if [ $# -lt 2 ]
+then
+	usage
+	exit 1
+fi
+
+#
+# Import a stack of sanity checks
+#
+. /usr/share/ubuntu-vm-builder/sanity-checks
+
+#
+# First arg is the vm tech to use
+#
+check_vm "$1"
+VM="$1"
+. /usr/share/ubuntu-vm-builder/vms/$VM
+shift
+
+#
+# Second arg is the Ubuntu suite to install
+#
+check_suite "$1"
+SUITE="$1"
+. /usr/share/ubuntu-vm-builder/suites/$SUITE
+shift
+
+TEMP=`getopt -q -o a:d:hs:t:v --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,no-opt,exec:,verbose,$vm_getopt_args  -- "$@"`
+eval set -- "$TEMP"
+
+while true
+do
+	case "$1" in 
+		--addpkg)
+			PKGCMD="$PKGCMD $2"
+			shift 2
+		;;
+		-a|--arch)
+			validate_arch $2
+			ARCH="$2"
+			shift 2
+		;;
+		-d|--dest)
+			check_dest_dir "$2"
+			if [ ! "${2#/}" = "${2}" ]
+			then
+				# Absolute path given
+				DESTINATION="$2"
+			else
+				# Relative path given
+				DESTINATION="${PWD}/$2"
+			fi
+			shift 2
+		;;
+		--domain)
+			DOMAIN="$2"
+			shift 2
+		;;
+		--hostname)
+			VMHOSTNAME="$2"
+			shift 2
+		;;
+		--mem)
+			MEM="$2"
+			shift 2
+		;;
+		--mirror)
+			MIRROR="$2"
+			shift 2
+		;;
+		--removepkg)
+			PKGCMD="$PKGCMD ${2}-"
+			shift 2
+		;;
+		-t|--tmp)
+			TMPDIR="$2"
+			shift 2
+		;;
+		--vm)
+			check_vm "$2"
+			shift 2
+		;;
+		--user)
+			VMUSER="$2"
+			shift 2
+		;;
+		--name)
+			NAME="$2"
+			shift 2
+		;;
+		--pass)
+			PASS="$2"
+   			shift 2
+		;;
+		--part)
+			PARTFILE="$2"
+			shift 2
+		;;
+		--rootsize)
+			ROOTSIZE="$2"
+			shift 2
+		;;
+		--swapsize)
+			SWAPSIZE="$2"
+			shift 2
+		;;
+		--optsize)
+			OPTSIZE="$2"
+			shift 2
+		;;
+		--kernel-flavour)
+			KERNEL_FLAVOUR="$2"
+			shift 2
+		;;
+		--components)
+			COMPS="$2"
+			shift 2
+		;;
+		--ssh-key)
+			SSHKEY="$2"
+			shift 2
+		;;
+		--exec)
+			EXEC="$2"
+			shift 2
+		;;
+		--ip)
+			IP="$2"
+			shift 2
+		;;
+		--mask)
+			MASK="$2"
+			shift 2
+		;;
+		--net)
+			NET="$2"
+			shift 2
+		;;
+		--bcast)
+			BCAST="$2"
+			shift 2
+		;;
+		--gw)
+			GW=$2
+			shift 2
+		;;
+		--dns)
+			DNS=$2
+			shift 2
+		;;
+		--no-opt)
+			echo "Ignored obsolete --no-opt option"
+			shift 1
+		;;
+		-v|--verbose)
+			VERBOSE="YEAH"
+			shift 1
+		;;
+		--)
+			shift
+			break
+		;;
+		*)
+			vm_getopt "$@"
+			if [ $argsused -gt 0 ]
+			then
+				shift $argsused
+			else
+				# The vm had no clue what this was either
+				echo "Unknown option: $1"
+				usage
+				exit 1
+			fi
+			;;
+	esac
+done
+
+if [ -z "$ARCH" ]
+then
+	ARCH=`dpkg --print-architecture`
+fi
+
+if [ -z "$KERNEL_FLAVOUR" ]
+then
+	default_kernel
+else
+	check_kernel_flavour "$KERNEL_FLAVOUR"
+fi
+
+if [ -z "$TMPDIR" ]
+then
+	TMPDIR="/tmp"
+fi
+
+if [ -z "$TEMPLATEDIR" ]
+then
+	TEMPLATEDIR=/usr/share/ubuntu-vm-builder/templates
+fi
+
+if [ -z "$VMUSER" ]
+then
+	VMUSER=ubuntu
+fi
+
+if [ -z "$PASS" ]
+then
+	PASS=ubuntu
+fi
+
+if [ -z "$MIRROR" ]
+then
+	if [ "$ARCH" = "lpia" ]
+	then
+		MIRROR="http://ports.ubuntu.com/ubuntu-ports"
+	else
+		MIRROR="http://archive.ubuntu.com/ubuntu"
+	fi
+fi
+
+if [ -z "$MEM" ]
+then
+	MEM=128
+fi
+
+if [ -z "$VMHOSTNAME" ]
+then
+	VMHOSTNAME="ubuntu"
+fi
+
+if [ -z "$DOMAIN" ]
+then
+	DOMAIN="`hostname -d`"
+fi
+
+if [ -z "$ROOTSIZE" ]
+then
+	ROOTSIZE="4096"
+fi
+
+if [ -z "$SWAPSIZE" ]
+then
+	SWAPSIZE="1024"
+fi
+
+if [ -z "$COMPS" ]
+then
+	if [ "$KERNEL_FLAVOUR" = "virtual" ]
+	then
+		COMPS="main"
+	else
+		COMPS="main,restricted"
+	fi
+fi
+
+declare -a MOUNTPOINTS 
+declare -a MOUNTSIZES
+declare -a MOUNTDISKS
+declare -a DISKIMGS
+declare -a DISKSIZES
+declare -a PARTITION_START
+declare -a PARTITION_END
+
+if [ $# -gt 0 ];
+then
+	usage
+	echo 
+	echo "Excess option(s): $@"
+	exit 1
+fi
+
+if [ ! "`id -u`" = 0 ]
+then
+	echo "$0 must be run as root (e.g. by means of sudo)"
+	exit 1
+fi
+
+# DISKIMGS holds the base names of the disk image files.
+# LOOPDEV[i] holds the loop device name for disk image i
+# MOUNTPOINTS[i] holds the mountpoint of partition i.
+# MOUNTDISKS[i] holds
+# MOUNTSIZES[i] holds the size of partition i.
+
+letters=("a" "b" "c" "d")
+
+if [ -z "$PARTFILE" ]; then
+	let partstart=0
+	let partid=0
+	let NUMDISKS=0
+	DISKIMGS[0]="root"
+
+	MOUNTPOINTS[$partid]="root" 
+	MOUNTDISKS[$partid]="a"
+	MOUNTSIZES[$partid]="$ROOTSIZE"
+	let PARTITION_START[$partid]=$partstart
+	let PARTITION_END[$partid]=$partstart+MOUNTSIZES[$partid]
+	let partstart=PARTITION_END[$partid]+1
+
+	if [ -n "$OPTSIZE" ]
+	then
+		let partid=$partid+1
+		MOUNTPOINTS[$partid]="/opt" 
+		MOUNTDISKS[$partid]="a"
+		MOUNTSIZES[$partid]="$OPTSIZE"
+		let PARTITION_START[$partid]=$partstart
+		let PARTITION_END[$partid]=$partstart+MOUNTSIZES[$partid]
+		let partstart=PARTITION_END[$partid]+1
+	fi
+
+	let partid=$partid+1
+	MOUNTPOINTS[$partid]="swap" 
+	MOUNTDISKS[$partid]="a"
+	if [ -z "$SWAPSIZE" ]; then
+		MOUNTSIZES[$partid]="1000"
+	else
+		MOUNTSIZES[$partid]="$SWAPSIZE"
+	fi
+	let PARTITION_START[$partid]=$partstart
+	let PARTITION_END[$partid]=$partstart+MOUNTSIZES[$partid]
+	let DISKSIZES[0]=PARTITION_END[$partid]+1
+else
+	letters=("a" "b" "c" "d")
+	let index=0
+	let diskindex=0
+	let partnum=0
+	let partstart=0
+
+	echo "Disks and partitions:"
+
+	exec 10<$PARTFILE
+	while read line<&10
+	do
+		if [ "$line" = "---" ]; then
+			let DISKSIZES[$diskindex]=$partstart
+			let diskindex=$diskindex+1
+			let partstart=0
+			let partnum=0
+			if [ $diskindex -gt 3 ]; then
+				echo "Sorry, no more than 4 IDE disks..."
+				exit 1
+			fi
+		else
+			MOUNTDISKS[$index]="${letters[$diskindex]}"
+			MOUNTPOINTS[$index]=${line%\ *}
+			MOUNTSIZES[$index]=`echo "${line#*\ }" | sed 's/^[ \t]*//'`
+			let PARTITION_START[$index]=$partstart
+			let PARTITION_END[$index]=$partstart+MOUNTSIZES[$index]
+			if [ $partnum -eq 0 ]; then
+				DISKIMGS[$diskindex]=`echo "${MOUNTPOINTS[$index]}" | sed 's%\/%%g' | sed 's/[ \t]*$//'`
+				info " Disk: $diskindex ${DISKIMGS[$diskindex]}"
+			fi
+
+			info "  Partition: $partnum ${MOUNTPOINTS[$index]} start: $partstart end: ${PARTITION_END[$index]} size: ${MOUNTSIZES[$index]}"
+			let partstart=PARTITION_END[$index]+1
+			let index=$index+1
+			let partnum=$partnum+1
+			
+		fi
+	done 
+	let DISKSIZES[$diskindex]=$partstart
+	let NUMDISK=$diskindex
+fi
+
+WORKINGDIR=`mktemp -d -p $TMPDIR vm-builder-XXXXXXXXXX` || exit 1
+
+if [ -z "$DESTINATION" ]
+then
+        DESTINATION="$PWD/ubuntu-vm-$SUITE-$ARCH"
+fi
+
+if [ -n "${SUDO_USER}" ]; then
+	sudo -u "${SUDO_USER}" mkdir "${DESTINATION}"
+else
+	mkdir "${DESTINATION}"
+fi
+
+if [ $? -ne 0 ]; then
+	echo "Error creating directory ${DESTINATION}. Unable to proceed."
+	rm -rf "${WORKINGDIR}"
+	exit 1
+fi
+
+if [ -z "$IP" ]; then
+	IP="DHCP"
+else
+	if [ -z "$MASK" ]; then
+		MASK="255.255.255.0"
+		echo "setting mask to \"$MASK\""
+	fi
+	if [ -z "$NET" ]; then
+		NET=`echo $IP | sed 's/\./.0./3' | sed 's/\.[[:digit:]]\{1,3\}$//'` 
+		echo "setting network to \"$NET\""
+	fi
+	if [ -z "$BCAST" ]; then
+		BCAST=`echo $IP | sed 's/\./.255./3' | sed 's/\.[[:digit:]]\{1,3\}$//'` 
+		echo "setting broadcast to \"$BCAST\""
+	fi
+	if [ -z "$GW" ]; then
+                GW=`echo $IP | sed 's/\./.1./3' | sed 's/\.[[:digit:]]\{1,3\}$//'`
+		echo "setting gateway to \"$GW\""
+        fi
+	if [ -z "$DNS" ]; then
+                DNS=`echo $IP | sed 's/\./.1./3' | sed 's/\.[[:digit:]]\{1,3\}$//'`
+		echo "setting name server to \"$DNS\""
+        fi
+
+
+fi 
+
+do_initial_user () {
+	#
+	# Set up a user with sudo etc.
+	#
+
+	chroot root adduser --disabled-password --gecos "${NAME}" ${VMUSER} > /dev/null
+	chroot root chpasswd <<EOF
+${VMUSER}:${PASS}
+EOF
+
+	chroot root addgroup --system admin >/dev/null 2>&1
+	chroot root adduser ${VMUSER} admin >/dev/null 2>&1
+
+	cat >> root/etc/sudoers << EOF
+
+# Members of the admin group may gain root privileges
+%admin ALL=(ALL) ALL
+EOF
+
+	for group in adm audio cdrom dialout floppy video plugdev dip netdev powerdev lpadmin scanner; do
+		chroot root adduser ${VMUSER} $group >/dev/null 2>&1
+	done
+
+	# Lock root account
+	chroot root chpasswd <<EOF
+root:!
+EOF
+}
+
+do_network_setup () {
+	echo $VMHOSTNAME > root/etc/hostname
+
+	cat > root/etc/hosts <<EOF
+127.0.0.1 localhost
+127.0.1.1 $VMHOSTNAME.$DOMAIN $VMHOSTNAME
+
+# The following lines are desirable for IPv6 capable hosts
+::1 ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+ff02::3 ip6-allhosts
+EOF
+
+	cat > root/etc/network/interfaces <<EOF
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+auto eth0
+EOF
+	if [ "$IP" = "DHCP" ]; then
+		cat >> root/etc/network/interfaces <<EOF
+iface eth0 inet dhcp
+EOF
+	else
+		cat >> root/etc/network/interfaces <<EOF
+iface eth0 inet static
+        address $IP
+        netmask $MASK 
+        network $NET
+        broadcast $BCAST
+        gateway $GW
+        # dns-* options are implemented by the resolvconf package, if installed
+        dns-nameservers $DNS
+        dns-search $DOMAIN
+EOF
+	fi
+
+	#temporary fix for /var/run/network not being created
+	if [ ! -e root/var/run/network ]; then 
+		echo "Creating /var/run/network"
+		mkdir root/var/run/network
+	fi
+}
+
+do_bootloader () {
+	#
+	# The suite will have defined updategrub
+	#
+	sed -e "s,%UPDATEGRUB%,$updategrub,g" << EOF | cat > target/etc/kernel-img.conf
+do_symlinks = yes
+relative_links = yes
+do_bootfloppy = no
+do_initrd = yes
+link_in_boot = no
+postinst_hook = %UPDATEGRUB%
+postrm_hook = %UPDATEGRUB%
+do_bootloader = no
+EOF
+
+	chroot target apt-get --force-yes -y install grub
+
+	mkdir target/boot/grub
+
+	if [ $ARCH = "amd64" ]
+	then
+		grubarch="x86_64-pc"
+	else
+		grubarch="i386-pc"
+	fi
+	cp target/$grubroot/$grubarch/* target/boot/grub/
+
+	#
+	# Create device.map
+	#
+	echo "(hd0) ${DISKIMGS[0]}.raw" >> device.map
+	grub --device-map=device.map --batch<<EOT
+root (hd0,0)
+setup (hd0)
+EOT
+
+	cat > target/boot/grub/device.map << EOF
+(fd0)	/dev/fd0
+EOF
+	suite_generate_device_map
+
+	# Hacky-di-hack.. First generate the template, then remove the errant kopt_2_6 (which hardcodes the root device to /dev/hda1) and then rerun update-grub.
+	chroot target $updategrub -y
+	suite_mangle_grub_menu_lst
+	chroot target $updategrub
+	chroot target grub-set-default 0
+}
+
+do_disk_images() {
+	#
+	# Create disk images, partitions and format
+	#
+
+	for ((i=0; i<${#DISKIMGS[@]}; i++)); do
+		# create disk image
+		let size=${DISKSIZES[$i]}*1024
+		qemu-img create -f raw ${DISKIMGS[$i]}.raw $size > /dev/null
+
+		# label the disk
+		parted --script ${DISKIMGS[$i]}.raw mklabel msdos
+	done
+	
+	let diskindex=-1
+	curdisk=""
+
+	# create the partitions
+	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+		if [ "$curdisk" != "${MOUNTDISKS[$i]i}" ]; then
+			let diskindex++
+			img="${DISKIMGS[$diskindex]}"
+			curdisk=${MOUNTDISKS[$i]}
+			info "Disk: $curdisk $img"
+		fi
+
+		# Create partition and format
+		info "  creating partition ${MOUNTPOINTS[$i]} on $img"
+		if [ "${MOUNTPOINTS[$i]}" = "swap" ]; then
+			parted --script -- $img.raw mkpartfs primary linux-swap ${PARTITION_START[$i]} ${PARTITION_END[$i]}
+		else
+			parted --script -- $img.raw mkpartfs primary ext2 ${PARTITION_START[$i]} ${PARTITION_END[$i]}
+		fi
+	done
+	
+	#mount the disk loops
+	for ((i=0;i<${#DISKIMGS[@]};i++)); do
+		LOOPDEV[$i]=$(losetup -s -f ${DISKIMGS[$i]}.raw)
+		kpartx -a ${LOOPDEV[$i]} > /dev/null
+	done
+	
+	#format the partitions
+	let diskindex=-1
+        curdisk=""
+        for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+                if [ "$curdisk" != "${MOUNTDISKS[$i]}" ]; then
+                        let diskindex++
+                        img="${DISKIMGS[$diskindex]}"
+                        curdisk=${MOUNTDISKS[$i]}
+			let partindex=1
+			mapper=$(echo ${LOOPDEV[$diskindex]} | sed s-/dev/-/dev/mapper/-)
+                fi
+
+		if  [ "${MOUNTPOINTS[$i]}" = "swap" ]; then
+			info formating ${mapper}p${partindex} as swap for ${MOUNTPOINTS[$i]}
+			mkswap ${mapper}p${partindex}	
+		else 
+			info formating ${mapper}p${partindex} as ext3 for ${MOUNTPOINTS[$i]}
+			mkfs.ext3 -q ${mapper}p${partindex}
+		fi
+		/lib/udev/vol_id --uuid  ${mapper}p${partindex} >  ${MOUNTPOINTS[$i]}.uuid
+		let partindex++
+	done
+
+}
+
+do_debootstrap() {
+	mkdir root
+	debootstrap --components="$COMPS" --arch $ARCH --keyring /usr/share/keyrings/ubuntu-archive-keyring.gpg $SUITE root "$MIRROR"
+}
+
+do_kernel_n_friends () {
+	PKGS="linux-$KERNEL_FLAVOUR"
+	vm_extra_packages
+	suite_extra_packages
+	chroot root apt-get --force-yes -y install $PKGS
+}
+
+do_add_remove_packages () {
+	cmd="apt-get --purge install "
+	chroot root apt-get -y --force-yes --purge install $PKGCMD
+}
+
+do_add_ssh_key () {
+	if [ -z "$SSHKEY" ]
+	then
+		return
+	fi
+	if [ ! -f "$SSHKEY" ]
+	then
+		echo "NO $SSHKEY found"
+		return
+	fi
+	# we have a key, add it
+	chroot root apt-get install --force-yes -y openssh-server
+	mkdir root/home/$VMUSER/.ssh
+	cp "$SSHKEY" root/home/$VMUSER/.ssh/authorized_keys
+	chroot root chown -R $VMUSER:$VMUSER /home/$VMUSER/.ssh
+}
+
+do_sourceslist () {
+	cat > root/etc/apt/sources.list << EOF
+deb ${MIRROR} ${SUITE} main
+#deb-src ${MIRROR} ${SUITE} main
+
+## Major bug fix updates produced after the final release of the
+## distribution.
+deb ${MIRROR} ${SUITE}-updates main
+#deb-src ${MIRROR} ${SUITE}-updates main 
+
+deb http://security.ubuntu.com/ubuntu ${SUITE}-security main 
+#deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security main 
+EOF
+	
+	## RESTRICTED ##
+
+	if echo $COMPS | grep restricted &> /dev/null 
+	then
+		cat >> root/etc/apt/sources.list << EOF
+deb ${MIRROR} ${SUITE} restricted
+#deb-src ${MIRROR} ${SUITE} restricted
+deb ${MIRROR} ${SUITE}-updates restricted
+#deb-src ${MIRROR} ${SUITE}-updates restricted 
+
+deb http://security.ubuntu.com/ubuntu ${SUITE}-security restricted 
+#deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security restricted 
+EOF
+	else
+		cat >> root/etc/apt/sources.list << EOF
+#deb ${MIRROR} ${SUITE} restricted
+#deb-src ${MIRROR} ${SUITE} restricted
+#deb ${MIRROR} ${SUITE}-updates restricted
+#deb-src ${MIRROR} ${SUITE}-updates restricted 
+
+#deb http://security.ubuntu.com/ubuntu ${SUITE}-security restricted 
+#deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security restricted 
+EOF
+	fi
+
+	## UNIVERSE ##
+
+	if echo $COMPS | grep universe &> /dev/null 
+	then
+		cat >> root/etc/apt/sources.list << EOF
+## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu
+## team, and may not be under a free licence. Please satisfy yourself as to
+## your rights to use the software. Also, please note that software in
+## universe WILL NOT receive any review or updates from the Ubuntu security
+## team.
+deb ${MIRROR} ${SUITE} universe
+#deb-src ${MIRROR} ${SUITE} universe
+deb ${MIRROR} ${SUITE}-updates universe
+#deb-src ${MIRROR} ${SUITE}-updates universe
+deb http://security.ubuntu.com/ubuntu ${SUITE}-security universe
+#deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security universe
+EOF
+	else
+		cat >> root/etc/apt/sources.list << EOF
+## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu
+## team, and may not be under a free licence. Please satisfy yourself as to
+## your rights to use the software. Also, please note that software in
+## universe WILL NOT receive any review or updates from the Ubuntu security
+## team.
+#deb ${MIRROR} ${SUITE} universe
+#deb-src ${MIRROR} ${SUITE} universe
+#deb ${MIRROR} ${SUITE}-updates universe
+#deb-src ${MIRROR} ${SUITE}-updates universe
+#deb http://security.ubuntu.com/ubuntu ${SUITE}-security universe
+#deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security universe
+EOF
+	fi
+
+	## MULTIVERSE ##
+		
+	if echo $COMPS | grep multiverse &> /dev/null 
+	then
+		cat >> root/etc/apt/sources.list << EOF	
+## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu 
+## team, and may not be under a free licence. Please satisfy yourself as to 
+## your rights to use the software. Also, please note that software in 
+## multiverse WILL NOT receive any review or updates from the Ubuntu
+## security team.
+deb ${MIRROR} ${SUITE} multiverse
+#deb-src ${MIRROR} ${SUITE} multiverse
+deb ${MIRROR} ${SUITE}-updates multiverse
+#deb-src ${MIRROR} ${SUITE}-updates multiverse
+deb http://security.ubuntu.com/ubuntu ${SUITE}-security multiverse
+#deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security multiverse
+EOF
+	else
+		cat >> root/etc/apt/sources.list << EOF
+## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu 
+## team, and may not be under a free licence. Please satisfy yourself as to 
+## your rights to use the software. Also, please note that software in 
+## multiverse WILL NOT receive any review or updates from the Ubuntu
+## security team.
+#deb ${MIRROR} ${SUITE} multiverse
+#deb-src ${MIRROR} ${SUITE} multiverse
+#deb ${MIRROR} ${SUITE}-updates multiverse
+#deb-src ${MIRROR} ${SUITE}-updates multiverse
+#deb http://security.ubuntu.com/ubuntu ${SUITE}-security multiverse
+#deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security multiverse
+EOF
+	fi
+	cat >> root/etc/apt/sources.list << EOF
+## Uncomment the following two lines to add software from the 'backports'
+## repository.
+## N.B. software from this repository may not have been tested as
+## extensively as that contained in the main release, although it includes
+## newer versions of some applications which may provide useful features.
+## Also, please note that software in backports WILL NOT receive any review
+## or updates from the Ubuntu security team.
+# deb ${MIRROR} ${SUITE}-backports main restricted universe multiverse
+# deb-src ${MIRROR} ${SUITE}-backports main restricted universe multiverse
+
+## Uncomment the following two lines to add software from Canonical's
+## 'partner' repository. This software is not part of Ubuntu, but is
+## offered by Canonical and the respective vendors as a service to Ubuntu
+## users.
+# deb http://archive.canonical.com/ubuntu hardy partner
+# deb-src http://archive.canonical.com/ubuntu hardy partner
+EOF
+}
+
+do_copy_settings () {
+        #copy the host settings to the new guest (locale, console-setup, tz)
+        cp /etc/default/locale root/etc/default/
+        cp /etc/default/console-setup root/etc/default/
+        cp /etc/timezone root/etc/
+        chroot root dpkg-reconfigure -pcritical tzdata
+	LANG=$HOSTLANG
+	chroot root locale-gen en_US
+	chroot root locale-gen $LANG
+	chroot root dpkg-reconfigure -pcritical locales
+}
+
+
+do_exec_script () {
+	if [ -z "$EXEC" ]
+	then
+		return
+	fi
+
+	if [ ! -f "$EXEC" ]
+	then
+		echo "Script '$EXEC' not found."
+		return
+	fi
+	#
+	# Execute the script.
+	#
+	"$EXEC"
+}
+
+mount_parts () {
+	base="$1"
+	if [ "$base" = "" ]; then
+		echo base is empty....  exiting
+		exit 0
+	fi
+	let diskindex=-1
+        curdisk=""
+        for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+                if [ "$curdisk" != "${MOUNTDISKS[$i]}" ]; then
+                        let diskindex++
+                        img="${DISKIMGS[$diskindex]}"
+                        curdisk=${MOUNTDISKS[$i]}
+                        let partindex=1
+			mapper=$(echo ${LOOPDEV[$diskindex]} | sed s-/dev/-/dev/mapper/-)
+                fi
+
+                if  [ "${MOUNTPOINTS[$i]}" = "root" ]; then
+			mount ${mapper}p${partindex} $base
+		elif  [ "${MOUNTPOINTS[$i]}" != "swap" ]; then
+			mkdir $base${MOUNTPOINTS[$i]}
+			mount ${mapper}p${partindex} $base${MOUNTPOINTS[$i]}
+                fi
+		let partindex++
+        done
+}
+
+umount_parts () {
+	base="$1"
+	for ((i=$(( ${#MOUNTPOINTS[@]} -1));i>-1;i--)); do
+		if  [ "${MOUNTPOINTS[$i]}" = "root" ]; then
+			echo umount  $base
+			umount  $base
+		elif  [ "${MOUNTPOINTS[$i]}" != "swap" ]; then
+			echo umount  $base${MOUNTPOINTS[$i]}
+			umount  $base${MOUNTPOINTS[$i]}
+		fi
+	done
+}
+
+# Taken from debootstrap
+do_avoid_starting_daemons() {
+	cat > root/usr/sbin/policy-rc.d <<EOT
+#!/bin/sh
+
+while true; do
+case "$1" in
+  -*) shift ;;
+  makedev) exit 0;;
+  x11-common) exit 0;;
+  *)  exit 101;;
+esac
+done
+EOT
+	chmod 755 "root/usr/sbin/policy-rc.d"
+			
+}
+
+# Taken from debootstrap
+do_undo_avoid_starting_daemons() {
+	rm root/usr/sbin/policy-rc.d
+}
+
+#
+# linux-restricted-modules unconditionally mounts a tmpfs.
+#
+do_unmount_restricted_tmpfs() {
+	umount root/lib/modules/*/volatile > /dev/null 2>&1
+}
+
+do_mount_target() {
+	mkdir target 
+	mount_parts target
+}
+
+do_umount_target() {
+	umount_parts target
+	rmdir target
+}
+
+do_copy_to_disk_images () {
+
+	chroot root apt-get clean
+	#
+	# Copy the debootstrapped filesystem into the partitions
+	#
+	info Copy the debootstrapped filesystem 
+	cp -a root/* target
+	rm -rf root
+}
+
+do_target_vm_conversion () {
+	info Convert to format $VM
+
+	vm_target_conversion
+
+	for ((i=0;i<${#DISKIMGS[@]};i++)); do
+		qemu-img convert $QEMU_IMG_CONVERT_OPTS ${DISKIMGS[$i]}.raw "${DISKIMGS[$i]}${QEMU_IMG_CONVERT_EXTENSION}"
+	done
+
+	test -n "${SUDO_USER}" && chown "$SUDO_USER" $FILES
+	mv $FILES $DESTINATION
+	echo "Done.  Images are in ${DESTINATION}."
+}
+
+do_cleanup () {
+	#unmount the disk loops
+        for ((i=0;i<${#DISKIMGS[@]};i++)); do
+                kpartx -d ${LOOPDEV[$i]} > /dev/null
+		losetup -d ${LOOPDEV[$i]} 
+        done
+
+	for ((i=0;i<${#MOUNTPOINTS[@]};i++)); do
+		rm ${MOUNTPOINTS[$i]}.uuid
+	done
+	for ((i=0;i<${#DISKIMGS[@]};i++)); do
+                rm ${DISKIMGS[$i]}.raw 
+        done
+	popd > /dev/null
+	umount "$WORKINGDIR"
+	rm -rf "$WORKINGDIR"
+}
+
+mount -t tmpfs ubuntu-vm-builder -o suid,dev "$WORKINGDIR"
+pushd "$WORKINGDIR" > /dev/null
+
+do_disk_images
+do_debootstrap
+suite_do_fstab
+do_copy_settings
+do_initial_user
+do_network_setup
+do_avoid_starting_daemons
+do_kernel_n_friends 
+do_add_remove_packages
+do_add_ssh_key
+do_sourceslist
+do_exec_script
+do_undo_avoid_starting_daemons
+do_unmount_restricted_tmpfs
+do_mount_target
+do_copy_to_disk_images 
+do_bootloader
+do_umount_target
+do_target_vm_conversion 
+do_cleanup
+
+exit 0

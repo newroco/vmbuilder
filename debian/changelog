@@ -1,28 +1,86 @@
-ubuntu-jeos-builder (0.1a-0ubuntu1~ppa2) gutsy; urgency=low
+ubuntu-vm-builder (0.4-0ubuntu0.2) hardy-proposed; urgency=low
 
-  * actually save qemu images as qcow2 files to allow snapshots
+  [ Michael Vogt ]
+  * patch the way do_avoid_starting_daemons() to write a policy-rc.d file in
+    the same way as pbuilder does (LP: #228372)
 
- -- Neal McBurnett <neal@bcn.boulder.co.us>  Fri, 09 Nov 2007 23:18:37 -0700
+  [ Nick Barcet ]
+  * Added function do_copy_settings to fix bug LP: #221231
+  * Fix missing ipv6 entries in host file (LP: #230299)
+  * Fix issue with template arguments fetching (LP: #228268)
+  * Create the /etc/apt/sources.list properly (LP: #218195)
+  * Use a tmpfs for $WORKINGDIR to avoid case when file system is mounted
+    with no suid (LP: #228744)
+  * Unproper letters variable initialization (LP: #230312)
 
-ubuntu-jeos-builder (0.1a-0ubuntu1~ppa1) gutsy; urgency=low
-
-  * release as ppa
-  * fix vmware regression - qemu-img needs -O vmdk
-
- -- Neal McBurnett <neal@bcn.boulder.co.us>  Fri, 09 Nov 2007 08:45:55 -0700
-
-ubuntu-jeos-builder (0.1a-0ubuntu1) hardy; urgency=low
+  [ Loic Minier ]
+  * Fix v / --verbose getopt parsing. (LP: #230319)
+  * Compute the default ARCH with dpkg --print-architecture. (LP: #230323)
+  * Add support for lpia.
+    - Allow lpia arch, lpia and lpiacompat kernel flavours.
+    - Use http://ports.ubuntu.com/ubuntu-ports as default mirror for lpia.
+    - Update help/documentation.
+  * Check Release files against the archive keyring; depend on ubuntu-keyring.
+    (LP: #230334)
 
   [ Soren Hansen ]
-  * Initial release.
+  * Fix root ssh login. (LP: #234062)
+  * Fix network address handling. (LP: #232361) Thanks to Kevin Traas
+    for the patch.
 
-  [ Neal McBurnett ]
-  * DESTINATION is now a directory, not a zip file.  This is faster, and
-    fixes problems with zipping files bigger than 2 GB.  Involves
-    chowning files to $SUDO_USER.
-  * Change default archive to http://archive.ubuntu.com/ubuntu from se....
-  * Check that we're running as root before making $WORKINGDIR
-  * Add support for --vm qemu and create launchjeos command for it
-  * Add Build-Depends debhelper
+ -- Soren Hansen <soren@ubuntu.com>  Fri, 23 May 2008 09:52:22 +0200
 
- -- Neal McBurnett <neal@bcn.boulder.co.us>  Mon, 05 Nov 2007 15:27:03 -0700
+ubuntu-vm-builder (0.4-0ubuntu0.1) hardy-security; urgency=low
+
+  * SECURITY UPDATE: adjust ubuntu-vm-builder to lock root account by default
+
+ -- Nicolas Barcet <nicolas.barcet@canonical.com>  Mon, 28 Apr 2008 14:02:01 +0200
+
+ubuntu-vm-builder (0.4) hardy; urgency=low
+
+  [ Soren Hansen ]
+  * FFe reference: (LP: #208161)
+  * Replace start-stop-daemon for a while to fix problems with daemons
+    expecting to be able to listen on certaing ports, etc.
+  * Unmount volatile tmpfs from lrm.
+  * Make /opt opt-in.
+  * Make default rootsize 4096 (to match documentation).
+  * New grub installer code.
+  * Fix syntax error in kernel flavour check.
+  * Massive refactoring.
+  * Make more intelligent default choices based on chosen suite, architecture,
+    kernel flavour, etc.
+  * Further quieting of the process.
+
+  [ Nick Barcet ]
+  * Added template support for vmware and qemu/kvm.
+  * Fix a bug reported by soren where loop devices could accendentally be
+    overwritten.  Was also preventing concurrent runs of the script.
+  * Further quieting of the process.
+
+ -- Soren Hansen <soren@ubuntu.com>  Wed, 02 Apr 2008 11:52:35 +0200
+
+ubuntu-vm-builder (0.3) hardy; urgency=low
+
+  * Fix perl locale warnings.
+  * Add missing --libvirt option. (LP: #194242)
+  * Add edgy to the list of supported distros (adding the appropriate quirks).
+  * Don't default to virtual kernel flavour when not installing i386. (LP:
+    #194240)
+  * Remove references to JeOS. (LP: #194233)
+  * Give more useful error messages when people pass unuseful options.
+  * Make the building process much less verbose (and hence less scary).
+
+ -- Soren Hansen <soren@ubuntu.com>  Wed, 12 Mar 2008 01:01:35 +0100
+
+ubuntu-vm-builder (0.2) hardy; urgency=low
+
+  * New release.
+
+ -- Soren Hansen <soren@ubuntu.com>  Thu, 21 Feb 2008 00:34:20 +0100
+
+ubuntu-vm-builder (0.1) hardy; urgency=low
+
+  * Initial upload to Ubuntu.
+
+ -- Soren Hansen <soren@ubuntu.com>  Thu, 14 Feb 2008 15:41:51 +0100
