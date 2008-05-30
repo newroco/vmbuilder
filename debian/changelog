@@ -2,6 +2,7 @@ ubuntu-vm-builder (0.6ubuntu1) UNRELEASED; urgency=low
 
   * Fix unchecked usage of $SUDO_USER which might be unset when creating the
     configuration.
+  * Set LIBVIRT URL to the empty string if it isn't set in the env.
 
  -- Loic Minier <lool@dooz.org>  Thu, 29 May 2008 23:18:50 +0200
 
