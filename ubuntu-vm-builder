@@ -66,7 +66,7 @@ usage: ubuntu-vm-builder <vm> <suite>
 vm                 Generate image for the specified virtualisation software.
                    Valid choices are: vmw6 vmserver vbox qemu kvm
 suite              Use the specified Ubuntu suite.
-                   Valid options: hardy, gutsy, feisty, edgy, dapper
+                   Valid options: intrepid, intrepid, hardy, gutsy, feisty, edgy, dapper
 --addpkg PKG       Install PKG into the guest (can be specfied multiple times)
 -a, --arch ARCH    Specify the target architecture.
                    Valid options: amd64 i386 lpia (defaults to host arch)
