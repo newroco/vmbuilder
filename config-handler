@@ -216,6 +216,7 @@ OVERWRITE=""
 # interesting while debugging.
 VERBOSE=""
 EOF
-	test -n "${SUDO_USER}" && chown "$SUDO_USER":"$SUDO_USER" $configfile
+	CONFIG_OWNER="${SUDO_USER:-}"
+	test -n "$CONFIG_OWNER" && chown "$CONFIG_OWNER:$CONFIG_OWNER" $configfile
 	chmod 600 $configfile
 fi

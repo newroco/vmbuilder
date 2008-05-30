@@ -447,6 +447,8 @@ then
 	TEMPLATEDIR=/usr/share/ubuntu-vm-builder/templates
 fi
 
+LIBVIRT=${LIBVIRT:-}
+
 if [ -z "$VMUSER" ]
 then
 	VMUSER=ubuntu

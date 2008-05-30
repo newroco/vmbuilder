@@ -3,8 +3,12 @@ ubuntu-vm-builder (0.7~ppa1) intrepid; urgency=low
   [Michael Vogt]
   * Add Intrepid to the suites
 
- -- Nicolas Barcet <nicolas.barcet@canonical.com>  Fri, 31 May 2008 00:10:00 +0200
+  [Loic Minier]
+  * Fix unchecked usage of $SUDO_USER which might be unset when creating the
+    configuration.
+  * Set LIBVIRT URL to the empty string if it isn't set in the env.
 
+ -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Fri, 31 May 2008 00:14:00 +0200
 
 ubuntu-vm-builder (0.6) intrepid; urgency=low
 
