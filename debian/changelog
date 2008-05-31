@@ -8,6 +8,9 @@ ubuntu-vm-builder (0.7~ppa1) intrepid; urgency=low
     configuration.
   * Set LIBVIRT URL to the empty string if it isn't set in the env.
 
+  [Nick Barcet]
+  * Added -c option to specify an alternate configuration file
+
  -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Fri, 31 May 2008 00:14:00 +0200
 
 ubuntu-vm-builder (0.6) intrepid; urgency=low

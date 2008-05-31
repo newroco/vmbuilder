@@ -45,9 +45,6 @@ info () {
 HOSTLANG=$LANG
 LANG=C
 
-# read default config from ~/.ubuntu-vm-builder and initialize variables
-. /usr/share/ubuntu-vm-builder/config-handler
-
 # array to hold list of raw "files" to use
 declare -a RAW
 declare -i NUMRAW
@@ -60,6 +57,7 @@ usage: ubuntu-vm-builder <vm> <suite>
                             [(-a|--arch) [(amd64|i386|lpia]]
                             [(-d|--dest) <destination (directory)>]
                             [(-o|--overwrite)]
+			    [-c PATH]
                             [--domain DOMAIN]
                             [-h|--help]
                             [--hostname NAME]
@@ -100,6 +98,7 @@ suite              Use the specified Ubuntu suite.
 -d, --dest         Specify the destination directory.
                    Default: ubuntu-vm-<SUITE>-<ARCH>-<HOSTNAME>
 -o, --overwrite    Force overwrite of destination directory if it already exist
+-c PATH            Specify a optional configuration file (default: ~/.ubuntu-vm-builder)
 --domain DOMAIN    Set DOMAIN as the domain name of the guest. Default:
                    The domain of the machine running this script.
 -h, --help         This help text.
@@ -172,7 +171,7 @@ The following three options are not used if --part is specified:
 
 Options below are discarded if --ip is not specified
 --mask VALUE       IP mask in dotted form (default: 255.255.255.0)
---net VALUE       IP net address (default: X.X.X.0)
+--net VALUE        IP net address (default: X.X.X.0)
 --bcast VALUE      IP broadcast (default: X.X.X.255)
 --gw ADDRESS       Gateway address (default: X.X.X.1)
 --dns ADDRESS      Name server address (default: X.X.X.1)
@@ -226,8 +225,11 @@ SUITE="$1"
 . /usr/share/ubuntu-vm-builder/suites/$SUITE
 shift
 
+# read default config from ~/.ubuntu-vm-builder and initialize variables
+. /usr/share/ubuntu-vm-builder/config-handler
+
 set +e; trap "usage;exit 1" ERR
-TEMP=`getopt -o a:d:ohs:t:v --long addpkg:,arch:,dest:,overwrite,domain:,help,hostname:,mem:,mirror:,iso:,removepkg:,suite:,tmp:,tmpfs:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,raw:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,ssh-user-key:,no-opt,exec:,firstboot:,firstlogin:,verbose,$vm_getopt_args  -- "$@"` 
+TEMP=`getopt -o a:d:ohs:t:vc: --long addpkg:,arch:,dest:,overwrite,domain:,help,hostname:,mem:,mirror:,iso:,removepkg:,suite:,tmp:,tmpfs:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,raw:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,ssh-user-key:,no-opt,exec:,firstboot:,firstlogin:,verbose,$vm_getopt_args  -- "$@"` 
 trap - ERR; set -e
 eval set -- "$TEMP"
 
@@ -388,6 +390,10 @@ do
 			VERBOSE="YES"
 			shift 1
 		;;
+		-c)
+			# already handled in config-handler
+			shift 2
+		;;
 		--)
 			shift
 			break
@@ -442,11 +448,11 @@ else
 	fi
 fi
 
-TEMPLATEDIR=${TEMPLATEDIR:/usr/share/ubuntu-vm-builder/templates}
+TEMPLATEDIR=${TEMPLATEDIR:-/usr/share/ubuntu-vm-builder/templates}
 LIBVIRT=${LIBVIRT:-}
-VMUSER=${VMUSER:"ubuntu"}
-NAME=${NAME:"ubuntu"}
-PASS=${PASS:"ubuntu"}
+VMUSER=${VMUSER:-"ubuntu"}
+NAME=${NAME:-"ubuntu"}
+PASS=${PASS:-"ubuntu"}
 
 if [ -z "$MIRROR" ]
 then
@@ -461,10 +467,10 @@ fi
 ORIGMIRROR=$MIRROR
 
 MEM=${MEM:128}
-VMHOSTNAME=${VMHOSTNAME:"ubuntu"}
-DOMAIN=${DOMAIN:"`hostname -d`"}
-ROOTSIZE=${ROOTSIZE:4096}
-SWAPSIZE=${SWAPSIZE:1024}
+VMHOSTNAME=${VMHOSTNAME:-"ubuntu"}
+DOMAIN=${DOMAIN:-"`hostname -d`"}
+ROOTSIZE=${ROOTSIZE:-4096}
+SWAPSIZE=${SWAPSIZE:-1024}
 if [ -z "$COMPS" ]
 then
 	if [ "$KERNEL_FLAVOUR" = "virtual" ]

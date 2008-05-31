@@ -167,6 +167,9 @@ Self-explanatory.
 .TP
 .B \-v, \-\-verbose
 Causes the display of a lot of information which are mainly interesting while debugging.
+.TP
+.B \-c PATH
+Specify a file to read the configuration from (defaults to ~/.ubuntu-vm-builder). See CONFIGURATION FILE below.
 
 
 .SS Obsolete
@@ -194,8 +197,8 @@ Specify where vmware.tmpl is stored. Uses /usr/share/ubuntu-vm-builder/templates
 .RE
 
 .SH CONFIGURATION FILE
- Most parameters can also be defined in the user's configuration file which can be found at ~/.ubuntu-vm-builder.
- The file is automatically generated with default values the first time ubuntu-vm-builder is ran. See comments in the config file for more details on possible values, it should be pretty much self explanatory.
+ Most parameters can also be defined in the user's configuration file which can be found at ~/.ubuntu-vm-builder, or in a file specified by -c PATH.
+ The file is automatically generated with default values the first time ubuntu-vm-builder is ran. See comments in the config file for more details on possible values, it should be self explanatory.
  In most cases, parameters have precedence over the configuration file, with the exception of list type parameters (ie: PKGCMD) which will see parameters added to the list predefined in the configuration file.
 
 .SH EXEC EXPLANATIONS

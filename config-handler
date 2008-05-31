@@ -1,11 +1,32 @@
 #!/bin/bash
-configfile="$HOME/.ubuntu-vm-builder"
 
-if [ -e $configfile ]; then
-	. $configfile
+# do we have a conf param?
+
+oconfigfile=$HOME/.ubuntu-vm-builder
+
+while getopts ":c:" OPTION
+do
+        case $OPTION in
+        c)
+                configfile=$OPTARG
+                break
+        esac
+done
+
+configfile=${configfile:-}
+
+if [ -n "$configfile" ]; then
+	if [ -e "$configfile" ]; then
+		. $configfile
+	else
+		echo "Configuration file $configfile does not exist"
+		exit 1
+	fi
+elif [ -e $oconfigfile ]; then
+	. $oconfigfile
 else
-	echo "Creating config file $configfile"
-	cat > $configfile << EOF
+	echo "Creating config file $oconfigfile"
+	cat > $oconfigfile << EOF
 # Configuration file for ubuntu-vm-builder
 # Version: 1.0
 
