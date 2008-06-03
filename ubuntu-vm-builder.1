@@ -165,6 +165,9 @@ Force overwrite of destination dirctory if it already exists.
 .B \-h, \-\-help
 Self-explanatory.
 .TP
+.B \-\-in-place
+Install directly into the filesystem images. This is needed if your $TMPDIR is nodev and/or nosuid, but will result in slightly larger file system images.
+.TP
 .B \-v, \-\-verbose
 Causes the display of a lot of information which are mainly interesting while debugging.
 .TP
