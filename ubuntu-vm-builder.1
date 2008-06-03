@@ -64,7 +64,7 @@ Set the password for the user. Default: ubuntu.
 .B \-\-no\-opt
 Do not build the /opt partition
 .TP
-.B \-\-part partfile
+B \-\-part partfile
 Allows to specify a partition table in partfile each line of partfile should specify (root first):
 .RS
 .RS
@@ -99,6 +99,9 @@ The kernel image flavour to install (default: virtual for versions >= gutsy on i
 .TP
 .B \-\-components
 A comma seperaed list of distro components to include (e.g. main,universe). This defaults to "main"
+.TP
+.B \-\-in-place
+Install directly into the filesystem images. This is needed if your $TMPDIR is nodev and/or nosuid, but will result in slightly larger file system images.
 .TP
 .B \-\-ssh-key
 Add the given ssh public key file (absolute path)to the user's authorized keys and install openssh-server (WARNING: this has strong security implications)
