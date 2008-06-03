@@ -110,6 +110,9 @@ The following three options are not used if --part is specified:
                    >= gutsy on i386, lpia on lpia, server otherwise)
 --components       A comma seperated list of distro components to include
                    (e.g. main,universe). This defaults to "main"
+--in-place         Install directly into the filesystem images. This is needed
+                   if your \$TMPDIR is nodev and/or nosuid, but will result in
+                   slightly larger file system images.
 --ssh-key          Add the given ssh public key file (absolute path)
                    to user's authorized keys and install openssh-server
                    (WARNING: this has strong security implications)
@@ -177,7 +180,7 @@ SUITE="$1"
 . /usr/share/ubuntu-vm-builder/suites/$SUITE
 shift
 
-TEMP=`getopt -q -o a:d:hs:t:v --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,no-opt,exec:,verbose,$vm_getopt_args  -- "$@"`
+TEMP=`getopt -q -o a:d:hs:t:v --long addpkg:,arch:,dest:,domain:,help,hostname:,mem:,mirror:,removepkg:,suite:,tmp:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,no-opt,exec:,verbose,in-place$vm_getopt_args  -- "$@"`
 eval set -- "$TEMP"
 
 while true
@@ -306,6 +309,10 @@ do
 		;;
 		-v|--verbose)
 			VERBOSE="YEAH"
+			shift 1
+		;;
+		--in-place)
+			INSTALL_IN_PLACE="YEAH"
 			shift 1
 		;;
 		--)
@@ -754,7 +761,12 @@ do_disk_images() {
 }
 
 do_debootstrap() {
-	mkdir root
+	if [ -n "$INSTALL_IN_PLACE" ]
+	then
+		ln -s target root
+	else
+		mkdir root
+	fi
 	debootstrap --components="$COMPS" --arch $ARCH --keyring /usr/share/keyrings/ubuntu-archive-keyring.gpg $SUITE root "$MIRROR"
 }
 
@@ -1024,12 +1036,16 @@ do_umount_target() {
 do_copy_to_disk_images () {
 
 	chroot root apt-get clean
-	#
-	# Copy the debootstrapped filesystem into the partitions
-	#
-	info Copy the debootstrapped filesystem 
-	cp -a root/* target
+	if [ -z "$INSTALL_IN_PLACE" ]
+	then
+		#
+		# Copy the debootstrapped filesystem into the partitions
+		#
+		info Copy the debootstrapped filesystem 
+		cp -a root/* target
+	fi
 	rm -rf root
+
 }
 
 do_target_vm_conversion () {
@@ -1064,10 +1080,10 @@ do_cleanup () {
 	rm -rf "$WORKINGDIR"
 }
 
-mount -t tmpfs ubuntu-vm-builder -o suid,dev "$WORKINGDIR"
 pushd "$WORKINGDIR" > /dev/null
 
 do_disk_images
+do_mount_target
 do_debootstrap
 suite_do_fstab
 do_copy_settings
@@ -1081,7 +1097,6 @@ do_sourceslist
 do_exec_script
 do_undo_avoid_starting_daemons
 do_unmount_restricted_tmpfs
-do_mount_target
 do_copy_to_disk_images 
 do_bootloader
 do_umount_target
