@@ -1076,7 +1076,6 @@ do_cleanup () {
                 rm ${DISKIMGS[$i]}.raw 
         done
 	popd > /dev/null
-	umount "$WORKINGDIR"
 	rm -rf "$WORKINGDIR"
 }
 
