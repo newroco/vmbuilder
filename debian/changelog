@@ -1,3 +1,9 @@
+ubuntu-vm-builder (0.7~ppa2) intrepid; urgency=low
+
+  * Merge --in-place option from Hardy.
+
+ -- Soren Hansen <soren@ubuntu.com>  Tue, 03 Jun 2008 15:55:18 +0200
+
 ubuntu-vm-builder (0.7~ppa1) intrepid; urgency=low
 
   [Michael Vogt]
@@ -12,6 +18,13 @@ ubuntu-vm-builder (0.7~ppa1) intrepid; urgency=low
   * Added -c option to specify an alternate configuration file
 
  -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Fri, 31 May 2008 00:14:00 +0200
+
+ubuntu-vm-builder (0.4-0ubuntu0.3) hardy-proposed; urgency=low
+
+  * Add --in-place option that will allow ubuntu-vm-builder to function when
+    $TMPDIR is nodev and/or nosuid. (LP: #228744)
+
+ -- Soren Hansen <soren@ubuntu.com>  Tue, 03 Jun 2008 14:43:51 +0200
 
 ubuntu-vm-builder (0.6) intrepid; urgency=low
 
