@@ -203,6 +203,6 @@ OVERWRITE=""
 VERBOSE=""
 EOF
 	CONFIG_OWNER="${SUDO_USER:-}"
-	test -n "$CONFIG_OWNER" && chown "$CONFIG_OWNER:$CONFIG_OWNER" $configfile
+	test -n "$CONFIG_OWNER" && chown "$CONFIG_OWNER:$CONFIG_OWNER" $oconfigfile
 	chmod 600 $configfile
 fi
