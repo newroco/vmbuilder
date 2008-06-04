@@ -201,6 +201,12 @@ OVERWRITE=""
 # Any non empty string cause the display of a lot of information which are mainly 
 # interesting while debugging.
 VERBOSE=""
+
+# INSTALL_IN_PLACE is the equivalent of --in-place
+# It installs the guest operating system directly into the disk images
+# which fixes some issues with nodev and nosuid $TMPDIR, but causes 
+# slightly larger disk images (deleted files still leave non-null fs blocks behind)
+INSTALL_IN_PLACE=""
 EOF
 	CONFIG_OWNER="${SUDO_USER:-}"
 	test -n "$CONFIG_OWNER" && chown "$CONFIG_OWNER:$CONFIG_OWNER" $oconfigfile
