@@ -752,11 +752,12 @@ EOF
 	fi
 }
 
-do_bootloader () {
+do_kernel_img_conf () {
 	#
 	# The suite will have defined updategrub
 	#
-	sed -e "s,%UPDATEGRUB%,$updategrub,g" << EOF | cat > target/etc/kernel-img.conf
+	mkdir -p target/etc
+	sed -e "s,%UPDATEGRUB%,$updategrub,g" << EOF | cat > root/etc/kernel-img.conf
 do_symlinks = yes
 relative_links = yes
 do_bootfloppy = no
@@ -766,7 +767,10 @@ postinst_hook = %UPDATEGRUB%
 postrm_hook = %UPDATEGRUB%
 do_bootloader = no
 EOF
+}
 
+
+do_bootloader () {
 	chroot target apt-get --force-yes -y install grub
 
 	mkdir target/boot/grub
@@ -1357,6 +1361,7 @@ do_copy_settings
 do_initial_user
 do_network_setup
 do_source "root" $WORKINGDIR
+do_kernel_img_conf 
 do_kernel_n_friends
 do_add_remove_packages
 do_add_ssh_key
