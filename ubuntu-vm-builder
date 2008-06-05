@@ -1068,6 +1068,7 @@ do_copy_settings () {
 	info "do_copy_settings"
         #copy the host settings to the new guest (locale, console-setup, tz)
         cp /etc/default/locale root/etc/default/
+        cp -a /etc/console-setup root/etc/
         cp /etc/default/console-setup root/etc/default/
         cp /etc/timezone root/etc/
         chroot root dpkg-reconfigure -pcritical tzdata
@@ -1148,8 +1149,9 @@ if [ ! -e /root/firstlogin_done ]; then
 	if [ -e /root/firstlogin.sh ]; then
 		/root/firstlogin.sh
 	fi
-	echo "Setting up your keyboard, will need sudo password."
-	sudo dpkg-reconfigure -p critical console-setup &> /dev/null
+	# This part should not be necessary any more
+	#echo "Setting up your keyboard, will need sudo password."
+	#sudo dpkg-reconfigure -p critical console-setup &> /dev/null
 	sudo touch /root/firstlogin_done
 fi
 EOT
