@@ -1,6 +1,8 @@
 ubuntu-vm-builder (0.7~ppa2) intrepid; urgency=low
 
   * Merge --in-place option from Hardy.
+  * Fix case when domain is not defined on the host, thanks to Thierry Carrez
+    (LP: #237580)
 
  -- Soren Hansen <soren@ubuntu.com>  Tue, 03 Jun 2008 15:55:18 +0200
 
