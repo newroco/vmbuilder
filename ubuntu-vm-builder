@@ -473,12 +473,12 @@ fi
 # save the mirror value for the source list if we are using --iso
 ORIGMIRROR=$MIRROR
 
-MEM=${MEM:128}
+MEM=${MEM:-"128"}
 VMHOSTNAME=${VMHOSTNAME:-"ubuntu"}
 DOMAIN=${DOMAIN:-"`hostname -d`"}
 DOMAIN=${DOMAIN:-"localdomain"}
-ROOTSIZE=${ROOTSIZE:-4096}
-SWAPSIZE=${SWAPSIZE:-1024}
+ROOTSIZE=${ROOTSIZE:-"4096"}
+SWAPSIZE=${SWAPSIZE:-"1024"}
 if [ -z "$COMPS" ]
 then
 	if [ "$KERNEL_FLAVOUR" = "virtual" ]

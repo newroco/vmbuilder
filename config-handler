@@ -4,12 +4,15 @@
 
 oconfigfile=$HOME/.ubuntu-vm-builder
 
-while getopts ":c:" OPTION
+for i
 do
-        case $OPTION in
-        c)
-                configfile=$OPTARG
-                break
+        if [ -n "$configfile" ]; then
+		configfile=$i
+		break
+	fi
+	case $i in
+        -c)
+                configfile=$i
         esac
 done
 
