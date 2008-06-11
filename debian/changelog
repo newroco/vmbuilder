@@ -7,7 +7,7 @@ ubuntu-vm-builder (0.7~ppa2) intrepid; urgency=low
     again to Thierry Carrez (LP: #237616)
   * Fix config-handler to not break with --arch option
 
- -- Soren Hansen <soren@ubuntu.com>  Tue, 03 Jun 2008 15:55:18 +0200
+ -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Tue, 03 Jun 2008 15:55:18 +0200
 
 ubuntu-vm-builder (0.7~ppa1) intrepid; urgency=low
 

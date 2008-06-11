@@ -3,6 +3,7 @@
 # do we have a conf param?
 
 oconfigfile=$HOME/.ubuntu-vm-builder
+configfile=""
 
 for i
 do
@@ -213,5 +214,5 @@ INSTALL_IN_PLACE=""
 EOF
 	CONFIG_OWNER="${SUDO_USER:-}"
 	test -n "$CONFIG_OWNER" && chown "$CONFIG_OWNER:$CONFIG_OWNER" $oconfigfile
-	chmod 600 $configfile
+	chmod 600 $oconfigfile
 fi
