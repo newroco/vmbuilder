@@ -63,6 +63,7 @@ usage: ubuntu-vm-builder <vm> <suite>
                             [--hostname NAME]
                             [--mem num]
                             [--mirror URL]
+                            [--security-mirror URL]
                             [--removepkg PKG]
                             [(-t|--tmp) temp_dir]
                             [--tmpfs options]
@@ -110,6 +111,9 @@ suite              Use the specified Ubuntu suite.
 --mirror URL       Use Ubuntu mirror at URL instead of the default, which
                    is http://archive.ubuntu.com/ubuntu for official arches
                    and http://ports.ubuntu.com/ubuntu-ports otherwise
+--mirror URL       Use Ubuntu security mirror at URL instead of the default,
+                   which is http://security.ubuntu.com/ubuntu for official
+                   arches and http://ports.ubuntu.com/ubuntu-ports otherwise
 --iso PATH         Use an iso image as the source for installation of file.
                    Full path to the iso must be provided. If --mirror is also
 		   provided, it will be used in the final sources.list of the vm.
@@ -238,7 +242,7 @@ shift
 . /usr/share/ubuntu-vm-builder/config-handler
 
 set +e; trap "usage;exit 1" ERR
-TEMP=`getopt -o a:d:ohs:t:vc: --long addpkg:,arch:,dest:,overwrite,domain:,help,hostname:,mem:,mirror:,iso:,removepkg:,suite:,tmp:,tmpfs:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,raw:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,ssh-user-key:,no-opt,exec:,firstboot:,firstlogin:,verbose,in-place,$vm_getopt_args  -- "$@"` 
+TEMP=`getopt -o a:d:ohs:t:vc: --long addpkg:,arch:,dest:,overwrite,domain:,help,hostname:,mem:,mirror:,security-mirror:,iso:,removepkg:,suite:,tmp:,tmpfs:,vm:,user:,name:,pass:,part:,rootsize:,swapsize:,optsize:,raw:,ip:,mask:,net:,bcast:,gw:,dns:,kernel-flavour:,components:,ssh-key:,ssh-user-key:,no-opt,exec:,firstboot:,firstlogin:,verbose,in-place,$vm_getopt_args  -- "$@"` 
 trap - ERR; set -e
 eval set -- "$TEMP"
 
@@ -284,6 +288,10 @@ do
 		;;
 		--mirror)
 			MIRROR="$2"
+			shift 2
+		;;
+		--security-mirror)
+			SECURITY_MIRROR="$2"
 			shift 2
 		;;
 		--iso)
@@ -474,6 +482,15 @@ then
 		MIRROR="http://ports.ubuntu.com/ubuntu-ports"
 	else
 		MIRROR="http://archive.ubuntu.com/ubuntu"
+	fi
+fi
+if [ -z "$SECURITY_MIRROR" ]
+then
+	if [ "$ARCH" = "lpia" ]
+	then
+		SECURITY_MIRROR="http://ports.ubuntu.com/ubuntu-ports"
+	else
+		SECURITY_MIRROR="http://security.ubuntu.com/ubuntu"
 	fi
 fi
 # save the mirror value for the source list if we are using --iso
@@ -901,9 +918,9 @@ do_source() {
 		# this is not the first time, update the source.list on the target
 		if [ "$1" = "-" ]; then
 			# this the last time we are called, push the --mirror info
-			do_sourceslist $ORIGMIRROR $2
+			do_sourceslist $ORIGMIRROR $SECURITY_MIRROR $2
 		else
-			do_sourceslist $MIRROR $1
+			do_sourceslist $MIRROR $SECURITY_MIRROR $1
 		fi
 		# Update the cache
 		sudo chroot $1 apt-get update &> /dev/null || true
@@ -966,8 +983,8 @@ do_add_ssh_key () {
 
 
 do_sourceslist () {
-	info "sourceslists $1 $2"
-	cat > $2/etc/apt/sources.list << EOF
+	info "sourceslists $1 $2 $3"
+	cat > $3/etc/apt/sources.list << EOF
 deb $1 ${SUITE} main restricted
 #deb-src $1 ${SUITE} main restricted
 
@@ -976,14 +993,14 @@ deb $1 ${SUITE} main restricted
 deb $1 ${SUITE}-updates main restricted
 #deb-src $1 ${SUITE}-updates main restricted 
 
-deb http://security.ubuntu.com/ubuntu ${SUITE}-security main restricted
-#deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security main restricted
+deb $2 ${SUITE}-security main restricted
+#deb-src $2 ${SUITE}-security main restricted
 EOF
 	## UNIVERSE ##
 
 	if echo $COMPS | grep universe &> /dev/null 
 	then
-		cat >> $2/etc/apt/sources.list << EOF
+		cat >> $3/etc/apt/sources.list << EOF
 ## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu
 ## team, and may not be under a free licence. Please satisfy yourself as to
 ## your rights to use the software. Also, please note that software in
@@ -993,11 +1010,11 @@ deb $1 ${SUITE} universe
 #deb-src $1 ${SUITE} universe
 deb $1 ${SUITE}-updates universe
 #deb-src $1 ${SUITE}-updates universe
-deb http://security.ubuntu.com/ubuntu ${SUITE}-security universe
-#deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security universe
+deb $2 ${SUITE}-security universe
+#deb-src $2 ${SUITE}-security universe
 EOF
 	else
-		cat >> $2/etc/apt/sources.list << EOF
+		cat >> $3/etc/apt/sources.list << EOF
 ## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu
 ## team, and may not be under a free licence. Please satisfy yourself as to
 ## your rights to use the software. Also, please note that software in
@@ -1007,8 +1024,8 @@ EOF
 #deb-src $1 ${SUITE} universe
 #deb $1 ${SUITE}-updates universe
 #deb-src $1 ${SUITE}-updates universe
-#deb http://security.ubuntu.com/ubuntu ${SUITE}-security universe
-#deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security universe
+#deb $2 ${SUITE}-security universe
+#deb-src $2 ${SUITE}-security universe
 EOF
 	fi
 
@@ -1016,7 +1033,7 @@ EOF
 		
 	if echo $COMPS | grep multiverse &> /dev/null 
 	then
-		cat >> $2/etc/apt/sources.list << EOF	
+		cat >> $3/etc/apt/sources.list << EOF
 ## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu 
 ## team, and may not be under a free licence. Please satisfy yourself as to 
 ## your rights to use the software. Also, please note that software in 
@@ -1026,11 +1043,11 @@ deb $1 ${SUITE} multiverse
 #deb-src $1 ${SUITE} multiverse
 deb $1 ${SUITE}-updates multiverse
 #deb-src $1 ${SUITE}-updates multiverse
-deb http://security.ubuntu.com/ubuntu ${SUITE}-security multiverse
-#deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security multiverse
+deb $2 ${SUITE}-security multiverse
+#deb-src $2 ${SUITE}-security multiverse
 EOF
 	else
-		cat >> $2/etc/apt/sources.list << EOF
+		cat >> $3/etc/apt/sources.list << EOF
 ## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu 
 ## team, and may not be under a free licence. Please satisfy yourself as to 
 ## your rights to use the software. Also, please note that software in 
@@ -1040,11 +1057,11 @@ EOF
 #deb-src $1 ${SUITE} multiverse
 #deb $1 ${SUITE}-updates multiverse
 #deb-src $1 ${SUITE}-updates multiverse
-#deb http://security.ubuntu.com/ubuntu ${SUITE}-security multiverse
-#deb-src http://security.ubuntu.com/ubuntu ${SUITE}-security multiverse
+#deb $2 ${SUITE}-security multiverse
+#deb-src $2 ${SUITE}-security multiverse
 EOF
 	fi
-	cat >> $2/etc/apt/sources.list << EOF
+	cat >> $3/etc/apt/sources.list << EOF
 ## Uncomment the following two lines to add software from the 'backports'
 ## repository.
 ## N.B. software from this repository may not have been tested as
