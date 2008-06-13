@@ -163,6 +163,12 @@ TEMPLATEDIR=""
 # and http://ports.ubuntu.com/ubuntu-ports otherwise
 MIRROR=""
 
+# SECURITY_MIRROR is the equivalent of --security-mirror
+# Use Ubuntu security mirror at URL instead of the default,
+# which is http://security.ubuntu.com/ubuntu for official
+# arches and http://ports.ubuntu.com/ubuntu-ports otherwise
+SECURITY_MIRROR=""
+
 # ISO is the equivalent of --iso
 # Use an iso image as the source for installation of file.
 # Full path to the iso must be provided. If MIRROR is also

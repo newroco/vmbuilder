@@ -1,3 +1,11 @@
+ubuntu-vm-builder (0.7~ppa3) UNRELEASED; urgency=low
+
+  * Add support for "security mirror"; --security-mirror flag, SECURITY_MIRROR
+    config; defaults to security.u.c/ubuntu for official arches and to
+    ports.ubuntu.com/ubuntu-ports for lpia.
+
+ -- Loic Minier <lool@dooz.org>  Fri, 13 Jun 2008 17:06:43 +0200
+
 ubuntu-vm-builder (0.7~ppa2) intrepid; urgency=low
 
   * Merge --in-place option from Hardy.
