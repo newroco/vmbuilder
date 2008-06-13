@@ -1,0 +1,13 @@
+Do not modify files in this directory, they will be replaced each
+time ubuntu-vm-builder is updated.
+
+To change the default configuration for ubuntu-vm-builder, you can 
+use :
+ * /etc/ubuntu-vm-builder for the system wide configuration
+ * ~/.ubuntu-vm-builder for a user specific configuration
+
+The configurations will be read in the order above, so user specific
+configurations will supersede system wide configuration.
+
+You can replace the user specific configuration with an execution
+time configuration using the -c parameter.

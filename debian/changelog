@@ -6,6 +6,7 @@ ubuntu-vm-builder (0.7~ppa2) intrepid; urgency=low
   * Fix console-setup the good way (by copying /etc/console-setup) thanks
     again to Thierry Carrez (LP: #237616)
   * Fix config-handler to not break with --arch option
+  * Change config handler to use default and etc configurations as well
 
  -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Tue, 03 Jun 2008 15:55:18 +0200
 

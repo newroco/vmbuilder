@@ -5,6 +5,8 @@ include /usr/share/cdbs/1/rules/debhelper.mk
 install/ubuntu-vm-builder::
 	install -d -m 775    debian/ubuntu-vm-builder/usr/share/ubuntu-vm-builder/vms
 	install    -m 775 -t debian/ubuntu-vm-builder/usr/share/ubuntu-vm-builder/vms vms/* 
+	install -d -m 700    debian/ubuntu-vm-builder/usr/share/ubuntu-vm-builder/confs
+	install    -m 600 -t debian/ubuntu-vm-builder/usr/share/ubuntu-vm-builder/confs confs/*
 	install -d -m 775    debian/ubuntu-vm-builder/usr/share/ubuntu-vm-builder/suites
 	install    -m 775 -t debian/ubuntu-vm-builder/usr/share/ubuntu-vm-builder/suites suites/*
 	install -d -m 775    debian/ubuntu-vm-builder/usr/share/ubuntu-vm-builder/templates

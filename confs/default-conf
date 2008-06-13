@@ -1,0 +1,52 @@
+# Default configuration for ubuntu-vm-builder
+# ##########################################################################
+# DO NOT MODIFY THIS FILE 
+# ##########################################################################
+# It will be replaced with NO WARNING each time ubuntu-vm-builder is updated
+# To modify the configuration of ubuntu-vm-builder, use either
+#   * /etc/ubuntu-vm-builder    or
+#   * ~/.ubuntu-vm-builder
+#
+# Version: 1.0
+
+### GUEST DEFINITIONS ###
+COMPS=""
+ARCH=""
+KERNEL_FLAVOUR=""
+PKGCMD=""
+VMUSER=""
+PASS=""
+NAME="Ubuntu"
+VMHOSTNAME=""
+MEM=""
+
+### GUEST NETWORKING ###
+DOMAIN=""
+IP=""
+MASK=""
+NET=""
+BCAST=""
+GW=""
+DNS=""
+
+### GUEST PARTITIONING ###
+PARTFILE=""
+ROOTSIZE=""
+SWAPSIZE=""
+OPTSIZE=""
+
+### ENVIRONMENT DEFINITIONS ###
+DESTINATION=""
+VMTMPDIR=""
+TMPFS=""
+TEMPLATEDIR=""
+MIRROR=""
+ISO=""
+SSHKEY=""
+SSHUKEY=""
+EXEC=""
+FIRSTBOOT=""
+FIRSTLOGIN=""
+OVERWRITE=""
+VERBOSE=""
+INSTALL_IN_PLACE=""
