@@ -200,6 +200,12 @@ written by Soren Hansen <soren@canonical.com>.
 EOT
 }
 
+if [ ! "`id -u`" = 0 ]
+then
+        echo "$0 must be run as root (e.g. by means of sudo)"
+        exit 1
+fi
+
 if [ $# -lt 2 ]
 then
 	echo "Please specify vm and suite"
@@ -502,12 +508,6 @@ then
 	usage
 	echo 
 	echo "Excess option(s): $@"
-	exit 1
-fi
-
-if [ ! "`id -u`" = 0 ]
-then
-	echo "$0 must be run as root (e.g. by means of sudo)"
 	exit 1
 fi
 
