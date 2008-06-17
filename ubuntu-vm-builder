@@ -111,7 +111,8 @@ suite              Use the specified Ubuntu suite.
 --mirror URL       Use Ubuntu mirror at URL instead of the default, which
                    is http://archive.ubuntu.com/ubuntu for official arches
                    and http://ports.ubuntu.com/ubuntu-ports otherwise
---mirror URL       Use Ubuntu security mirror at URL instead of the default,
+--security-mirror URL
+                   Use Ubuntu security mirror at URL instead of the default,
                    which is http://security.ubuntu.com/ubuntu for official
                    arches and http://ports.ubuntu.com/ubuntu-ports otherwise
 --iso PATH         Use an iso image as the source for installation of file.
