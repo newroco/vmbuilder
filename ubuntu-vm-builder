@@ -772,24 +772,26 @@ EOF
 }
 
 do_kernel_img_conf () {
-	#
-	# The suite will have defined updategrub
-	#
-	mkdir -p target/etc
-	sed -e "s,%UPDATEGRUB%,$updategrub,g" << EOF | cat > root/etc/kernel-img.conf
+	mkdir -p root/etc
+	cat > root/etc/kernel-img.conf << EOF
 do_symlinks = yes
 relative_links = yes
 do_bootfloppy = no
 do_initrd = yes
 link_in_boot = no
-postinst_hook = %UPDATEGRUB%
-postrm_hook = %UPDATEGRUB%
 do_bootloader = no
 EOF
 }
 
 
 do_bootloader () {
+	#
+	# The suite will have defined updategrub
+	#
+	sed -e "s,%UPDATEGRUB%,$updategrub,g" << EOF | cat >> target/etc/kernel-img.conf
+postinst_hook = %UPDATEGRUB%
+postrm_hook = %UPDATEGRUB%
+EOF
 	chroot target apt-get --force-yes -y install grub
 
 	mkdir target/boot/grub
@@ -945,7 +947,7 @@ do_kernel_n_friends () {
 	PKGS="linux-$KERNEL_FLAVOUR"
 	vm_extra_packages
 	suite_extra_packages
-	chroot root apt-get --force-yes -y install $PKGS
+	chroot root apt-get -o APT::Install-Recommends=False --force-yes -y install $PKGS
 }
 
 do_add_remove_packages () {

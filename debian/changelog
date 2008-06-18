@@ -1,5 +1,8 @@
 ubuntu-vm-builder (0.7~ppa2) intrepid; urgency=low
 
+ [Thierry Carrez]
+  * Patch to fix lilo prompt (fix LP: #206763)
+
  [Loic Minier]
   * Add support for "security mirror"; --security-mirror flag, SECURITY_MIRROR
     config; defaults to security.u.c/ubuntu for official arches and to
@@ -13,7 +16,7 @@ ubuntu-vm-builder (0.7~ppa2) intrepid; urgency=low
   * Fix config-handler to not break with --arch option
   * Change config handler to use default and etc configurations as well
 
- -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Tue, 03 Jun 2008 15:55:18 +0200
+ -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Tue, 18 Jun 2008 18:59:18 +0200
 
 ubuntu-vm-builder (0.7~ppa1) intrepid; urgency=low
 
