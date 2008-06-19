@@ -498,7 +498,7 @@ fi
 ORIGMIRROR=$MIRROR
 
 MEM=${MEM:-"128"}
-VMHOSTNAME=${VMHOSTNAME:-"ubuntu"}
+VMHOSTNAME=${VMHOSTNAME:-"ubuntu-vm-$SUITE-$ARCH"}
 DOMAIN=${DOMAIN:-"`hostname -d`"}
 DOMAIN=${DOMAIN:-"localdomain"}
 ROOTSIZE=${ROOTSIZE:-"4096"}
@@ -637,7 +637,7 @@ WORKINGDIR=$(mktemp -d -p $VMTMPDIR vm-builder-XXXXXXXXXX) || exit 1
 
 if [ -z "$DESTINATION" ]
 then
-	if [ -n "$VMHOSTNAME" ] && [ ! "$VMHOSTNAME" = "ubuntu" ] ; then
+	if [ -n "$VMHOSTNAME" ] && [ ! "$VMHOSTNAME" = "ubuntu-vm-$SUITE-$ARCH" ] ; then
         	DESTINATION="$PWD/ubuntu-vm-$SUITE-$ARCH-$VMHOSTNAME"
 	else
 		DESTINATION="$PWD/ubuntu-vm-$SUITE-$ARCH"

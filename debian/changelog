@@ -16,6 +16,7 @@ ubuntu-vm-builder (0.7~ppa2) intrepid; urgency=low
     again to Thierry Carrez (LP: #237616)
   * Fix config-handler to not break with --arch option
   * Change config handler to use default and etc configurations as well
+  * Make VMHOSTNAME more meaningfull by default
 
  -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Tue, 18 Jun 2008 18:59:18 +0200
 
