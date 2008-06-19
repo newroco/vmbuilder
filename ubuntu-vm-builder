@@ -936,7 +936,7 @@ do_debootstrap() {
 	then
 		ln -s target root
 	else
-		mkdir root
+		mkdir root &> /dev/null || true 
 	fi
 	info "debootstrap"
 	debootstrap --components="$COMPS" --arch $ARCH --keyring /usr/share/keyrings/ubuntu-archive-keyring.gpg $SUITE root "$MIRROR"

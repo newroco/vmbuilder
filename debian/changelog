@@ -1,13 +1,14 @@
 ubuntu-vm-builder (0.7~ppa2) intrepid; urgency=low
 
- [Thierry Carrez]
+  [Thierry Carrez]
   * Patch to fix lilo prompt (fix LP: #206763)
-
- [Loic Minier]
+  
+  [Loic Minier]
   * Add support for "security mirror"; --security-mirror flag, SECURITY_MIRROR
     config; defaults to security.u.c/ubuntu for official arches and to
     ports.ubuntu.com/ubuntu-ports for lpia.
- [Nicolas Barcet]
+ 
+  [Nicolas Barcet]
   * Merge --in-place option from Hardy.
   * Fix case when domain is not defined on the host, thanks to Thierry Carrez
     (LP: #237580)

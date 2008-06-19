@@ -5,6 +5,8 @@ baseuserconf=/usr/share/ubuntu-vm-builder/confs/baseuser-conf
 etcconfig=/etc/ubuntu-vm-builder
 userconfig=$HOME/.ubuntu-vm-builder
 configfile=""
+SUDO_USER=${SUDO_USER:-}
+CONFIG_OWNER=${CONFIG_OWNER:-"$SUDO_USER"}
 
 # Search for a config param
 for i
