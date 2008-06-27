@@ -1,0 +1,9 @@
+#!/usr/bin/python
+import sys
+import os
+
+#sys.path += [os.getcwd()]
+
+import VMBuilder
+
+VMBuilder.run()

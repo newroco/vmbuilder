@@ -1,0 +1,2 @@
+class Hypervisor(object):
+    pass

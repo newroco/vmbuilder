@@ -1,6 +1,0 @@
-. /usr/share/ubuntu-vm-builder/vms/qemu-common
-
-vm_target_conversion() {
-	CMD=qemu
-	qemu_common_target_conversion
-}

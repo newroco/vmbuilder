@@ -1,8 +1,0 @@
-. /usr/share/ubuntu-vm-builder/vms/vmware-common
-
-vm_target_conversion () {
-	QEMU_IMG_CONVERT_OPTS="-O vmdk"
-	VMHWVERSION=4
-
-	vmware_common_target_conversion
-}

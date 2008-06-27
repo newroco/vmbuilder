@@ -1,9 +1,0 @@
-= Requirements =
- * coreutils
- * qemu
- * moreutils
- * debootstrap
- * sed
- * parted
- * mount
- * kpartx
