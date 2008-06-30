@@ -1,3 +1,22 @@
+#
+#    Uncomplicated VM Builder
+#    Copyright (C) 2007-2008 Canonical
+#    
+#    See AUTHORS for list of contributors
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 #!/usr/bin/python
 import builder
 import os
@@ -10,7 +29,6 @@ from VMBuilder.util import run_cmd
 from VMBuilder.disk import Disk
 from VMBuilder.hypervisor import Hypervisor
 from VMBuilder.distro import Distro
-from opts import create_optparser
 from VMBuilder.plugins import load_plugins
 from exception import VMBuilderException
    
@@ -20,52 +38,11 @@ def register_hypervisor(cls):
 def register_distro(cls):
     distros[cls.arg] = cls
 
-# This is waaay to simple. All it does is to apply the sizes of root, swap and opt
-# and put them all on a single disk (in separate partitions, of course)
-def disk_layout():
-    size = options.rootsize + options.swapsize + options.optsize
-    disk = Disk(dir=workdir, size='%dM' % size)
-    offset = 0
-    disk.add_part(offset, options.rootsize, 'ext3', '/')
-    offset += options.rootsize+1
-    disk.add_part(offset, options.swapsize, 'swap', 'swap')
-    offset += options.swapsize+1
-    if options.optsize > 0:
-        disk.add_part(offset, options.optsize, 'ext3', '/opt')
-    return [disk]
-
 def checkroot():
     if os.geteuid() != 0:
         optparser.error("This script must be run as root (e.g. via sudo)")
 
-def parse_options():
-    global options
-    global optparser
-    optparser.disable_interspersed_args()
-    (options, args) = optparser.parse_args()
-    if len(args) < 2:
-        optparser.error("You need to specify at least the hypervisor type and the distro")
-
-    if not args[0] in hypervisors.keys():
-        optparser.error("Invalid hypervisor. Valid hypervisors: %s" % " ".join(hypervisors.keys()))
-    else:
-        hypervisor = hypervisors[args[0]]()
-        if getattr(hypervisor, 'extend_optparse', None):
-            optparser = hypervisor.extend_optparse(optparser)
-
-    if not args[1] in distros.keys():
-        optparser.error("Invalid distro. Valid distros: %s" % " ".join(distros.keys()))
-    else:
-        distro = distros[args[1]]()
-        if getattr(distro, 'extend_optparse', None):
-            optparser = distro.extend_optparse(optparser)
-
-    optparser.set_defaults(destdir='%s-%s' % (args[0], args[1]))
-    optparser.enable_interspersed_args()
-    (options, args) = optparser.parse_args()
-    return (distro, hypervisor)
-
-def run():
+def run(parse_options):
     checkroot()     
 
     finished = False
@@ -73,7 +50,7 @@ def run():
         logging.debug('Loading plugins')
         load_plugins()
         (distro, hypervisor) = parse_options()
-        create_directory_structure()
+        builder.create_directory_structure()
 
         distro.set_defaults()
 
@@ -162,6 +139,5 @@ def bootpart():
     return disks[0].partitions[0]
 
 cleanup_cb = []
-optparser = create_optparser()
 distros = {}
 hypervisors = {}
