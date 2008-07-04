@@ -17,11 +17,8 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+#    Distro super class
 class Distro(object):
-    def extend_optparser(self, optparser):
-        """Add whatever you like to the optparser and return it"""
-        return optparser
-
     def install(self, destdir):
         """Install the distro into destdir"""
         raise NotImplemented('Distro subclasses need to implement the install method')

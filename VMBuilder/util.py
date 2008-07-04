@@ -17,6 +17,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+#    Various utility functions
 import os
 import subprocess
 import sys
@@ -52,7 +53,7 @@ def run_cmd(*argv, **kwargs):
         stdout += buf
     status = proc.wait()
     if not ignore_fail and status != 0:
-        raise VMBuilderException, "Process returned %d. stdout: %s, stderr: %s" % (status, stdout, stderr)
+        raise VMBuilderException, "Process (%s) returned %d. stdout: %s, stderr: %s" % (args.__repr__(), status, stdout, stderr)
     return stdout
 
 def give_to_caller(path):
@@ -60,4 +61,14 @@ def give_to_caller(path):
         logging.debug('Changing ownership of %s to %s' % (path, os.environ['SUDO_USER']))
         (uid, gid) = pwd.getpwnam(os.environ['SUDO_USER'])[2:4]
         os.chown(path, uid, gid)
-        
+
+def checkroot():
+    """Check if we're running as root, and bail out if we're not."""
+
+    if os.geteuid() != 0:
+        raise VMBuilderException("This script must be run as root (e.g. via sudo)")
+
+def fix_ownership(files):
+    for file in files:
+        give_to_caller(file)
+

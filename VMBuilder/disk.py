@@ -17,6 +17,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+#    Virtual disk management
 from VMBuilder.util import run_cmd 
 import VMBuilder
 import logging
@@ -25,19 +26,20 @@ import string
 class Disk(object):
     index = 1
 
-    def __init__(self, size='5G', preallocated=False, filename=None, dir=None):
+    def __init__(self, vm, size='5G', preallocated=False, filename=None):
+        """size is by default given in MB, but 'G', 'k', 'M' suffixes are allowed, too
+           preallocated means that the disk already exists and we shouldn't create it (useful for raw devices)
+           filename can be given to force a certain filename or to give the name of the preallocated disk image"""
         self.size = self.parse_size(size)
+        self.vm = vm
+
         self.preallocated = preallocated
         if filename:
             self.filename = filename
         else:
             self.filename = 'disk%d.img' % Disk.index
-        # This will only work for up to 26 disks. If you *actually* 
-        # need more than that, just shout, but right now, I can't 
-        # be bothered to fix it. - Soren
-        self.devname = '/dev/sd%s' % string.ascii_lowercase[Disk.index]
-        if dir:
-            self.filename = '%s/%s' % (dir, self.filename)
+        self.index = Disk.index
+        self.devletters = index_to_devname(self.index)
         Disk.index += 1    
         self.partitions = []
 
@@ -60,8 +62,11 @@ class Disk(object):
         if size_str[-1:] == 'k' or size_str[-1:] == 'K':
             return num / 1024
 
-    def create(self):
+    def create(self, directory):
+        """Create the disk image and partition mapping devices, and mkfs's the partitions"""
         if not self.preallocated:
+            if directory:
+                self.filename = '%s/%s' % (directory, self.filename)
             logging.info('Creating disk image: %s' % self.filename)
             run_cmd('qemu-img', 'create', '-f', 'raw', self.filename, '%dM' % self.size)
 
@@ -73,7 +78,8 @@ class Disk(object):
 
         logging.info('Creating loop devices corresponding to the created partitions')
         kpartx_output = run_cmd('kpartx', '-av', self.filename)
-        VMBuilder.add_clean_cb(lambda : self.unmap(ignore_fail=True))
+        self.vm.add_clean_cb(lambda : self.unmap(ignore_fail=True))
+
         parts = kpartx_output.split('\n')[2:-1]
         mapdevs = []
         for line in parts:
@@ -85,10 +91,17 @@ class Disk(object):
         for part in self.partitions:
             part.mkfs()
 
+    def get_grub_id(self):
+        return '(hd%d)' % self.get_index()
+
+    def get_index(self):
+        return self.vm.disks.index(self)
+
     def unmap(self, ignore_fail=False):
         run_cmd('kpartx', '-d', self.filename, ignore_fail=ignore_fail)
 
     def add_part(self, begin, length, type, mntpnt):
+        """Add a partition to the disk. Sizes are given in megabytes"""
         end = begin+length-1
         for part in self.partitions:
             if (begin >= part.begin and begin <= part.end) or \
@@ -98,7 +111,7 @@ class Disk(object):
                 raise Exception('Partition\'s last block is before its first')
             if begin < 0 or end > self.size:
                 raise Exception('Partition is out of bounds. start=%d, end=%d, disksize=%d' % (begin,end,self.size))
-        part = self.Partition(begin=begin, end=end, type=self.Partition.str_to_type(type), mntpnt=mntpnt)
+        part = self.Partition(disk=self, begin=begin, end=end, type=self.Partition.str_to_type(type), mntpnt=mntpnt)
         self.partitions.append(part)
         self.partitions.sort(cmp=lambda x,y: x.begin - y.begin)
 
@@ -112,7 +125,8 @@ class Disk(object):
         TYPE_XFS = 2
         TYPE_SWAP = 3
 
-        def __init__(self, begin, end, type, mntpnt):
+        def __init__(self, disk, begin, end, type, mntpnt):
+            self.disk = disk
             self.begin = begin
             self.end = end
             self.type = type
@@ -141,6 +155,13 @@ class Disk(object):
             run_cmd(self.mkfs_fstype(), self.mapdev)
             self.uuid = run_cmd('vol_id', '--uuid', self.mapdev).rstrip()
 
+        def get_grub_id(self):
+            return '(hd%d,%d)' % (self.disk.get_index(), self.get_index())
+
+        def get_index(self):
+            # Yikes!
+            return self.disk.partitions.index(self)
+
         @classmethod
         def str_to_type(cls, type):
             try:
@@ -153,3 +174,43 @@ class Disk(object):
                 raise Exception('Unknown partition type')
 
 
+def bootpart(disks):
+    """Returns the partition which contains /boot"""
+    return path_to_partition(disks, '/boot/foo')
+
+def path_to_partition(disks, path):
+    parts = get_ordered_partitions(disks)
+    parts.reverse()
+    for part in parts:
+        if path.startswith(part.mntpnt):
+            return part
+    raise VMBuilderException("Couldn't find partition path %s belongs to" % path)
+
+def create_partitions(vm):
+    for disk in vm.disks:
+        disk.create(vm.workdir)
+
+def get_ordered_partitions(disks):
+    """Returns partitions from disks array in an order suitable for mounting them"""
+    parts = []
+    for disk in disks:
+        parts += disk.partitions
+    parts.sort(lambda x,y: len(x.mntpnt)-len(y.mntpnt))
+    return parts
+
+def devname_to_index(devname):
+    index = 0
+    while True:
+        index += string.ascii_lowercase.index(devname[0])
+        devname = devname[1:]
+        if not devname:
+            break
+        index = (index + 1) * 26
+    return index
+
+def index_to_devname(index):
+    retval = ''
+    while index >= 0:
+        retval = string.ascii_lowercase[index % 26] + retval
+        index = index / 26 - 1
+    return retval

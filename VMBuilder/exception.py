@@ -17,9 +17,10 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-"""VMBuilderException is currently the exact same as Exception,
-but having a separate class for it allows us to catch those, but
-let others bubble to the user."""
+#    Our very own exception
 
 class VMBuilderException(Exception):
+    pass
+
+class VMBuilderUserError(Exception):
     pass

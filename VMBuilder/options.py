@@ -17,17 +17,18 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+#    Option handling
+import VMBuilder
 import os
+import optparse
 
-def load_plugins():
-    for plugin in find_plugins():
-        exec "import %s" % plugin
+#opts_handler = base_optparser()
 
-def find_plugins():
-    retval = []
-    for plugin_dir in __path__:
-        for p in os.listdir(plugin_dir):
-            path = '%s/%s' % (plugin_dir, p)
-            if os.path.isdir(path) and os.path.isfile('%s/__init__.py' % path):
-                retval.append("VMBuilder.plugins.%s" % p)
-    return retval
+class OptionGroup(object):
+    def __init__(self, help=None):
+        self.help = help
+        self.options = []
+    
+    def add_option(self, option):
+        pass
+        

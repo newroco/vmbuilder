@@ -17,17 +17,16 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+#    CLI related classes and code
+import VMBuilder
 import os
+import textwrap
+import optparse
+import log
+from optparse import OptionContainer
+from gettext import gettext
+_ = gettext
 
-def load_plugins():
-    for plugin in find_plugins():
-        exec "import %s" % plugin
-
-def find_plugins():
-    retval = []
-    for plugin_dir in __path__:
-        for p in os.listdir(plugin_dir):
-            path = '%s/%s' % (plugin_dir, p)
-            if os.path.isdir(path) and os.path.isfile('%s/__init__.py' % path):
-                retval.append("VMBuilder.plugins.%s" % p)
-    return retval
+vm.register_option('--rootsize', metavar='SIZE', type='int', default=4096, help='Size (in MB) of the root filesystem [default: %default]')
+vm.register_option('--optsize', metavar='SIZE', type='int', default=0, help='Size (in MB) of the /opt filesystem. If not set, no /opt filesystem will be added.')
+vm.register_option('--swapsize', metavar='SIZE', type='int', default=1024, help='Size (in MB) of the swap partition [default: %default]')

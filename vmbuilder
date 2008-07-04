@@ -24,6 +24,6 @@
 #sys.path += [os.getcwd()]
 
 import VMBuilder
-import VMBuilder.cli
 
-VMBuilder.run(VMBuilder.cli.parse_options)
+VMBuilder.set_frontend('cli')
+VMBuilder.run()

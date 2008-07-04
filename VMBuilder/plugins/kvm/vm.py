@@ -27,7 +27,9 @@ class KVM(Hypervisor):
     filetype = 'qcow2'
 
     def convert(self):
-        for disk in VMBuilder.disks:
-            disk.convert('%s/%s.%s' % (VMBuilder.options.destdir, '.'.join(os.path.basename(disk.filename).split('.')[:-1]), self.filetype), self.filetype)
+        for disk in self.vm.disks:
+            target_img = '%s/%s.%s' % (self.vm.destdir, '.'.join(os.path.basename(disk.filename).split('.')[:-1]), self.filetype)
+            self.vm.result_files.append(target_img)
+            disk.convert(target_img, self.filetype)
     
 register_hypervisor(KVM)

@@ -18,10 +18,24 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import suite
+from VMBuilder.plugins.ubuntu.dapper import Dapper
 
-class Hardy(suite.Suite):
+class Hardy(Dapper):
     def device_map(self):
-        return '\n'.join(['(hd%d) %s' % (idx, disk.devname) for (idx, disk) in zip(range(len(self.builder.disks)), self.builder.disks)])
+        return '\n'.join(['(%s) %s' % (disk.get_grub_id(), disk.devname) for disk in self.vm.disks])
 
     def kernel_name(self):
         return 'linux-image-server'
+
+    def fstab(self):
+        retval = '''# /etc/fstab: static file system information.
+#
+# <file system>                                 <mount point>   <type>  <options>       <dump>  <pass>
+proc                                            /proc           proc    defaults        0       0
+'''
+        parts = disk.get_ordered_partitions(self.vm.disks)
+        for part in parts:
+            retval += "UUID=%-40s %15s %7s %15s %d       %d\n" % (part.uuid, part.mntpnt, part.fstab_fstype(), part.fstab_options(), 0, 0)
+        return retval
+
+
