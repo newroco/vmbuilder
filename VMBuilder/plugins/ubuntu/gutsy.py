@@ -17,8 +17,13 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import logging
 import suite
-from VMBuilder.plugins.ubuntu.gutsy import Gutsy
+import VMBuilder.disk as disk
+from   VMBuilder.util import run_cmd
+from   VMBuilder.plugins.ubuntu.feisty import Feisty
 
-class Hardy(Gutsy):
-    pass
+class Gutsy(Feisty):
+    valid_flavours = { 'i386' :  ['386', 'generic', 'rt', 'server', 'virtual'],
+                       'amd64' : ['generic', 'rt', 'server']}
+    default_flavour = { 'i386' : 'virtual', 'amd64' : 'server', 'lpia' : 'lpia' }

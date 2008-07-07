@@ -159,7 +159,6 @@ class Disk(object):
             return '(hd%d,%d)' % (self.disk.get_index(), self.get_index())
 
         def get_index(self):
-            # Yikes!
             return self.disk.partitions.index(self)
 
         @classmethod

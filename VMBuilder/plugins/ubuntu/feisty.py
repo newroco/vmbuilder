@@ -17,8 +17,15 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import logging
 import suite
-from VMBuilder.plugins.ubuntu.gutsy import Gutsy
+import VMBuilder.disk as disk
+from   VMBuilder.util import run_cmd
+from   VMBuilder.plugins.ubuntu.edgy import Edgy
 
-class Hardy(Gutsy):
-    pass
+class Feisty(Edgy):
+    updategrub = "/usr/sbin/update-grub"
+    grubroot = "/usr/lib/grub"
+    valid_flavours = { 'i386' :  ['386', '686', '686-smp', 'generic', 'k7', 'k7-smp', 'server', 'server-bigiron', 'lowlatency'],
+                       'amd64' : ['amd64-generic', 'amd64-k8', 'amd64-k8-smp', 'amd64-server', 'amd64-xeon', 'server']}
+    disk_prefix = 'sd'
