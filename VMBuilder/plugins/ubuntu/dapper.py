@@ -49,17 +49,17 @@ class Dapper(suite.Suite):
         logging.debug("Installing fstab")
         self.install_fstab()
     
-        logging.debug("Installing kernel")
-        self.install_kernel()
-
         logging.debug("Installing grub")
         self.install_grub()
 
-        logging.debug("Creating device.map")
-        self.install_device_map()
-
         logging.debug("Installing menu.list")
         self.install_menu_lst()
+
+        logging.debug("Installing kernel")
+        self.install_kernel()
+
+        logging.debug("Creating device.map")
+        self.install_device_map()
 
         logging.debug("Unmounting volatile lrm filesystems")
         self.unmount_volatile()
@@ -79,13 +79,14 @@ class Dapper(suite.Suite):
         run_cmd('chroot', self.destdir, self.updategrub, '-y')
         self.mangle_grub_menu_lst()
         run_cmd('chroot', self.destdir, self.updategrub)
+        run_cmd('chroot', self.destdir, 'grub-set-default', '0')
 
         run_cmd('umount', '%s/dev' % self.destdir)
         run_cmd('umount', '%s/proc' % self.destdir)
 
     def mangle_grub_menu_lst(self):
         bootdev = disk.bootpart(self.vm.disks)
-        run_cmd('sed', '-ie', 's/^# kopt=root=\([^ ]*\)\(.*\)/# kopt=root=\/dev\/hd%s%d\2/g' % (bootdev.disk.devletters, bootdev.get_index()), '%s/boot/grub/menu.lst' % self.destdir)
+        run_cmd('sed', '-ie', 's/^# kopt=root=\([^ ]*\)\(.*\)/# kopt=root=\/dev\/hd%s%d\\2/g' % (bootdev.disk.devletters, bootdev.get_index()+1), '%s/boot/grub/menu.lst' % self.destdir)
         run_cmd('sed', '-ie', 's/^# groot.*/# groot %s/g' % bootdev.get_grub_id(), '%s/boot/grub/menu.lst' % self.destdir)
         run_cmd('sed', '-ie', '/^# kopt_2_6/ d', '%s/boot/grub/menu.lst' % self.destdir)
 
@@ -109,8 +110,18 @@ class Dapper(suite.Suite):
         run_cmd(*cmd)
 
     def install_kernel(self):
-        kernel_name = self.kernel_name()
-        run_cmd('chroot', self.destdir, 'apt-get', '--force-yes', '-y', 'install', kernel_name, 'grub')
+        fp = open('%s/etc/kernel-img.conf' % self.destdir, 'w')
+        fp.write('''
+do_symlinks = yes
+relative_links = yes
+do_bootfloppy = no
+do_initrd = yes
+link_in_boot = no
+postinst_hook = %s
+postrm_hook = %s
+do_bootloader = no''' % (self.updategrub, self.updategrub))
+        fp.close()
+        run_cmd('chroot', self.destdir, 'apt-get', '--force-yes', '-y', 'install', self.kernel_name(), 'grub')
 
     def install_grub(self):
         run_cmd('chroot', self.destdir, 'apt-get', '--force-yes', '-y', 'install', 'grub')
@@ -124,5 +135,5 @@ proc                                            /proc           proc    defaults
 '''
         parts = disk.get_ordered_partitions(self.vm.disks)
         for part in parts:
-            retval += "/dev/%s%-38s %15s %7s %15s %d       %d\n" % (self.disk_prefix, disk.devletters, part.mntpnt, part.fstab_fstype(), part.fstab_options(), 0, 0)
+            retval += "/dev/%s%-38s %15s %7s %15s %d       %d\n" % (self.disk_prefix, part.get_suffix(), part.mntpnt, part.fstab_fstype(), part.fstab_options(), 0, 0)
         return retval

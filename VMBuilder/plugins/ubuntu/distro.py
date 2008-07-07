@@ -72,7 +72,6 @@ class Ubuntu(Distro):
         
         suite = self.vm.suite
         mod = 'VMBuilder.plugins.ubuntu.%s' % (suite, )
-        print "import %s" % (mod,)
         exec "import %s" % (mod,)
         exec "self.suite = %s.%s(self.vm)" % (mod, suite.capitalize())
 

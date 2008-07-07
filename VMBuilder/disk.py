@@ -24,7 +24,7 @@ import logging
 import string
 
 class Disk(object):
-    index = 1
+    index = 0
 
     def __init__(self, vm, size='5G', preallocated=False, filename=None):
         """size is by default given in MB, but 'G', 'k', 'M' suffixes are allowed, too
@@ -157,6 +157,11 @@ class Disk(object):
 
         def get_grub_id(self):
             return '(hd%d,%d)' % (self.disk.get_index(), self.get_index())
+
+        def get_suffix(self):
+            """Returns 'a4' for a device that would be called /dev/sda4 in the guest. 
+               This allows other parts of VMBuilder to set the prefix to something suitable."""
+            return '%s%d' % (self.disk.devletters, self.get_index() + 1)
 
         def get_index(self):
             return self.disk.partitions.index(self)
