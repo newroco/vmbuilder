@@ -19,7 +19,9 @@
 #
 from VMBuilder import register_hypervisor, Hypervisor
 import VMBuilder
+import os
 import os.path
+import stat
 
 class KVM(Hypervisor):
     name = 'KVM'
@@ -27,9 +29,20 @@ class KVM(Hypervisor):
     filetype = 'qcow2'
 
     def convert(self):
+        cmdline = ['kvm', '-m', str(self.vm.mem) ]
         for disk in self.vm.disks:
-            target_img = '%s/%s.%s' % (self.vm.destdir, '.'.join(os.path.basename(disk.filename).split('.')[:-1]), self.filetype)
+            filename = '%s.%s' % ('.'.join(os.path.basename(disk.filename).split('.')[:-1]), self.filetype)
+            target_img = '%s/%s' % (self.vm.destdir, filename)
             self.vm.result_files.append(target_img)
             disk.convert(target_img, self.filetype)
+            cmdline += ['-drive', 'file=%s' % filename]
     
+        cmdline += ['$@']
+        script = '%s/run.sh' % self.vm.destdir
+        fp = open(script, 'w')
+        fp.write("#!/bin/sh\n\n%s\n" % ' '.join(cmdline))
+        fp.close()
+        os.chmod(script, stat.S_IRWXU | stat.S_IRWXU | stat.S_IROTH | stat.S_IXOTH)
+        self.vm.result_files.append(script)
+
 register_hypervisor(KVM)
