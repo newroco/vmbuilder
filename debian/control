@@ -1,17 +1,25 @@
-Source: ubuntu-vm-builder
+Source: vm-builder
 Section: utils
 Priority: extra
 Maintainer: Soren Hansen <soren@ubuntu.com>
-Build-Depends: cdbs, debhelper
-Standards-Version: 3.7.3
-Vcs-Bzr: http://bazaar.launchpad.net/~shawarma/ubuntu-jeos/trunk
+Build-Depends: cdbs, debhelper (>= 5.0.38), python-all-dev (>= 2.3.5-11), python-central (>= 0.5.6)
+Standards-Version: 3.8.0
+XS-Python-Version: >= 2.5
+Vcs-Bzr: http://bazaar.launchpad.net/~ubuntu-virt/ubuntu-jeos/python-rewrite
 
-Package: ubuntu-vm-builder
+Package: python-vm-builder
 Architecture: all
-Depends: qemu, debootstrap, parted, kpartx, ubuntu-keyring
+Depends: qemu | kvm (>= 1:69), debootstrap, parted, kpartx, ubuntu-keyring, ${python:Depends}
+XB-Python-Version: ${python:Versions}
 Description: Ubuntu VM builder
  This is the Ubuntu VM builder script which automates the process of creating
  a ready to use VM based on Ubuntu. You can pass command line options to add
  extra packages, remove packages, choose which version of Ubuntu, which mirror
  etc. On recent hardware with plenty of RAM, tmpdir in /dev/shm or using a tmpfs, 
  and a local mirror, you can bootstrap a vm in less than a minute.
+
+Package: ubuntu-vm-builder
+Architecture: all
+Depends: python-vm-builder
+Description: Ubuntu VM Builder - transitional package
+ Transitional package (ubuntu-vm-builder -> python-vm-builder)

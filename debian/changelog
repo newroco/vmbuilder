@@ -1,4 +1,4 @@
-ubuntu-vm-builder (0.7~ppa3) hardy; urgency=low
+vm-builder (0.8) intrepid; urgency=low
 
   * Rewrote the whole thing. 
 
