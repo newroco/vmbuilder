@@ -24,10 +24,13 @@ import VMBuilder.log       as log
 import VMBuilder.disk      as disk
 from   VMBuilder.disk      import Disk
 from   VMBuilder.exception import VMBuilderException
+from gettext import gettext
+_ = gettext
+import logging
 import os
 import optparse
-import logging
 import tempfile
+import textwrap
 
 class VM(object):
     def __init__(self):
@@ -36,7 +39,7 @@ class VM(object):
         self.disks = []
         self.result_files = []
         self.cleanup_cbs = []
-        self.optparser = MyOptParser(epilog="I wrote it", usage='%prog hypervisor distro [options]')
+        self.optparser = MyOptParser(epilog="ubuntu-vm-builder is Copyright (C) 2007-2008 Canonical Ltd. and written by Soren Hansen <soren@canonical.com>.", usage='%prog hypervisor distro [options]')
         self.optparser.arg_help = (('hypervisor', self.hypervisor_help), ('distro', self.distro_help))
         self.register_base_settings()
 
