@@ -27,4 +27,3 @@ import sys
 class Suite(object):
     def __init__(self, vm):
         self.vm = vm
-
