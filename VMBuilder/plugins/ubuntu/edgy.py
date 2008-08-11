@@ -31,7 +31,7 @@ class Edgy(Dapper):
 
     def mangle_grub_menu_lst(self):
         bootdev = disk.bootpart(self.vm.disks)
-        run_cmd('sed', '-ie', 's/^# kopt=root=\([^ ]*\)\(.*\)/# kopt=root=UUID=%s\\2/g' % bootdev.uuid, '%s/boot/grub/menu.lst' % self.destdir)
+        run_cmd('sed', '-ie', 's/^# kopt=root=\([^ ]*\)\(.*\)/# kopt=root=UUID=%s\\2/g' % bootdev.fs.uuid, '%s/boot/grub/menu.lst' % self.destdir)
         run_cmd('sed', '-ie', 's/^# groot.*/# groot %s/g' % bootdev.get_grub_id(), '%s/boot/grub/menu.lst' % self.destdir)
         run_cmd('sed', '-ie', '/^# kopt_2_6/ d', '%s/boot/grub/menu.lst' % self.destdir)
 
@@ -43,5 +43,5 @@ proc                                            /proc           proc    defaults
 '''
         parts = disk.get_ordered_partitions(self.vm.disks)
         for part in parts:
-            retval += "UUID=%-40s %15s %7s %15s %d       %d\n" % (part.uuid, part.mntpnt, part.fstab_fstype(), part.fstab_options(), 0, 0)
+            retval += "UUID=%-40s %15s %7s %15s %d       %d\n" % (part.fs.uuid, part.fs.mntpnt, part.fs.fstab_fstype(), part.fs.fstab_options(), 0, 0)
         return retval

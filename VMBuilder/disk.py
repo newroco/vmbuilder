@@ -18,10 +18,35 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #    Virtual disk management
-from VMBuilder.util import run_cmd 
+from   VMBuilder.util import run_cmd 
 import VMBuilder
 import logging
 import string
+from   exception import VMBuilderUserError
+
+TYPE_EXT2 = 0
+TYPE_EXT3 = 1
+TYPE_XFS = 2
+TYPE_SWAP = 3
+
+def parse_size(size_str):
+    """Takes a size like qemu-img would accept it and returns the size in MB"""
+    try:
+        return int(size_str)
+    except ValueError, e:
+        pass
+
+    try:
+        num = int(size_str[:-1])
+    except ValueError, e:
+        raise VMBuilderUserError("Invalid size: %s" % size_str)
+
+    if size_str[-1:] == 'g' or size_str[-1:] == 'G':
+        return num * 1024
+    if size_str[-1:] == 'm' or size_str[-1:] == 'M':
+        return num
+    if size_str[-1:] == 'k' or size_str[-1:] == 'K':
+        return num / 1024
 
 class Disk(object):
     index = 0
@@ -30,37 +55,19 @@ class Disk(object):
         """size is by default given in MB, but 'G', 'k', 'M' suffixes are allowed, too
            preallocated means that the disk already exists and we shouldn't create it (useful for raw devices)
            filename can be given to force a certain filename or to give the name of the preallocated disk image"""
-        self.size = self.parse_size(size)
+        self.size = parse_size(size)
         self.vm = vm
 
         self.preallocated = preallocated
         if filename:
             self.filename = filename
         else:
-            self.filename = 'disk%d.img' % Disk.index
-        self.index = Disk.index
-        self.devletters = index_to_devname(self.index)
-        Disk.index += 1    
+            self.filename = 'disk%d.img' % len(self.vm.disks)
+
         self.partitions = []
 
-    def parse_size(self, size_str):
-        """Takes a size like qemu-img would accept it and returns the size in MB"""
-        try:
-            return int(size_str)
-        except ValueError, e:
-            pass
-
-        try:
-            num = int(size_str[:-1])
-        except ValueError, e:
-            raise ValueError("Invalid size: %s" % size_str)
-
-        if size_str[-1:] == 'g' or size_str[-1:] == 'G':
-            return num * 1024
-        if size_str[-1:] == 'm' or size_str[-1:] == 'M':
-            return num
-        if size_str[-1:] == 'k' or size_str[-1:] == 'K':
-            return num / 1024
+    def devletters(self):
+        return index_to_devname(self.vm.disks.index(self))
 
     def create(self, directory):
         """Create the disk image and partition mapping devices, and mkfs's the partitions"""
@@ -111,7 +118,7 @@ class Disk(object):
                 raise Exception('Partition\'s last block is before its first')
             if begin < 0 or end > self.size:
                 raise Exception('Partition is out of bounds. start=%d, end=%d, disksize=%d' % (begin,end,self.size))
-        part = self.Partition(disk=self, begin=begin, end=end, type=self.Partition.str_to_type(type), mntpnt=mntpnt)
+        part = self.Partition(disk=self, begin=begin, end=end, type=str_to_type(type), mntpnt=mntpnt)
         self.partitions.append(part)
         self.partitions.sort(cmp=lambda x,y: x.begin - y.begin)
 
@@ -120,11 +127,6 @@ class Disk(object):
         run_cmd('qemu-img', 'convert', '-O', format, self.filename, destination)
 
     class Partition(object):
-        TYPE_EXT2 = 0
-        TYPE_EXT3 = 1
-        TYPE_XFS = 2
-        TYPE_SWAP = 3
-
         def __init__(self, disk, begin, end, type, mntpnt):
             self.disk = disk
             self.begin = begin
@@ -134,16 +136,7 @@ class Disk(object):
             self.mapdev = None
 
         def parted_fstype(self):
-            return { self.TYPE_EXT2: 'ext2', self.TYPE_EXT3: 'ext2', self.TYPE_XFS: 'ext2', self.TYPE_SWAP: 'linux-swap' }[self.type]
-
-        def mkfs_fstype(self):
-            return { self.TYPE_EXT2: 'mkfs.ext2', self.TYPE_EXT3: 'mkfs.ext3', self.TYPE_XFS: 'mkfs.xfs', self.TYPE_SWAP: 'mkswap' }[self.type]
-
-        def fstab_fstype(self):
-            return { self.TYPE_EXT2: 'ext2', self.TYPE_EXT3: 'ext3', self.TYPE_XFS: 'xfs', self.TYPE_SWAP: 'swap' }[self.type]
-
-        def fstab_options(self):
-            return 'defaults'
+            return { TYPE_EXT2: 'ext2', TYPE_EXT3: 'ext2', TYPE_XFS: 'ext2', TYPE_SWAP: 'linux-swap' }[self.type]
 
         def create(self, disk):
             logging.info('Adding type %d partition to disk image: %s' % (self.type, disk.filename))
@@ -152,8 +145,7 @@ class Disk(object):
         def mkfs(self):
             if not self.mapdev:
                 raise Exception('We can\'t mkfs before we have a mapper device')
-            run_cmd(self.mkfs_fstype(), self.mapdev)
-            self.uuid = run_cmd('vol_id', '--uuid', self.mapdev).rstrip()
+            self.fs = Filesystem(self.disk.vm, preallocated=True, filename=self.mapdev, type=self.type)
 
         def get_grub_id(self):
             return '(hd%d,%d)' % (self.disk.get_index(), self.get_index())
@@ -161,22 +153,49 @@ class Disk(object):
         def get_suffix(self):
             """Returns 'a4' for a device that would be called /dev/sda4 in the guest. 
                This allows other parts of VMBuilder to set the prefix to something suitable."""
-            return '%s%d' % (self.disk.devletters, self.get_index() + 1)
+            return '%s%d' % (self.disk.devletters(), self.get_index() + 1)
 
         def get_index(self):
             return self.disk.partitions.index(self)
 
-        @classmethod
-        def str_to_type(cls, type):
-            try:
-                return { 'ext2': cls.TYPE_EXT2,
-                         'ext3': cls.TYPE_EXT3,
-                         'xfs': cls.TYPE_XFS,
-                         'swap': cls.TYPE_SWAP,
-                         'linux-swap': cls.TYPE_SWAP }[type]
-            except KeyError, e:
-                raise Exception('Unknown partition type')
+class Filesystem(object):
+    def __init__(self, vm, size=None, preallocated=False, type=None, mntpnt=None, filename=None):
+        self.vm = vm
+        self.filename = filename
+        if not preallocated:
+            self.size = parse_size(size)
+            run_cmd('qemu-img', 'create', '-f', 'raw', self.filename, '%dM' % self.size)
+            
+        self.type = type
+        self.mntpnt = mntpnt
+        self.create()
 
+    def create(self):
+        self.mkfs()
+
+    def mkfs(self):
+        run_cmd(self.mkfs_fstype(), self.filename)
+        self.uuid = run_cmd('vol_id', '--uuid', self.filename).rstrip()
+
+    def mkfs_fstype(self):
+        return { TYPE_EXT2: 'mkfs.ext2', TYPE_EXT3: 'mkfs.ext3', TYPE_XFS: 'mkfs.xfs', TYPE_SWAP: 'mkswap' }[self.type]
+
+    def fstab_fstype(self):
+        return { TYPE_EXT2: 'ext2', TYPE_EXT3: 'ext3', TYPE_XFS: 'xfs', TYPE_SWAP: 'swap' }[self.type]
+
+    def fstab_options(self):
+        return 'defaults'
+
+
+def str_to_type(type):
+    try:
+        return { 'ext2': TYPE_EXT2,
+                 'ext3': TYPE_EXT3,
+                 'xfs': TYPE_XFS,
+                 'swap': TYPE_SWAP,
+                 'linux-swap': TYPE_SWAP }[type]
+    except KeyError, e:
+        raise Exception('Unknown partition type')
 
 def bootpart(disks):
     """Returns the partition which contains /boot"""

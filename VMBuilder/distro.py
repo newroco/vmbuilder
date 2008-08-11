@@ -23,13 +23,5 @@ from VMBuilder.util import run_cmd
 class Distro(object):
     def install(self, destdir):
         """Install the distro into destdir"""
-       raise NotImplemented('Distro subclasses need to implement the install method')
-
-     def install_file(self, path, contents):
-        fp = open('%s%s' % (self.destdir, self.path), 'w')
-        fp.write(contents)
-        fp.close()
-
-     def run_in_target(*args, **kwargs):
-        return run_cmd('chroot', 'self.destdir', *args, **kwargs)
+        raise NotImplemented('Distro subclasses need to implement the install method')
 

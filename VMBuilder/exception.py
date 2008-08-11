@@ -20,7 +20,9 @@
 #    Our very own exception
 
 class VMBuilderException(Exception):
+    """Something failed inside VMBuilder"""
     pass
 
 class VMBuilderUserError(Exception):
+    """The user did something silly."""
     pass

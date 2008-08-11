@@ -1,6 +1,6 @@
 vm-builder (0.8) intrepid; urgency=low
 
-  * Rewrote the whole thing. 
+  * Forked (actually rewrote) the whole thing. 
 
  -- Soren Hansen <soren@ubuntu.com>  Sat, 05 Jul 2008 00:23:20 +0200
 

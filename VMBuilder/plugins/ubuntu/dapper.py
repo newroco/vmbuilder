@@ -116,12 +116,14 @@ done
         os.chmod(path, 0755)
 
     def install_extras(self):
+        if not self.vm.addpkg and not self.vm.removepkg:
+            return
         cmd = ['chroot', self.destdir, 'apt-get', 'install', '-y', '--force-yes']
-        cmd += self.vm.addpkg
-        cmd += ['%s-' % pkg for pkg in self.vm.removepkg]
-        logging.debug(cmd.__repr__())
-        import os, signal
-        os.kill(os.getpid(), signal.SIGSTOP)
+        cmd += self.vm.addpkg or []
+        cmd += ['%s-' % pkg for pkg in self.vm.removepkg or []]
+#        logging.debug(cmd.__repr__())
+#       import os, signal
+#       os.kill(os.getpid(), signal.SIGSTOP)
         run_cmd(*cmd)
         
     def unmount_volatile(self):
@@ -151,16 +153,16 @@ done
         run_cmd('sed', '-ie', '/^# kopt_2_6/ d', '%s/boot/grub/menu.lst' % self.destdir)
 
     def install_fstab(self):
-        self.intall_file('/etc/fstab', self.fstab())
+        self.install_file('/etc/fstab', self.fstab())
 
     def install_device_map(self):
-        self.intall_file('/boot/grub/device.map', self.device_map())
+        self.install_file('/boot/grub/device.map', self.device_map())
 
     def device_map(self):
         return '\n'.join(['(%s) /dev/%s%s' % (self.disk_prefix, disk.get_grub_id(), disk.devletters) for disk in self.vm.disks])
 
     def debootstrap(self):
-        cmd = ['debootstrap', self.vm.suite, self.destdir]
+        cmd = ['/usr/sbin/debootstrap', self.vm.suite, self.destdir]
         if self.vm.mirror:
             cmd += [self.vm.mirror]
         run_cmd(*cmd)
@@ -178,7 +180,7 @@ do_bootloader = no''' % (self.updategrub, self.updategrub))
         run_cmd('chroot', self.destdir, 'apt-get', '--force-yes', '-y', 'install', self.kernel_name(), 'grub')
 
     def install_grub(self):
-        run_in_target('apt-get', '--force-yes', '-y', 'install', 'grub')
+        self.run_in_target('apt-get', '--force-yes', '-y', 'install', 'grub')
         run_cmd('cp', '-a', '%s%s/%s/' % (self.destdir, self.grubroot, self.vm.arch == 'amd64' and 'x86_64-pc' or 'i386-pc'), '%s/boot/grub' % self.destdir) 
 
     def fstab(self):
@@ -191,3 +193,12 @@ proc                                            /proc           proc    defaults
         for part in parts:
             retval += "/dev/%s%-38s %15s %7s %15s %d       %d\n" % (self.disk_prefix, part.get_suffix(), part.mntpnt, part.fstab_fstype(), part.fstab_options(), 0, 0)
         return retval
+
+    def install_file(self, path, contents):
+        fp = open('%s%s' % (self.destdir, path), 'w')
+        fp.write(contents)
+        fp.close()
+
+    def run_in_target(self, *args, **kwargs):
+        return run_cmd('chroot', self.destdir, *args, **kwargs)
+

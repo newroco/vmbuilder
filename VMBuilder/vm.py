@@ -86,6 +86,10 @@ class VM(object):
         self.disks.append(disk)
         return disk
 
+    def add_filesystem(self, mntpnt, type=None):
+        """Adds a filesystem to the virtual machine"""
+
+
     def set_distro(self, arg):
         if arg in VMBuilder.distros.keys():
             self.distro = VMBuilder.distros[arg](self)
@@ -139,7 +143,7 @@ class VM(object):
         logging.info('Mounting target filesystem')
         parts = disk.get_ordered_partitions(self.disks)
         for part in parts:
-            if part.type != part.TYPE_SWAP: 
+            if part.type != VMBuilder.disk.TYPE_SWAP: 
                 logging.debug('Mounting %s', part.mntpnt) 
                 part.mntpath = '%s%s' % (self.rootmnt, part.mntpnt)
                 if not os.path.exists(part.mntpath):
@@ -152,7 +156,7 @@ class VM(object):
         parts = VMBuilder.disk.get_ordered_partitions(self.disks)
         parts.reverse()
         for part in parts:
-            if part.type != part.TYPE_SWAP: 
+            if part.type != VMBuilder.disk.TYPE_SWAP: 
                 logging.debug('Unmounting %s', part.mntpath) 
                 util.run_cmd('umount', part.mntpath)
         for disk in self.disks:

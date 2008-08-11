@@ -19,6 +19,12 @@
 #
 #    Hypervisor super class
 
+STORAGE_DISK_IMAGE = 0
+STORAGE_FS_IMAGE = 1
+
 class Hypervisor(object):
+    STORAGE_DISK_IMAGE = STORAGE_DISK_IMAGE
+    STORAGE_FS_IMAGE   = STORAGE_FS_IMAGE
+
     def __init__(self, vm):
         self.vm = vm

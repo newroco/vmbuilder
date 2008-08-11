@@ -27,6 +27,7 @@ class KVM(Hypervisor):
     name = 'KVM'
     arg = 'kvm'
     filetype = 'qcow2'
+    preferred_storage = Hypervisor.STORAGE_DISK_IMAGE
 
     def convert(self):
         cmdline = ['kvm', '-m', str(self.vm.mem) ]
