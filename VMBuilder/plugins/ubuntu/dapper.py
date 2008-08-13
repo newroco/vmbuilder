@@ -45,23 +45,27 @@ class Dapper(suite.Suite):
         logging.debug("Installing fstab")
         self.install_fstab()
     
-        logging.debug("Installing grub")
-        self.install_grub()
+        if self.vm.hypervisor.needs_bootloader:
+            logging.debug("Installing grub")
+            self.install_grub()
         
         logging.debug("Configuring guest networking")
         self.config_network()
 
-        logging.debug("Installing menu.list")
-        self.install_menu_lst()
+        if self.vm.hypervisor.needs_bootloader:
+            logging.debug("Installing menu.list")
+            self.install_menu_lst()
         
         logging.debug("Preventing daemons from starting")
         self.prevent_daemons_starting()
 
-        logging.debug("Installing kernel")
-        self.install_kernel()
+        if self.vm.hypervisor.needs_bootloader:
+            logging.debug("Installing kernel")
+            self.install_kernel()
 
-        logging.debug("Creating device.map")
-        self.install_device_map()
+        if self.vm.hypervisor.needs_bootloader:
+            logging.debug("Creating device.map")
+            self.install_device_map()
 
         logging.debug("Installing extra packages")
         self.install_extras()
@@ -121,7 +125,7 @@ done
         cmd = ['chroot', self.destdir, 'apt-get', 'install', '-y', '--force-yes']
         cmd += self.vm.addpkg or []
         cmd += ['%s-' % pkg for pkg in self.vm.removepkg or []]
-#        logging.debug(cmd.__repr__())
+#       logging.debug(cmd.__repr__())
 #       import os, signal
 #       os.kill(os.getpid(), signal.SIGSTOP)
         run_cmd(*cmd)

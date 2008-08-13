@@ -18,33 +18,29 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from VMBuilder import register_hypervisor, Hypervisor
+from VMBuilder.util import run_cmd
 import VMBuilder
-import os
+import logging
 import os.path
 import stat
 
-class KVM(Hypervisor):
-    name = 'KVM'
-    arg = 'kvm'
-    filetype = 'qcow2'
-    preferred_storage = Hypervisor.STORAGE_DISK_IMAGE
-    needs_bootloader = True
+class Xen(Hypervisor):
+    name = 'Xen'
+    arg = 'xen'
+    preferred_storage = Hypervisor.STORAGE_FS_IMAGE
+    needs_bootloader = False
 
     def finalize(self):
-        cmdline = ['kvm', '-m', str(self.vm.mem) ]
-        for disk in self.vm.disks:
-            filename = '%s.%s' % ('.'.join(os.path.basename(disk.filename).split('.')[:-1]), self.filetype)
-            target_img = '%s/%s' % (self.vm.destdir, filename)
-            self.vm.result_files.append(target_img)
-            disk.convert(target_img, self.filetype)
-            cmdline += ['-drive', 'file=%s' % filename]
+        for filesystem in self.vm.filesystems:
+            destfile = '%s/%s' % (self.vm.destdir, os.path.basename(filesystem.filename))
+            logging.info('Moving %s to %s' % (filesystem.filename, destfile))
+            self.vm.result_files.append(destfile)
+            run_cmd('cp', '--sparse=always', filesystem.filename, destfile)
     
-        cmdline += ['$@']
-        script = '%s/run.sh' % self.vm.destdir
-        fp = open(script, 'w')
-        fp.write("#!/bin/sh\n\n%s\n" % ' '.join(cmdline))
+        xenconf = '%s/foo.conf' % self.vm.destdir
+        fp = open(xenconf, 'w')
+        fp.write("This should be a config file for xen")
         fp.close()
-        os.chmod(script, stat.S_IRWXU | stat.S_IRWXU | stat.S_IROTH | stat.S_IXOTH)
-        self.vm.result_files.append(script)
+        self.vm.result_files.append(xenconf)
 
-register_hypervisor(KVM)
+register_hypervisor(Xen)

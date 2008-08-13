@@ -80,19 +80,6 @@ class Ubuntu(Distro):
 
         self.suite.install(destdir)
 
-
-    def fstab(self):
-        return
-        self.suite.fstab()
-        retval = '''# /etc/fstab: static file system information.
-#
-# <file system>                                 <mount point>   <type>  <options>       <dump>  <pass>
-proc                                            /proc           proc    defaults        0       0
-'''
-        parts = VMBuilder.get_ordered_partitions()
-        for part in parts:
-            retval += "UUID=%42s %15s %7s %15s %d       %d" % (part.uuid, part.mntpnt, part.fstab_fstype(), part.fstab_options(), 0, 0)
-
     def install_bootloader(self):
         devmapfile = '%s/device.map' % self.vm.workdir
         devmap = open(devmapfile, 'w')

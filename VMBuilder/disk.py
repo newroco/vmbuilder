@@ -18,59 +18,52 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #    Virtual disk management
+
 from   VMBuilder.util import run_cmd 
 import VMBuilder
 import logging
 import string
-from   exception import VMBuilderUserError
+from   exception import VMBuilderUserError, VMBuilderException
+import tempfile
 
 TYPE_EXT2 = 0
 TYPE_EXT3 = 1
 TYPE_XFS = 2
 TYPE_SWAP = 3
 
-def parse_size(size_str):
-    """Takes a size like qemu-img would accept it and returns the size in MB"""
-    try:
-        return int(size_str)
-    except ValueError, e:
-        pass
-
-    try:
-        num = int(size_str[:-1])
-    except ValueError, e:
-        raise VMBuilderUserError("Invalid size: %s" % size_str)
-
-    if size_str[-1:] == 'g' or size_str[-1:] == 'G':
-        return num * 1024
-    if size_str[-1:] == 'm' or size_str[-1:] == 'M':
-        return num
-    if size_str[-1:] == 'k' or size_str[-1:] == 'K':
-        return num / 1024
-
 class Disk(object):
     index = 0
 
     def __init__(self, vm, size='5G', preallocated=False, filename=None):
-        """size is by default given in MB, but 'G', 'k', 'M' suffixes are allowed, too
+        """size is passed to disk.parse_size
            preallocated means that the disk already exists and we shouldn't create it (useful for raw devices)
            filename can be given to force a certain filename or to give the name of the preallocated disk image"""
-        self.size = parse_size(size)
+
+        # We need this for "introspection"
         self.vm = vm
 
+        # Perhaps this should be the frontend's responsibility?
+        self.size = parse_size(size)
+
         self.preallocated = preallocated
+
+        # If filename isn't given, make one up
         if filename:
             self.filename = filename
         else:
+            if self.preallocated:
+                raise VMBuilderException('Preallocated was set, but no filename given')
             self.filename = 'disk%d.img' % len(self.vm.disks)
 
         self.partitions = []
 
     def devletters(self):
+        """Returns the series of letters that ought to correspond to the device inside
+           the VM. E.g. the first disk of a VM would return 'a', while the 702nd would return 'zz'"""
         return index_to_devname(self.vm.disks.index(self))
 
     def create(self, directory):
-        """Create the disk image and partition mapping devices, and mkfs's the partitions"""
+        """Creates the disk image, partitions it, creates the partition mapping devices and mkfs's the partitions"""
         if not self.preallocated:
             if directory:
                 self.filename = '%s/%s' % (directory, self.filename)
@@ -131,6 +124,7 @@ class Disk(object):
             self.disk = disk
             self.begin = begin
             self.end = end
+            print type
             self.type = type
             self.mntpnt = mntpnt
             self.mapdev = None
@@ -145,7 +139,8 @@ class Disk(object):
         def mkfs(self):
             if not self.mapdev:
                 raise Exception('We can\'t mkfs before we have a mapper device')
-            self.fs = Filesystem(self.disk.vm, preallocated=True, filename=self.mapdev, type=self.type)
+            self.fs = Filesystem(self.disk.vm, preallocated=True, filename=self.mapdev, type=self.type, mntpnt=self.mntpnt)
+            self.fs.mkfs()
 
         def get_grub_id(self):
             return '(hd%d,%d)' % (self.disk.get_index(), self.get_index())
@@ -159,26 +154,39 @@ class Disk(object):
             return self.disk.partitions.index(self)
 
 class Filesystem(object):
-    def __init__(self, vm, size=None, preallocated=False, type=None, mntpnt=None, filename=None):
+    def __init__(self, vm, size=0, preallocated=False, type=None, mntpnt=None, filename=None):
         self.vm = vm
         self.filename = filename
-        if not preallocated:
-            self.size = parse_size(size)
-            run_cmd('qemu-img', 'create', '-f', 'raw', self.filename, '%dM' % self.size)
-            
-        self.type = type
+        self.size = parse_size(size)
+        self.preallocated = preallocated
+           
+        try:
+            if int(type) == type:
+                self.type = type
+            else:
+                self.type = str_to_type(type)
+        except ValueError, e:
+            self.type = str_to_type(type)
+
         self.mntpnt = mntpnt
-        self.create()
 
     def create(self):
+        logging.info('Creating filesystem')
+        if not self.preallocated:
+            logging.info('Not preallocated, so we create it.')
+            if not self.filename:
+                self.filename = tempfile.mktemp(dir=self.vm.workdir)
+                logging.info('A name wasn\'t specified either, so we make one up: %s' % self.filename)
+            run_cmd('qemu-img', 'create', '-f', 'raw', self.filename, '%dM' % self.size)
         self.mkfs()
 
     def mkfs(self):
-        run_cmd(self.mkfs_fstype(), self.filename)
+        cmd = self.mkfs_fstype() + [self.filename]
+        run_cmd(*cmd)
         self.uuid = run_cmd('vol_id', '--uuid', self.filename).rstrip()
 
     def mkfs_fstype(self):
-        return { TYPE_EXT2: 'mkfs.ext2', TYPE_EXT3: 'mkfs.ext3', TYPE_XFS: 'mkfs.xfs', TYPE_SWAP: 'mkswap' }[self.type]
+        return { TYPE_EXT2: ['mkfs.ext2', '-F'], TYPE_EXT3: ['mkfs.ext3', '-F'], TYPE_XFS: ['mkfs.xfs'], TYPE_SWAP: ['mkswap'] }[self.type]
 
     def fstab_fstype(self):
         return { TYPE_EXT2: 'ext2', TYPE_EXT3: 'ext3', TYPE_XFS: 'xfs', TYPE_SWAP: 'swap' }[self.type]
@@ -186,6 +194,24 @@ class Filesystem(object):
     def fstab_options(self):
         return 'defaults'
 
+def parse_size(size_str):
+    """Takes a size like qemu-img would accept it and returns the size in MB"""
+    try:
+        return int(size_str)
+    except ValueError, e:
+        pass
+
+    try:
+        num = int(size_str[:-1])
+    except ValueError, e:
+        raise VMBuilderUserError("Invalid size: %s" % size_str)
+
+    if size_str[-1:] == 'g' or size_str[-1:] == 'G':
+        return num * 1024
+    if size_str[-1:] == 'm' or size_str[-1:] == 'M':
+        return num
+    if size_str[-1:] == 'k' or size_str[-1:] == 'K':
+        return num / 1024
 
 def str_to_type(type):
     try:
@@ -195,7 +221,7 @@ def str_to_type(type):
                  'swap': TYPE_SWAP,
                  'linux-swap': TYPE_SWAP }[type]
     except KeyError, e:
-        raise Exception('Unknown partition type')
+        raise Exception('Unknown partition type: %s' % type)
 
 def bootpart(disks):
     """Returns the partition which contains /boot"""
@@ -209,31 +235,39 @@ def path_to_partition(disks, path):
             return part
     raise VMBuilderException("Couldn't find partition path %s belongs to" % path)
 
+def create_filesystems(vm):
+    for filesystem in vm.filesystems:
+        filesystem.create()
+
 def create_partitions(vm):
     for disk in vm.disks:
         disk.create(vm.workdir)
+
+def get_ordered_filesystems(vm):
+    """Returns filesystems in an order suitable for mounting them"""
+    fss = vm.filesystems
+    for disk in vm.disks:
+        fss += [part.fs for part in disk.partitions]
+    fss.sort(lambda x,y: len(x.mntpnt or '')-len(y.mntpnt or ''))
+    return fss
 
 def get_ordered_partitions(disks):
     """Returns partitions from disks array in an order suitable for mounting them"""
     parts = []
     for disk in disks:
         parts += disk.partitions
-    parts.sort(lambda x,y: len(x.mntpnt)-len(y.mntpnt))
+    parts.sort(lambda x,y: len(x.mntpnt or '')-len(y.mntpnt or ''))
     return parts
 
 def devname_to_index(devname):
-    index = 0
-    while True:
-        index += string.ascii_lowercase.index(devname[0])
-        devname = devname[1:]
-        if not devname:
-            break
-        index = (index + 1) * 26
-    return index
+    return devname_to_index_rec(devname) - 1
 
-def index_to_devname(index):
-    retval = ''
-    while index >= 0:
-        retval = string.ascii_lowercase[index % 26] + retval
-        index = index / 26 - 1
-    return retval
+def devname_to_index_rec(devname):
+    if not devname:
+        return 0
+    return 26 * devname_to_index_rec(devname[:-1]) + (string.ascii_lowercase.index(devname[-1]) + 1) 
+
+def index_to_devname(index, suffix=''):
+    if index < 0:
+        return suffix
+    return suffix + index_to_devname(index / 26 -1, string.ascii_lowercase[index % 26])

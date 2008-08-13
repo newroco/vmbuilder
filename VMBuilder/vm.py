@@ -22,7 +22,7 @@ import VMBuilder
 import VMBuilder.util      as util
 import VMBuilder.log       as log
 import VMBuilder.disk      as disk
-from   VMBuilder.disk      import Disk
+from   VMBuilder.disk      import Disk, Filesystem
 from   VMBuilder.exception import VMBuilderException
 from gettext import gettext
 _ = gettext
@@ -37,6 +37,7 @@ class VM(object):
         self.hypervisor = None
         self.distro = None
         self.disks = []
+        self.filesystems = []
         self.result_files = []
         self.cleanup_cbs = []
         self.optparser = MyOptParser(epilog="ubuntu-vm-builder is Copyright (C) 2007-2008 Canonical Ltd. and written by Soren Hansen <soren@canonical.com>.", usage='%prog hypervisor distro [options]')
@@ -86,9 +87,11 @@ class VM(object):
         self.disks.append(disk)
         return disk
 
-    def add_filesystem(self, mntpnt, type=None):
+    def add_filesystem(self, *args, **kwargs):
         """Adds a filesystem to the virtual machine"""
-
+        fs = Filesystem(self, *args, **kwargs)
+        self.filesystems.append(fs)
+        return fs
 
     def set_distro(self, arg):
         if arg in VMBuilder.distros.keys():
@@ -141,24 +144,24 @@ class VM(object):
 
     def mount_partitions(self):
         logging.info('Mounting target filesystem')
-        parts = disk.get_ordered_partitions(self.disks)
-        for part in parts:
-            if part.type != VMBuilder.disk.TYPE_SWAP: 
-                logging.debug('Mounting %s', part.mntpnt) 
-                part.mntpath = '%s%s' % (self.rootmnt, part.mntpnt)
-                if not os.path.exists(part.mntpath):
-                    os.makedirs(part.mntpath)
-                util.run_cmd('mount', part.mapdev, part.mntpath)
-                self.add_clean_cmd('umount', part.mntpath, ignore_fail=True)
+        fss = disk.get_ordered_filesystems(self)
+        for fs in fss:
+            if fs.type != VMBuilder.disk.TYPE_SWAP: 
+                logging.debug('Mounting %s', fs.mntpnt) 
+                fs.mntpath = '%s%s' % (self.rootmnt, fs.mntpnt)
+                if not os.path.exists(fs.mntpath):
+                    os.makedirs(fs.mntpath)
+                util.run_cmd('mount', '-o', 'loop', fs.filename, fs.mntpath)
+                self.add_clean_cmd('umount', fs.mntpath, ignore_fail=True)
 
     def umount_partitions(self):
         logging.info('Unmounting target filesystem')
-        parts = VMBuilder.disk.get_ordered_partitions(self.disks)
-        parts.reverse()
-        for part in parts:
-            if part.type != VMBuilder.disk.TYPE_SWAP: 
-                logging.debug('Unmounting %s', part.mntpath) 
-                util.run_cmd('umount', part.mntpath)
+        fss = VMBuilder.disk.get_ordered_filesystems(self)
+        fss.reverse()
+        for fs in fss:
+            if fs.type != VMBuilder.disk.TYPE_SWAP: 
+                logging.debug('Unmounting %s', fs.mntpath) 
+                util.run_cmd('umount', fs.mntpath)
         for disk in self.disks:
             disk.unmap()
 
@@ -170,12 +173,14 @@ class VM(object):
 
         logging.info("Installing guest operating system. This might take some time...")
         self.distro.install(self.installdir)
+    
+        if not self.in_place:
+            logging.info("Copying to disk images")
+            util.run_cmd('rsync', '-aHA', '%s/' % self.tmproot, self.rootmnt)
 
-        logging.info("Copying to disk images")
-        util.run_cmd('rsync', '-aHA', '%s/' % self.tmproot, self.rootmnt)
-
-        logging.info("Installing bootloader")
-        self.distro.install_bootloader()
+        if self.hypervisor.needs_bootloader:
+            logging.info("Installing bootloader")
+            self.distro.install_bootloader()
 
     def create(self):
         util.checkroot()
@@ -185,13 +190,15 @@ class VM(object):
 
             disk.create_partitions(self)
 
+            disk.create_filesystems(self)
+
             self.mount_partitions()
 
             self.install()
 
             self.umount_partitions()
 
-            self.hypervisor.convert()
+            self.hypervisor.finalize()
 
             util.fix_ownership(self.result_files)
 
