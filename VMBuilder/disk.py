@@ -32,12 +32,12 @@ TYPE_XFS = 2
 TYPE_SWAP = 3
 
 class Disk(object):
-    index = 0
-
     def __init__(self, vm, size='5G', preallocated=False, filename=None):
         """size is passed to disk.parse_size
-           preallocated means that the disk already exists and we shouldn't create it (useful for raw devices)
-           filename can be given to force a certain filename or to give the name of the preallocated disk image"""
+
+        preallocated means that the disk already exists and we shouldn't create it (useful for raw devices)
+
+        filename can be given to force a certain filename or to give the name of the preallocated disk image"""
 
         # We need this for "introspection"
         self.vm = vm
@@ -59,27 +59,32 @@ class Disk(object):
 
     def devletters(self):
         """Returns the series of letters that ought to correspond to the device inside
-           the VM. E.g. the first disk of a VM would return 'a', while the 702nd would return 'zz'"""
+        the VM. E.g. the first disk of a VM would return 'a', while the 702nd would return 'zz'"""
         return index_to_devname(self.vm.disks.index(self))
 
     def create(self, directory):
-        """Creates the disk image, partitions it, creates the partition mapping devices and mkfs's the partitions"""
+        """Creates the disk image (unless preallocated), partitions it, creates the partition mapping devices and mkfs's the partitions"""
+
         if not self.preallocated:
             if directory:
                 self.filename = '%s/%s' % (directory, self.filename)
             logging.info('Creating disk image: %s' % self.filename)
             run_cmd('qemu-img', 'create', '-f', 'raw', self.filename, '%dM' % self.size)
 
+        # From here, we assume that self.filename refers to whatever holds the disk image,
+        # be it a file, a partition, logical volume, actual disk..
+
         logging.info('Adding partition table to disk image: %s' % self.filename)
         run_cmd('parted', '--script', self.filename, 'mklabel', 'msdos')
 
+        # Partition the disk 
         for part in self.partitions:
             part.create(self)
 
         logging.info('Creating loop devices corresponding to the created partitions')
         kpartx_output = run_cmd('kpartx', '-av', self.filename)
         self.vm.add_clean_cb(lambda : self.unmap(ignore_fail=True))
-
+        
         parts = kpartx_output.split('\n')[2:-1]
         mapdevs = []
         for line in parts:
@@ -87,18 +92,27 @@ class Disk(object):
         for (part, mapdev) in zip(self.partitions, mapdevs):
             part.mapdev = '/dev/mapper/%s' % mapdev
 
+        # At this point, all partitions are created and their mapping device has been
+        # created and set as .mapdev
+
+        # Adds a filesystem to the partition
         logging.info("Creating file systems")
         for part in self.partitions:
             part.mkfs()
 
     def get_grub_id(self):
+        """The name of the disk as known by grub"""
         return '(hd%d)' % self.get_index()
 
     def get_index(self):
+        """Index of the disk (starting from 0)"""
         return self.vm.disks.index(self)
 
     def unmap(self, ignore_fail=False):
+        """Destroy all mapping devices"""
         run_cmd('kpartx', '-d', self.filename, ignore_fail=ignore_fail)
+        for part in self.partitions:
+            self.mapdev = None
 
     def add_part(self, begin, length, type, mntpnt):
         """Add a partition to the disk. Sizes are given in megabytes"""
@@ -113,9 +127,12 @@ class Disk(object):
                 raise Exception('Partition is out of bounds. start=%d, end=%d, disksize=%d' % (begin,end,self.size))
         part = self.Partition(disk=self, begin=begin, end=end, type=str_to_type(type), mntpnt=mntpnt)
         self.partitions.append(part)
+
+        # We always keep the partitions in order, so that the output from kpartx matches our understanding
         self.partitions.sort(cmp=lambda x,y: x.begin - y.begin)
 
     def convert(self, destination, format):
+        """Converts disk image"""
         logging.info('Converting %s to %s, format %s' % (self.filename, format, destination))
         run_cmd('qemu-img', 'convert', '-O', format, self.filename, destination)
 
@@ -124,25 +141,28 @@ class Disk(object):
             self.disk = disk
             self.begin = begin
             self.end = end
-            print type
             self.type = type
             self.mntpnt = mntpnt
             self.mapdev = None
 
         def parted_fstype(self):
+            """Maps type_id to a fstype argument to parted"""
             return { TYPE_EXT2: 'ext2', TYPE_EXT3: 'ext2', TYPE_XFS: 'ext2', TYPE_SWAP: 'linux-swap' }[self.type]
 
         def create(self, disk):
+            """Adds partition to the disk image (does not mkfs or anything like that)"""
             logging.info('Adding type %d partition to disk image: %s' % (self.type, disk.filename))
             run_cmd('parted', '--script', '--', disk.filename, 'mkpart', 'primary', self.parted_fstype(), self.begin, self.end)
 
         def mkfs(self):
+            """Adds Filesystem object"""
             if not self.mapdev:
                 raise Exception('We can\'t mkfs before we have a mapper device')
             self.fs = Filesystem(self.disk.vm, preallocated=True, filename=self.mapdev, type=self.type, mntpnt=self.mntpnt)
             self.fs.mkfs()
 
         def get_grub_id(self):
+            """The name of the partition as known by grub"""
             return '(hd%d,%d)' % (self.disk.get_index(), self.get_index())
 
         def get_suffix(self):
@@ -151,6 +171,7 @@ class Disk(object):
             return '%s%d' % (self.disk.devletters(), self.get_index() + 1)
 
         def get_index(self):
+            """Index of the disk (starting from 0)"""
             return self.disk.partitions.index(self)
 
 class Filesystem(object):
