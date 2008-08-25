@@ -50,7 +50,7 @@ class CLI(VMBuilder.Frontend):
             self.set_disk_layout(vm)
 
             vm.create()
-        except VMBuilder.VMBuilderException, e:
+        except VMBuilder.VMBuilderUserError, e:
             print >> sys.stderr, e
 
     def set_disk_layout(self, vm):

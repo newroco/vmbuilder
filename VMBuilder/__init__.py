@@ -26,7 +26,7 @@ from   VMBuilder.distro     import Distro
 from   VMBuilder.hypervisor import Hypervisor
 from   VMBuilder.frontend   import Frontend
 from   VMBuilder.vm         import VM
-from   VMBuilder.exception  import VMBuilderException
+from   VMBuilder.exception  import VMBuilderException, VMBuilderUserError
 
 # Internal bookkeeping
 distros = {}
