@@ -98,7 +98,7 @@ class VM(object):
             self.distro = VMBuilder.distros[arg](self)
             self.set_defaults()
         else:
-            raise VMBuilderException("Invalid distro. Valid distros: %s" % " ".join(distros.keys()))
+            raise VMBuilderException("Invalid distro. Valid distros: %s" % " ".join(VMBuilder.distros.keys()))
 
     def set_hypervisor(self, arg):
         if arg in VMBuilder.hypervisors.keys():
