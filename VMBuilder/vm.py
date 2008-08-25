@@ -23,7 +23,7 @@ import VMBuilder.util      as util
 import VMBuilder.log       as log
 import VMBuilder.disk      as disk
 from   VMBuilder.disk      import Disk, Filesystem
-from   VMBuilder.exception import VMBuilderException
+from   VMBuilder.exception import VMBuilderException, VMBuilderUserError
 from gettext import gettext
 _ = gettext
 import logging
@@ -98,14 +98,14 @@ class VM(object):
             self.distro = VMBuilder.distros[arg](self)
             self.set_defaults()
         else:
-            raise VMBuilderException("Invalid distro. Valid distros: %s" % " ".join(VMBuilder.distros.keys()))
+            raise VMBuilderUserError("Invalid distro. Valid distros: %s" % " ".join(VMBuilder.distros.keys()))
 
     def set_hypervisor(self, arg):
         if arg in VMBuilder.hypervisors.keys():
             self.hypervisor = VMBuilder.hypervisors[arg](self)
             self.set_defaults()
         else:
-            raise VMBuilderException("Invalid hypervisor. Valid hypervisors: %s" % " ".join(hypervisors.keys()))
+            raise VMBuilderUserError("Invalid hypervisor. Valid hypervisors: %s" % " ".join(VMBuilder.hypervisors.keys()))
 
     def set_defaults(self):
         if self.distro and self.hypervisor:
