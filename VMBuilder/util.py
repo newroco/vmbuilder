@@ -23,7 +23,7 @@ import subprocess
 import sys
 import logging
 import pwd
-from exception import VMBuilderException
+from exception import VMBuilderException, VMBuilderUserError
 
 def run_cmd(*argv, **kwargs):
     """Runs a command.
