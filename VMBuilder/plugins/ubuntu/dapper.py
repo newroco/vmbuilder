@@ -20,7 +20,6 @@
 import glob
 import logging
 import os
-import stat
 import suite
 import VMBuilder.disk as disk
 from   VMBuilder.util import run_cmd
@@ -52,18 +51,16 @@ class Dapper(suite.Suite):
         logging.debug("Configuring guest networking")
         self.config_network()
 
-        if self.vm.hypervisor.needs_bootloader:
-            logging.debug("Installing menu.list")
-            self.install_menu_lst()
-        
         logging.debug("Preventing daemons from starting")
         self.prevent_daemons_starting()
 
         if self.vm.hypervisor.needs_bootloader:
+            logging.debug("Installing menu.list")
+            self.install_menu_lst()
+
             logging.debug("Installing kernel")
             self.install_kernel()
 
-        if self.vm.hypervisor.needs_bootloader:
             logging.debug("Creating device.map")
             self.install_device_map()
 
@@ -122,13 +119,10 @@ done
     def install_extras(self):
         if not self.vm.addpkg and not self.vm.removepkg:
             return
-        cmd = ['chroot', self.destdir, 'apt-get', 'install', '-y', '--force-yes']
+        cmd = ['apt-get', 'install', '-y', '--force-yes']
         cmd += self.vm.addpkg or []
         cmd += ['%s-' % pkg for pkg in self.vm.removepkg or []]
-#       logging.debug(cmd.__repr__())
-#       import os, signal
-#       os.kill(os.getpid(), signal.SIGSTOP)
-        run_cmd(*cmd)
+        self.run_in_target(*cmd)
         
     def unmount_volatile(self):
         for mntpnt in glob.glob('%s/lib/modules/*/volatile' % self.destdir):
