@@ -17,11 +17,9 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from VMBuilder import register_distro, Distro
-from VMBuilder.util import run_cmd
 import VMBuilder
-from optparse import OptionGroup
-import os
+from   VMBuilder      import register_distro, Distro
+from   VMBuilder.util import run_cmd
 import socket
 
 class Ubuntu(Distro):
@@ -74,9 +72,9 @@ class Ubuntu(Distro):
             raise VMBuilderException('Invalid suite. Valid suites are: %s' % ' '.join(self.suites))
         
         suite = self.vm.suite
-        mod = 'VMBuilder.plugins.ubuntu.%s' % (suite, )
-        exec "import %s" % (mod,)
-        exec "self.suite = %s.%s(self.vm)" % (mod, suite.capitalize())
+        modname = 'VMBuilder.plugins.ubuntu.%s' % (suite, )
+        mod = __import__(modname)
+        self.suite = getattr(mod, suite.capitalize())(self.vm)
 
         self.suite.install(destdir)
 
