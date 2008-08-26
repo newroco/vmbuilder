@@ -73,7 +73,7 @@ class Ubuntu(Distro):
         
         suite = self.vm.suite
         modname = 'VMBuilder.plugins.ubuntu.%s' % (suite, )
-        mod = __import__(modname)
+        mod = __import__(modname, fromlist=[suite])
         self.suite = getattr(mod, suite.capitalize())(self.vm)
 
         self.suite.install(destdir)
