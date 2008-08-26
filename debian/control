@@ -18,8 +18,8 @@ Description: Ubuntu VM builder
  etc. On recent hardware with plenty of RAM, tmpdir in /dev/shm or using a tmpfs, 
  and a local mirror, you can bootstrap a vm in less than a minute.
 
-Package: ubuntu-vm-builder
-Architecture: all
-Depends: python-vm-builder
-Description: Ubuntu VM Builder - transitional package
- Transitional package (ubuntu-vm-builder -> python-vm-builder)
+#Package: ubuntu-vm-builder
+#Architecture: all
+#Depends: python-vm-builder
+#Description: Ubuntu VM Builder - transitional package
+# Transitional package (ubuntu-vm-builder -> python-vm-builder)
