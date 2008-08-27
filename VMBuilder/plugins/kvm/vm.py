@@ -17,8 +17,9 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from VMBuilder import register_hypervisor, Hypervisor
+from   VMBuilder import register_hypervisor, Hypervisor
 import VMBuilder
+import VMBuilder.hypervisor
 import os
 import os.path
 import stat
@@ -27,7 +28,7 @@ class KVM(Hypervisor):
     name = 'KVM'
     arg = 'kvm'
     filetype = 'qcow2'
-    preferred_storage = Hypervisor.STORAGE_DISK_IMAGE
+    preferred_storage = VMBuilder.hypervisor.STORAGE_DISK_IMAGE
     needs_bootloader = True
 
     def finalize(self):

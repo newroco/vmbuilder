@@ -17,9 +17,10 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from VMBuilder import register_hypervisor, Hypervisor
-from VMBuilder.util import run_cmd
+from   VMBuilder      import register_hypervisor, Hypervisor
+from   VMBuilder.util import run_cmd
 import VMBuilder
+import VMBuilder.hypervisor
 import logging
 import os.path
 import stat
@@ -27,7 +28,7 @@ import stat
 class Xen(Hypervisor):
     name = 'Xen'
     arg = 'xen'
-    preferred_storage = Hypervisor.STORAGE_FS_IMAGE
+    preferred_storage = VMBuilder.hypervisor.STORAGE_FS_IMAGE
     needs_bootloader = False
 
     def finalize(self):
