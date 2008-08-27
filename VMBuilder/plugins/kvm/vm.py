@@ -33,11 +33,8 @@ class KVM(Hypervisor):
     def finalize(self):
         cmdline = ['kvm', '-m', str(self.vm.mem) ]
         for disk in self.vm.disks:
-            filename = '%s.%s' % ('.'.join(os.path.basename(disk.filename).split('.')[:-1]), self.filetype)
-            target_img = '%s/%s' % (self.vm.destdir, filename)
-            self.vm.result_files.append(target_img)
-            disk.convert(target_img, self.filetype)
-            cmdline += ['-drive', 'file=%s' % filename]
+            img_path = disk.convert(self.vm.destdir, self.filetype)
+            cmdline += ['-drive', 'file=%s' % os.path.basename(img_path)]
     
         cmdline += ['$@']
         script = '%s/run.sh' % self.vm.destdir
