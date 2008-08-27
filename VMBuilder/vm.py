@@ -24,36 +24,67 @@ import VMBuilder.log       as log
 import VMBuilder.disk      as disk
 from   VMBuilder.disk      import Disk, Filesystem
 from   VMBuilder.exception import VMBuilderException, VMBuilderUserError
-from gettext import gettext
-_ = gettext
+from   gettext import gettext
 import logging
 import os
 import optparse
 import tempfile
 import textwrap
+_ = gettext
 
 class VM(object):
+    """It's the job of the frontend to instantiate this class.
+
+    The VM object has the following attributes of relevance to plugins:
+
+    hypervisor: A hypervisor object, representing the hypervisor the vm is destined for
+    distro: A distro object, representing the distro running in the vm
+
+    disks: The disk images for the vm
+    filesystems: The filesystem images for the vm
+
+    result_files: A list of the files that make up the entire vm.
+                  The ownership of these files will be fixed up.
+
+    optparser: Will be of interest mostly to frontends. Any sort of option
+               a plugin accepts will be represented in the optparser.
+    
+
+    """
     def __init__(self):
         self.hypervisor = None
         self.distro = None
+
         self.disks = []
         self.filesystems = []
+
         self.result_files = []
-        self.cleanup_cbs = []
+        self.plugins  = []
+        self._cleanup_cbs = []
         self.optparser = MyOptParser(epilog="ubuntu-vm-builder is Copyright (C) 2007-2008 Canonical Ltd. and written by Soren Hansen <soren@canonical.com>.", usage='%prog hypervisor distro [options]')
         self.optparser.arg_help = (('hypervisor', self.hypervisor_help), ('distro', self.distro_help))
-        self.register_base_settings()
+        self._register_base_settings()
 
     def cleanup(self):
         logging.info("Cleaning up after ourselves")
-        while len(self.cleanup_cbs) > 0:
-            self.cleanup_cbs.pop(0)()
+        while len(self._cleanup_cbs) > 0:
+            self._cleanup_cbs.pop(0)()
 
     def add_clean_cb(self, cb):
-        self.cleanup_cbs.insert(0, cb)
+        self._cleanup_cbs.insert(0, cb)
 
     def add_clean_cmd(self, *argv, **kwargs):
-        self.add_clean_cb(lambda : util.run_cmd(*argv, **kwargs))
+        cb = lambda : util.run_cmd(*argv, **kwargs)
+        self.add_clean_cb(cb)
+        return cb
+
+    def cancel_cleanup(self, cb):
+        print self._cleanup_cbs, cb
+        try:
+            self._cleanup_cbs.remove(cb)
+        except ValueError, e:
+            # Wasn't in there. That's cool.
+            pass
 
     def distro_help(self):
         return 'Distro. Valid options: %s' % " ".join(VMBuilder.distros.keys())
@@ -70,7 +101,7 @@ class VM(object):
     def setting_group(self, *args, **kwargs):
         return optparse.OptionGroup(self.optparser, *args, **kwargs)
 
-    def register_base_settings(self):
+    def _register_base_settings(self):
         self.register_setting('-c', dest='altconfig', default='~/.ubuntu-vm-builder', help='Specify a optional configuration file [default: %default]')
         self.register_setting('-d', '--dest', help='Specify the destination directory. [default: <hypervisor>-<distro>]')
         self.register_setting('--debug', action='callback', callback=log.set_verbosity, help='Show debug information')
@@ -93,6 +124,10 @@ class VM(object):
         self.filesystems.append(fs)
         return fs
 
+    def call_hooks(self, func):
+        for plugin in self.plugins:
+            getattr(plugin, func)()
+        
     def set_distro(self, arg):
         if arg in VMBuilder.distros.keys():
             self.distro = VMBuilder.distros[arg](self)
@@ -108,6 +143,9 @@ class VM(object):
             raise VMBuilderUserError("Invalid hypervisor. Valid hypervisors: %s" % " ".join(VMBuilder.hypervisors.keys()))
 
     def set_defaults(self):
+        for plugin in VMBuilder._plugins:
+            self.plugins.append(plugin(self))
+
         if self.distro and self.hypervisor:
             self.optparser.set_defaults(destdir='%s-%s' % (self.distro.arg, self.hypervisor.arg))
 
@@ -146,22 +184,14 @@ class VM(object):
         logging.info('Mounting target filesystem')
         fss = disk.get_ordered_filesystems(self)
         for fs in fss:
-            if fs.type != VMBuilder.disk.TYPE_SWAP: 
-                logging.debug('Mounting %s', fs.mntpnt) 
-                fs.mntpath = '%s%s' % (self.rootmnt, fs.mntpnt)
-                if not os.path.exists(fs.mntpath):
-                    os.makedirs(fs.mntpath)
-                util.run_cmd('mount', '-o', 'loop', fs.filename, fs.mntpath)
-                self.add_clean_cmd('umount', fs.mntpath, ignore_fail=True)
+            fs.mount()
 
     def umount_partitions(self):
         logging.info('Unmounting target filesystem')
         fss = VMBuilder.disk.get_ordered_filesystems(self)
         fss.reverse()
         for fs in fss:
-            if fs.type != VMBuilder.disk.TYPE_SWAP: 
-                logging.debug('Unmounting %s', fs.mntpath) 
-                util.run_cmd('umount', fs.mntpath)
+            fs.umount()
         for disk in self.disks:
             disk.unmap()
 

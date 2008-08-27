@@ -222,6 +222,21 @@ class Filesystem(object):
     def fstab_options(self):
         return 'defaults'
 
+    def mount(self):
+        if self.type != TYPE_SWAP: 
+            logging.debug('Mounting %s', self.mntpnt) 
+            self.mntpath = '%s%s' % (self.vm.rootmnt, self.mntpnt)
+            if not os.path.exists(self.mntpath):
+                os.makedirs(self.mntpath)
+            run_cmd('mount', '-o', 'loop', self.filename, self.mntpath)
+            self.vm.add_clean_cb(self.umount)
+
+    def umount(self):
+        self.vm.cancel_cleanup(self.umount)
+        if self.type != TYPE_SWAP: 
+            logging.debug('Unmounting %s', self.mntpath) 
+            run_cmd('umount', self.mntpath)
+
 def parse_size(size_str):
     """Takes a size like qemu-img would accept it and returns the size in MB"""
     try:
@@ -272,7 +287,8 @@ def create_partitions(vm):
         disk.create(vm.workdir)
 
 def get_ordered_filesystems(vm):
-    """Returns filesystems in an order suitable for mounting them"""
+    """Returns filesystems (self hosted as well as contained in partitions
+    in an order suitable for mounting them"""
     fss = list(vm.filesystems)
     for disk in vm.disks:
         fss += [part.fs for part in disk.partitions]
@@ -280,7 +296,7 @@ def get_ordered_filesystems(vm):
     return fss
 
 def get_ordered_partitions(disks):
-    """Returns partitions from disks array in an order suitable for mounting them"""
+    """Returns partitions from disks in an order suitable for mounting them"""
     parts = []
     for disk in disks:
         parts += disk.partitions
