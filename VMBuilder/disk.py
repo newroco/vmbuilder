@@ -19,12 +19,13 @@
 #
 #    Virtual disk management
 
-from   VMBuilder.util import run_cmd 
+from   VMBuilder.util      import run_cmd 
+from   VMBuilder.exception import VMBuilderUserError, VMBuilderException
 import VMBuilder
 import logging
 import string
-from   exception import VMBuilderUserError, VMBuilderException
 import tempfile
+import os.path
 
 TYPE_EXT2 = 0
 TYPE_EXT3 = 1
@@ -131,10 +132,16 @@ class Disk(object):
         # We always keep the partitions in order, so that the output from kpartx matches our understanding
         self.partitions.sort(cmp=lambda x,y: x.begin - y.begin)
 
-    def convert(self, destination, format):
-        """Converts disk image"""
-        logging.info('Converting %s to %s, format %s' % (self.filename, format, destination))
-        run_cmd('qemu-img', 'convert', '-O', format, self.filename, destination)
+    def convert(self, destdir, format):
+        """Converts disk image, names it appropriately, puts it in destdir, and returns the new name"""
+        filename = os.path.basename(self.filename)
+        if '.' in filename:
+            filename = filename[:filename.rindex('.')]
+        destfile = '%s/%s.%s' % (destdir, filename, format)
+
+        logging.info('Converting %s to %s, format %s' % (self.filename, format, destfile))
+        run_cmd('qemu-img', 'convert', '-O', format, self.filename, destfile)
+        return destfile
 
     class Partition(object):
         def __init__(self, disk, begin, end, type, mntpnt):
@@ -266,7 +273,7 @@ def create_partitions(vm):
 
 def get_ordered_filesystems(vm):
     """Returns filesystems in an order suitable for mounting them"""
-    fss = vm.filesystems
+    fss = list(vm.filesystems)
     for disk in vm.disks:
         fss += [part.fs for part in disk.partitions]
     fss.sort(lambda x,y: len(x.mntpnt or '')-len(y.mntpnt or ''))
