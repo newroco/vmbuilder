@@ -31,15 +31,44 @@ class Xen(Hypervisor):
     needs_bootloader = False
 
     def finalize(self):
+        destimages = []
         for filesystem in self.vm.filesystems:
             destfile = '%s/%s' % (self.vm.destdir, os.path.basename(filesystem.filename))
             logging.info('Moving %s to %s' % (filesystem.filename, destfile))
             self.vm.result_files.append(destfile)
             run_cmd('cp', '--sparse=always', filesystem.filename, destfile)
+            destimages.append(destfile)
     
-        xenconf = '%s/foo.conf' % self.vm.destdir
+        xenconf = '%s/xen.conf' % self.vm.destdir
         fp = open(xenconf, 'w')
-        fp.write("This should be a config file for xen")
+        fp.write("""
+# Configuration file for the Xen instance %s, created
+# by VMBuilder
+kernel = '%s'
+ramdisk = '%s'
+memory = %d
+
+root = '/dev/xvda1,w'
+disk = [
+%s
+]
+
+name = '%s'
+
+dhcp    = 'dhcp'
+
+on_poweroff = 'destroy'
+on_reboot   = 'restart'
+on_crash    = 'restart'
+
+extra = '2 console=xvc0'
+
+"""  %   (self.vm.name,
+          self.vm.distro.xen_kernel_path(),
+          self.vm.distro.xen_ramdisk_path(),
+          self.vm.mem,
+          ',\n'.join(["'file:%s,xvd%d,w'" % (os.path.abspath(img), id+1) for (img, id) in zip(destimages, range(len(destimages)))]),
+          self.vm.name))
         fp.close()
         self.vm.result_files.append(xenconf)
 
