@@ -21,4 +21,8 @@ import suite
 from VMBuilder.plugins.ubuntu.gutsy import Gutsy
 
 class Hardy(Gutsy):
-    pass
+    def xen_kernel_path(self):
+        return '/boot/vmlinuz-2.6.24-19-xen'
+
+    def xen_ramdisk_path(self):
+        return '/boot/initrd.img-2.6.24-19-xen'
