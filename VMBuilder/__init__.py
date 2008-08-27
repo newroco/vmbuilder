@@ -19,11 +19,13 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #    The publically exposed bits of VMBuilder
+#
 import logging
 import options
 import VMBuilder.plugins
 from   VMBuilder.distro     import Distro
 from   VMBuilder.hypervisor import Hypervisor
+from   VMBuilder.plugins    import Plugin
 from   VMBuilder.frontend   import Frontend
 from   VMBuilder.vm         import VM
 from   VMBuilder.exception  import VMBuilderException, VMBuilderUserError
@@ -31,6 +33,7 @@ from   VMBuilder.exception  import VMBuilderException, VMBuilderUserError
 # Internal bookkeeping
 distros = {}
 hypervisors = {}
+_plugins = []
 frontends = {}
 frontend = None
 
@@ -48,8 +51,11 @@ def register_frontend(cls):
     """Register a frontend plugin with VMBuilder"""
     frontends[cls.arg] = cls
 
+def register_plugin(cls):
+    """Register a plugin with VMBuilder"""
+    _plugins.append(cls)
+
 def set_frontend(arg):
-    # Why is this global directive needed, when it's not in set_{hypervisor,distro}?
     global frontend
     if arg in frontends.keys():
         frontend = frontends[arg]()
