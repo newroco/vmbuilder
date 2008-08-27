@@ -79,7 +79,6 @@ class VM(object):
         return cb
 
     def cancel_cleanup(self, cb):
-        print self._cleanup_cbs, cb
         try:
             self._cleanup_cbs.remove(cb)
         except ValueError, e:
