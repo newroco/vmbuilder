@@ -76,7 +76,11 @@ class Ubuntu(Distro):
         mod = __import__(modname, fromlist=[suite])
         self.suite = getattr(mod, suite.capitalize())(self.vm)
 
+        self.xen_kernel_path = self.suite.xen_kernel_path
+        self.xen_ramdisk_path = self.suite.xen_ramdisk_path
+
         self.suite.install(destdir)
+
 
     def install_bootloader(self):
         devmapfile = '%s/device.map' % self.vm.workdir
