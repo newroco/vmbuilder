@@ -31,3 +31,17 @@ def find_plugins():
             if os.path.isdir(path) and os.path.isfile('%s/__init__.py' % path):
                 retval.append("VMBuilder.plugins.%s" % p)
     return retval
+
+class Plugin(object):
+    def __init__(self, vm):
+        self.vm = vm
+
+    def check_preconditions(self):
+        """Override this method with checks for anything that might cause the VM creation to fail
+        
+        raise an exception if you can see already that this won't work
+        """
+        pass
+
+    def deploy(self):
+        pass
