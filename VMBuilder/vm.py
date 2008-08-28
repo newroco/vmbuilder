@@ -28,6 +28,7 @@ from   gettext import gettext
 import logging
 import os
 import optparse
+import shutil
 import tempfile
 import textwrap
 _ = gettext
@@ -126,6 +127,8 @@ class VM(object):
     def call_hooks(self, func):
         for plugin in self.plugins:
             getattr(plugin, func)()
+        getattr(self.hypervisor, func)()
+        getattr(self.distro, func)()
         
     def set_distro(self, arg):
         if arg in VMBuilder.distros.keys():
@@ -170,6 +173,13 @@ class VM(object):
         os.mkdir(self.tmproot)
 
         # destdir is where the user's files will land when they're done
+        if os.path.exists(self.destdir):
+            if self.overwrite:
+                logging.info('%s exists, and --overwrite specified. Removing..' % (self.destdir, ))
+                shutil.rmtree(self.destdir)
+            else:
+                raise VMBuilderUserError('%s already exists' % (self.destdir,))
+
         logging.debug('Creating destination directory: %s', self.destdir)
         os.mkdir(self.destdir)
         self.add_clean_cmd('rmdir', self.destdir, ignore_fail=True)
@@ -213,6 +223,9 @@ class VM(object):
 
     def create(self):
         util.checkroot()
+        
+        self.call_hooks('preflight_check')
+
         finished = False
         try:
             self.create_directory_structure()
