@@ -21,7 +21,6 @@
 #    The publically exposed bits of VMBuilder
 #
 import logging
-import options
 import VMBuilder.plugins
 from   VMBuilder.distro     import Distro
 from   VMBuilder.hypervisor import Hypervisor
