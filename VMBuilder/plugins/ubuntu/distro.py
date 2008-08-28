@@ -18,14 +18,21 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import VMBuilder
-from   VMBuilder      import register_distro, Distro
-from   VMBuilder.util import run_cmd
+from   VMBuilder           import register_distro, Distro
+from   VMBuilder.util      import run_cmd
+from   VMBuilder.exception import VMBuilderUserError
 import socket
 
 class Ubuntu(Distro):
     name = 'Ubuntu'
     arg = 'ubuntu'
     suites = ['dapper', 'feisty', 'gutsy', 'hardy', 'intrepid']
+    
+    # Maps host arch to valid guest archs
+    valid_archs = { 'amd64' : ['amd64', 'i386', 'lpia' ],
+                    'i386' : [ 'i386', 'lpia' ],
+                    'lpia' : [ 'i386', 'lpia' ] }
+
 
     def __init__(self, vm):
         self.vm = vm
@@ -40,8 +47,8 @@ class Ubuntu(Distro):
         domainname = '.'.join(socket.gethostbyname_ex(socket.gethostname())[0].split('.')[1:])
 
         group = self.vm.setting_group('General OS options')
-        arch = run_cmd('dpkg-architecture', '-qDEB_HOST_ARCH').rstrip()
-        group.add_option('-a', '--arch', default=arch, help='Specify the target architecture.  Valid options: amd64 i386 lpia (defaults to host arch)')
+        self.host_arch = run_cmd('dpkg-architecture', '-qDEB_HOST_ARCH').rstrip()
+        group.add_option('-a', '--arch', default=self.host_arch, help='Specify the target architecture.  Valid options: amd64 i386 lpia (defaults to host arch)')
         group.add_option('--domain', default=domainname, help='Set DOMAIN as the domain name of the guest. Default: The domain of the machine running this script.')
         group.add_option('--hostname', default='ubuntu', help='Set NAME as the hostname of the guest. Default: ubuntu. Also uses this name as the VM name.')
         self.vm.register_setting_group(group)
@@ -56,7 +63,12 @@ class Ubuntu(Distro):
         group = self.vm.setting_group('Settings for the initial user')
         group.add_option('--user', default='ubuntu', help='Username of initial user [default: %default]')
         group.add_option('--name', default='Ubuntu', help='Full name of initial user [default: %default]')
-        group.add_option('--pass', default='ubuntu', help='Password of initial user [default: %default]')
+        group.add_option('--pass', default='ubuntu', dest='passwd', help='Password of initial user [default: %default]')
+        self.vm.register_setting_group(group)
+
+        group = self.vm.setting_group('Other options')
+        group.add_option('--ssh-key', metavar='PATH', help='Add PATH to root\'s ~/.ssh/authorized_keys (WARNING: this has strong security implications)')
+        group.add_option('--ssh-user-key', help='Add PATH to the user\'s ~/.ssh/authorized_keys')
         self.vm.register_setting_group(group)
 
     def set_defaults(self):
@@ -66,18 +78,28 @@ class Ubuntu(Distro):
             else:
                 self.vm.mirror = 'http://archive.ubuntu.com/ubuntu'
         
-    def install(self, destdir):
-        self.destdir = destdir
+    def preflight_check(self):
+        """While not all of these are strictly checks, their failure would inevitably
+        lead to failure, and since we can check them before we start setting up disk
+        and whatnot, we might as well go ahead an do this now."""
+
         if not self.vm.suite in self.suites:
             raise VMBuilderException('Invalid suite. Valid suites are: %s' % ' '.join(self.suites))
         
-        suite = self.vm.suite
-        modname = 'VMBuilder.plugins.ubuntu.%s' % (suite, )
-        mod = __import__(modname, fromlist=[suite])
-        self.suite = getattr(mod, suite.capitalize())(self.vm)
+        modname = 'VMBuilder.plugins.ubuntu.%s' % (self.vm.suite, )
+        mod = __import__(modname, fromlist=[self.vm.suite])
+        self.suite = getattr(mod, self.vm.suite.capitalize())(self.vm)
 
-        self.xen_kernel_path = self.suite.xen_kernel_path
-        self.xen_ramdisk_path = self.suite.xen_ramdisk_path
+        if self.vm.arch not in self.valid_archs[self.host_arch] or  \
+            not self.suite.check_arch_validity(self.vm.arch):
+            raise VMBuilderUserError('%s is not a valid architecture. Valid architectures are: %s' % (self.vm.arch, 
+                                                                                                      ' '.join(self.valid_archs[self.host_arch])))
+
+    def install(self, destdir):
+        self.destdir = destdir
+
+        self.xen_kernel_path = getattr(self.suite, 'xen_kernel_path', lambda : None)
+        self.xen_ramdisk_path = getattr(self.suite, 'xen_ramdisk_path', lambda: None)
 
         self.suite.install(destdir)
 
