@@ -1,23 +1,18 @@
 This package was debianized by Soren Hansen <soren@ubuntu.com> on
-Thu, 2007-11-01 18:06:25 +0100.
+Thu, 28 Aug 2008 05:14:27 +0200
 
-It lives on https://code.launchpad.net/ubuntu-jeos
+It lives at https://code.launchpad.net/ubuntu-jeos
 
 Copyright:
 	Copyright (C) 2007-2008  Canonical Ltd.
 
 Authors:
 	Soren Hansen <soren@canonical.com>
-	Neal McBurnett <neal@mcburnett.org>
-	Michael Vogt <michael.vogt@ubuntu.com>
-	Mike Frisch
-	Nick Barcet <nick.barcet@canonical.com>
-	Onno Benschop <onno@itmaze.com.au>
 
 License:
-    This program is free software; you can redistribute it and/or modify
+    This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
+    the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
@@ -25,10 +20,9 @@ License:
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-For the full license, see '/usr/share/common-licenses/GPL-2'.
+For the full license, see '/usr/share/common-licenses/GPL-3'.
 
 The same license and copyright applies to the Debian packaging.
