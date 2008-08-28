@@ -36,7 +36,7 @@ class Plugin(object):
     def __init__(self, vm):
         self.vm = vm
 
-    def check_preconditions(self):
+    def preflight_check(self):
         """Override this method with checks for anything that might cause the VM creation to fail
         
         raise an exception if you can see already that this won't work
