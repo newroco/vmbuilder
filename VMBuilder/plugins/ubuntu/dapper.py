@@ -21,6 +21,7 @@ import glob
 import logging
 import os
 import suite
+import shutil
 import VMBuilder.disk as disk
 from   VMBuilder.util import run_cmd
 
@@ -35,6 +36,9 @@ class Dapper(suite.Suite):
     def check_kernel_flavour(self, arch, flavour):
         return flavour in self.valid_flavours[arch]
 
+    def check_arch_validity(self, arch):
+        return arch in self.valid_flavours.keys()
+        
     def install(self, destdir):
         self.destdir = destdir
 
@@ -67,11 +71,45 @@ class Dapper(suite.Suite):
         logging.debug("Installing extra packages")
         self.install_extras()
 
+        
+        logging.debug("Creating initial user")
+        self.create_initial_user()
+
+        self.install_authorized_keys()
+
         logging.debug("Unmounting volatile lrm filesystems")
         self.unmount_volatile()
 
         logging.debug("Unpreventing daemons from starting")
         self.unprevent_daemons_starting()
+
+    def install_authorized_keys(self):
+        if self.vm.ssh_key:
+            os.mkdir('%s/root/.ssh' % self.destdir, 0700)
+            shutil.copy(self.vm.ssh_key, '%s/root/.ssh/authorized_keys' % self.destdir)
+            os.chmod('%s/root/.ssh/authorized_keys' % self.destdir, 0644)
+        if self.vm.ssh_user_key:
+            os.mkdir('%s/home/%s/.ssh' % (self.destdir, self.vm.user), 0700)
+            shutil.copy(self.vm.ssh_user_key, '%s/home/%s/.ssh/authorized_keys' % (self.destdir, self.vm.user))
+            os.chmod('%s/home/%s/.ssh/authorized_keys' % (self.destdir, self.vm.user), 0644)
+
+    def create_initial_user(self):
+        self.run_in_target('adduser', '--disabled-password', '--gecos', self.vm.name, self.vm.user)
+        self.run_in_target('chpasswd', stdin=('%s:%s\n' % (self.vm.user, self.vm.passwd)))
+        self.run_in_target('addgroup', '--system', 'admin')
+        self.run_in_target('adduser', self.vm.user, 'admin')
+        fp = open('%s/etc/sudoers' %  self.destdir, 'a')
+        fp.write("""
+
+# Members of the admin group may gain root privileges
+%admin ALL=(ALL) ALL
+""")
+        fp.close()
+        for group in ['adm', 'audio', 'cdrom', 'dialout', 'floppy', 'video', 'plugdev', 'dip', 'netdev', 'powerdev', 'lpadmin', 'scanner']:
+            self.run_in_target('adduser', self.vm.user, group, ignore_fail=True)
+
+        # Lock root account
+        self.run_in_target('chpasswd', stdin='root:!\n')
 
     def kernel_name(self):
         return 'linux-image-%s' % (self.vm.flavour or self.default_flavour[self.vm.arch],)
@@ -160,7 +198,7 @@ done
         return '\n'.join(['(%s) /dev/%s%s' % (self.disk_prefix, disk.get_grub_id(), disk.devletters) for disk in self.vm.disks])
 
     def debootstrap(self):
-        cmd = ['/usr/sbin/debootstrap', self.vm.suite, self.destdir]
+        cmd = ['/usr/sbin/debootstrap', '--arch=%s' % self.vm.arch, self.vm.suite, self.destdir ]
         if self.vm.mirror:
             cmd += [self.vm.mirror]
         run_cmd(*cmd)
