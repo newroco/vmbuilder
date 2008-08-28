@@ -27,3 +27,7 @@ import sys
 class Suite(object):
     def __init__(self, vm):
         self.vm = vm
+
+    def check_arch_validity(self, arch):
+        """Checks whether the given arch is valid for this suite"""
+        raise NotImplemented('Suite subclasses need to implement the check_arch_validity method')
