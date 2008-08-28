@@ -25,5 +25,6 @@ from   VMBuilder.plugins.ubuntu.feisty import Feisty
 
 class Gutsy(Feisty):
     valid_flavours = { 'i386' :  ['386', 'generic', 'rt', 'server', 'virtual'],
-                       'amd64' : ['generic', 'rt', 'server']}
+                       'amd64' : ['generic', 'rt', 'server'],
+                       'lpia'  : ['lpia', 'lpiacompat'] }
     default_flavour = { 'i386' : 'virtual', 'amd64' : 'server', 'lpia' : 'lpia' }
