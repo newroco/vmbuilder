@@ -1,6 +1,6 @@
 #
 #    Uncomplicated VM Builder
-#    Copyright (C) 2007-2008 Canonical
+#    Copyright (C) 2007-2008 Canonical Ltd.
 #    
 #    See AUTHORS for list of contributors
 #
