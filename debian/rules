@@ -9,3 +9,12 @@ include /usr/share/cdbs/1/class/python-distutils.mk
 
 #makebuilddir/python-vm-builder::
 #	if test -d .bzr; then if ! bzr diff -q > /dev/null; then echo 'ERROR! Uncommitted changes!!!' ; /bin/false ; fi; fi
+
+build/python-vm-builder:: doc-stamp
+
+doc-stamp:
+	epydoc VMBuilder
+	touch $@
+
+cleanbuilddir/python-vm-builder::
+	rm -rf html doc-stamp
