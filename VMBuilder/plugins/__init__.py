@@ -44,4 +44,4 @@ class Plugin(object):
         pass
 
     def deploy(self):
-        pass
+        return False

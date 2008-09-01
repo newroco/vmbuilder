@@ -32,24 +32,26 @@ class KVM(Hypervisor):
     needs_bootloader = True
 
     def finalize(self):
-        imgs = []
-        cmdline = ['kvm', '-m', str(self.vm.mem) ]
+        self.imgs = []
+        self.cmdline = ['kvm', '-m', str(self.vm.mem) ]
         for disk in self.vm.disks:
             img_path = disk.convert(self.vm.destdir, self.filetype)
-            imgs.append(img_path)
+            self.imgs.append(img_path)
             self.vm.result_files.append(img_path)
-            cmdline += ['-drive', 'file=%s' % os.path.basename(img_path)]
+            self.cmdline += ['-drive', 'file=%s' % os.path.basename(img_path)]
 
     
-        cmdline += ['$@']
+        self.cmdline += ['$@']
+
+    def deploy(self):
         script = '%s/run.sh' % self.vm.destdir
         fp = open(script, 'w')
-        fp.write("#!/bin/sh\n\n%s\n" % ' '.join(cmdline))
+        fp.write("#!/bin/sh\n\n%s\n" % ' '.join(self.cmdline))
         fp.close()
         os.chmod(script, stat.S_IRWXU | stat.S_IRWXU | stat.S_IROTH | stat.S_IXOTH)
         self.vm.result_files.append(script)
         diskxml = ''
-        for (id, img) in enumerate(imgs):
+        for (id, img) in enumerate(self.imgs):
             diskxml += """
     <disk type='file' device='disk'>
       <source file='%s'/>

@@ -138,6 +138,20 @@ class VM(object):
         getattr(self.hypervisor, func)()
         getattr(self.distro, func)()
         
+    def deploy(self):
+        """
+        "Deploy" the VM, by asking the plugins in turn to deploy it.
+
+        If no non-hypervior and non-distro plugin accepts to deploy
+        the image, the hypervisor's default deployment is used.
+
+        Returns when the first True is returned.
+        """
+        for plugin in self.plugins:
+             if getattr(plugin, 'deploy')():
+                 return True
+        getattr(self.hypervisor, 'deploy')()
+
     def set_distro(self, arg):
         if arg in VMBuilder.distros.keys():
             self.distro = VMBuilder.distros[arg](self)
@@ -272,7 +286,6 @@ class VM(object):
 
             disk.create_partitions(self)
             disk.create_filesystems(self)
-
             self.mount_partitions()
 
             self.install()
@@ -280,6 +293,8 @@ class VM(object):
             self.umount_partitions()
 
             self.hypervisor.finalize()
+
+            self.deploy()
 
             util.fix_ownership(self.result_files)
 
