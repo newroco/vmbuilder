@@ -34,11 +34,16 @@ TYPE_SWAP = 3
 
 class Disk(object):
     def __init__(self, vm, size='5G', preallocated=False, filename=None):
-        """size is passed to disk.parse_size
+        """
+        @type  size: string or number
+        @param size: The size of the disk image (passed to L{parse_size})
 
-        preallocated means that the disk already exists and we shouldn't create it (useful for raw devices)
+        @type  preallocated: boolean
+        @param preallocated: if True, the disk image already exists and will not be created (useful for raw devices)
 
-        filename can be given to force a certain filename or to give the name of the preallocated disk image"""
+        @type  filename: string
+        @param filename: force a certain filename or to give the name of the preallocated disk image
+        """
 
         # We need this for "introspection"
         self.vm = vm
@@ -59,12 +64,21 @@ class Disk(object):
         self.partitions = []
 
     def devletters(self):
-        """Returns the series of letters that ought to correspond to the device inside
-        the VM. E.g. the first disk of a VM would return 'a', while the 702nd would return 'zz'"""
+        """
+        @rtype: string
+        @return: the series of letters that ought to correspond to the device inside
+                 the VM. E.g. the first disk of a VM would return 'a', while the 702nd would return 'zz'
+        """
+
         return index_to_devname(self.vm.disks.index(self))
 
     def create(self, directory):
-        """Creates the disk image (unless preallocated), partitions it, creates the partition mapping devices and mkfs's the partitions"""
+        """
+        Creates the disk image (unless preallocated), partitions it, creates the partition mapping devices and mkfs's the partitions
+
+        @type  directory: string
+        @param directory: If set, the disk image is created in this directory
+        """
 
         if not self.preallocated:
             if directory:
@@ -102,21 +116,40 @@ class Disk(object):
             part.mkfs()
 
     def get_grub_id(self):
-        """The name of the disk as known by grub"""
+        """
+        @rtype:  string
+        @return: name of the disk as known by grub
+        """
         return '(hd%d)' % self.get_index()
 
     def get_index(self):
-        """Index of the disk (starting from 0)"""
+        """
+        @rtype:  number
+        @return: index of the disk (starting from 0)
+        """
         return self.vm.disks.index(self)
 
     def unmap(self, ignore_fail=False):
-        """Destroy all mapping devices"""
+        """
+        Destroy all mapping devices
+        """
         run_cmd('kpartx', '-d', self.filename, ignore_fail=ignore_fail)
         for part in self.partitions:
             self.mapdev = None
 
     def add_part(self, begin, length, type, mntpnt):
-        """Add a partition to the disk. Sizes are given in megabytes"""
+        """
+        Add a partition to the disk
+
+        @type  begin: number
+        @param begin: Start offset of the new partition (in megabytes)
+        @type  length: 
+        @param length: Size of the new partition (in megabytes)
+        @type  type: string
+        @param type: Type of the new partition. Valid options are: ext2 ext3 xfs swap linux-swap
+        @type  mntpnt: string
+        @param mntpnt: Intended mountpoint inside the guest of the new partition
+        """
         end = begin+length-1
         for part in self.partitions:
             if (begin >= part.begin and begin <= part.end) or \
@@ -133,7 +166,16 @@ class Disk(object):
         self.partitions.sort(cmp=lambda x,y: x.begin - y.begin)
 
     def convert(self, destdir, format):
-        """Converts disk image, names it appropriately, puts it in destdir, and returns the new name"""
+        """
+        Convert the disk image
+        
+        @type  destdir: string
+        @param destdir: Target location of converted disk image
+        @type  format: string
+        @param format: The target format (as understood by qemu-img)
+        @rtype:  string
+        @return: the name of the converted image
+        """
         filename = os.path.basename(self.filename)
         if '.' in filename:
             filename = filename[:filename.rindex('.')]
@@ -153,7 +195,10 @@ class Disk(object):
             self.mapdev = None
 
         def parted_fstype(self):
-            """Maps type_id to a fstype argument to parted"""
+            """
+            @rtype: string
+            @return: the filesystem type of the partition suitable for passing to parted
+            """
             return { TYPE_EXT2: 'ext2', TYPE_EXT3: 'ext2', TYPE_XFS: 'ext2', TYPE_SWAP: 'linux-swap' }[self.type]
 
         def create(self, disk):
@@ -256,13 +301,15 @@ def parse_size(size_str):
     if size_str[-1:] == 'k' or size_str[-1:] == 'K':
         return num / 1024
 
-def str_to_type(type):
-    try:
-        return { 'ext2': TYPE_EXT2,
+str_to_type_map = { 'ext2': TYPE_EXT2,
                  'ext3': TYPE_EXT3,
                  'xfs': TYPE_XFS,
                  'swap': TYPE_SWAP,
-                 'linux-swap': TYPE_SWAP }[type]
+                 'linux-swap': TYPE_SWAP }
+
+def str_to_type(type):
+    try:
+        return str_to_type_map[type]
     except KeyError, e:
         raise Exception('Unknown partition type: %s' % type)
 

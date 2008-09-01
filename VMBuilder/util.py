@@ -26,14 +26,20 @@ import pwd
 from exception import VMBuilderException, VMBuilderUserError
 
 def run_cmd(*argv, **kwargs):
-    """Runs a command.
+    """
+    Runs a command.
+
     Locale is reset to C to make parsing error messages possible.
 
-    stdin: a string that will be piped to the command's stdin
-    ignore_fail: If True, a non-zero exit code from the command will not 
-                 cause an exception to be raised.
+    @type  stdin: a string
+    @param stdin: input to provide to the process on stdin
+    @type  ignore_fail: boolean
+    @param ignore_fail: If True, a non-zero exit code from the command will not 
+                        cause an exception to be raised.
 
-    return value is a string containing the stdout of the command"""
+    @rtype:  string
+    @return: string containing the stdout of the process
+    """
 
     stdin= kwargs.get('stdin', None)
     ignore_fail = kwargs.get('ignore_fail', False)
@@ -66,21 +72,35 @@ def run_cmd(*argv, **kwargs):
     return stdout
 
 def give_to_caller(path):
-    """Change ownership of path to belong to $SUDO_USER if set"""
+    """
+    Change ownership of file to $SUDO_USER.
+
+    @type  path: string
+    @param path: file or directory to give to $SUDO_USER
+    """
+
     if 'SUDO_USER' in os.environ:
         logging.debug('Changing ownership of %s to %s' % (path, os.environ['SUDO_USER']))
         (uid, gid) = pwd.getpwnam(os.environ['SUDO_USER'])[2:4]
         os.chown(path, uid, gid)
 
 def checkroot():
-    """Check if we're running as root, and bail out if we're not."""
+    """
+    Check if we're running as root, and bail out if we're not.
+    """
 
     if os.geteuid() != 0:
         raise VMBuilderUserError("This script must be run as root (e.g. via sudo)")
 
 def fix_ownership(files):
-    """Goes through files and fixes their ownership of them. Currently, this just 
-       means changing their ownership to $SUDO_USER"""
+    """
+    Goes through files and fixes their ownership of them. 
+    
+    @type  files: list
+    @param files: files whose ownership should be fixed up (currently 
+                  simply calls L{give_to_caller})
+
+    """
     for file in files:
         give_to_caller(file)
 

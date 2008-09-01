@@ -34,15 +34,12 @@ import textwrap
 _ = gettext
 
 class VM(object):
-    """It's the job of the frontend to instantiate this class.
+    """The VM object has the following attributes of relevance to plugins:
 
-    The VM object has the following attributes of relevance to plugins:
-
-    hypervisor: A hypervisor object, representing the hypervisor the vm is destined for
     distro: A distro object, representing the distro running in the vm
 
-    disks: The disk images for the vm
-    filesystems: The filesystem images for the vm
+    disks: The disk images for the vm.
+    filesystems: The filesystem images for the vm.
 
     result_files: A list of the files that make up the entire vm.
                   The ownership of these files will be fixed up.
@@ -53,7 +50,7 @@ class VM(object):
 
     """
     def __init__(self):
-        self.hypervisor = None
+        self.hypervisor = None #: hypervisor object, representing the hypervisor the vm is destined for
         self.distro = None
 
         self.disks = []
@@ -62,12 +59,22 @@ class VM(object):
         self.result_files = []
         self.plugins  = []
         self._cleanup_cbs = []
-        self.optparser = MyOptParser(epilog="ubuntu-vm-builder is Copyright (C) 2007-2008 Canonical Ltd. and written by Soren Hansen <soren@canonical.com>.", usage='%prog hypervisor distro [options]')
+
+        #: final destination for the disk images
+        self.destdir = None
+        #: tempdir where we do all the work
+        self.workdir = None
+        #: mount point where the disk images will be mounted
+        self.rootmnt = None
+        #: directory where we build up the guest filesystem
+        self.tmproot = None
+
+        self.optparser = _MyOptParser(epilog="ubuntu-vm-builder is Copyright (C) 2007-2008 Canonical Ltd. and written by Soren Hansen <soren@canonical.com>.", usage='%prog hypervisor distro [options]')
         self.optparser.arg_help = (('hypervisor', self.hypervisor_help), ('distro', self.distro_help))
         self._register_base_settings()
 
     def cleanup(self):
-        logging.info("Cleaning up after ourselves")
+        logging.info("Cleaning up")
         while len(self._cleanup_cbs) > 0:
             self._cleanup_cbs.pop(0)()
 
@@ -83,7 +90,7 @@ class VM(object):
         try:
             self._cleanup_cbs.remove(cb)
         except ValueError, e:
-            # Wasn't in there. That's cool.
+            # Wasn't in there. No worries.
             pass
 
     def distro_help(self):
@@ -114,6 +121,7 @@ class VM(object):
         self.register_setting('-m', '--mem', type='int', default=128, help='Assign MEM megabytes of memory to the guest vm. [default: %default]')
 
     def add_disk(self, *args, **kwargs):
+        """Adds a disk image to the virtual machine"""
         disk = Disk(self, *args, **kwargs)
         self.disks.append(disk)
         return disk
@@ -156,18 +164,30 @@ class VM(object):
                 setattr(self, k, v)
 
     def create_directory_structure(self):
-        # workdir is the tempdir where we do all the work
+        """Creates the directory structure where we'll be doing all the work
+
+        When create_directory_structure returns, the following attributes will be set:
+
+         - L{VM.destdir}: The final destination for the disk images
+         - L{VM.workdir}: The temporary directory where' we'll too all the work
+         - L{VM.rootmnt}: The root mount point where all the target filesystems will be mounted
+         - L{VM.tmproot}: The directory where we build up the guest filesystem
+
+        ..and the corresponding directories are created.
+
+        Additionally, L{VM.destdir} is created, which is where the files (disk images, filesystem
+        images, run scripts, etc.) will eventually be placed.
+        """
+
         self.workdir = self.create_workdir()
         self.add_clean_cmd('rm', '-rf', self.workdir)
 
         logging.debug('Temporary directory: %s', self.workdir)
 
-        # rootmnt is where the disk images will be mounted
         self.rootmnt = '%s/target' % self.workdir
         logging.debug('Creating the root mount directory: %s', self.rootmnt)
         os.mkdir(self.rootmnt)
 
-        # tmproot it where we build up the guest filesystem
         self.tmproot = '%s/root' % self.workdir
         logging.debug('Creating temporary root: %s', self.tmproot)
         os.mkdir(self.tmproot)
@@ -187,15 +207,18 @@ class VM(object):
         self.result_files.append(self.destdir)
 
     def create_workdir(self):
+        """Creates the working directory for this vm and returns its path"""
         return tempfile.mkdtemp('', 'vmbuilder', self.tmp)
 
     def mount_partitions(self):
-        logging.info('Mounting target filesystem')
+        """Mounts all the vm's partitions and filesystems below .rootmnt"""
+        logging.info('Mounting target filesystems')
         fss = disk.get_ordered_filesystems(self)
         for fs in fss:
             fs.mount()
 
     def umount_partitions(self):
+        """Unmounts all the vm's partitions and filesystems"""
         logging.info('Unmounting target filesystem')
         fss = VMBuilder.disk.get_ordered_filesystems(self)
         fss.reverse()
@@ -222,6 +245,23 @@ class VM(object):
             self.distro.install_bootloader()
 
     def create(self):
+        """
+        The core vm creation method
+        
+        The VM creation happens in the following steps:
+
+        A series of preliminary checks are performed:
+         - We check if we're being run as root, since 
+           the filesystem handling requires root priv's
+         - Each plugin's prefligh_check method is called.
+           See L{VMBuilder.plugins.Plugin} documentation for details
+         - L{create_directory_structure} is called
+         - VMBuilder.disk.create_partitions is called
+         - VMBuilder.disk.create_filesystems is called
+         - .mount_partitions is called
+         - .install is called
+
+        """
         util.checkroot()
         
         self.call_hooks('preflight_check')
@@ -231,7 +271,6 @@ class VM(object):
             self.create_directory_structure()
 
             disk.create_partitions(self)
-
             disk.create_filesystems(self)
 
             self.mount_partitions()
@@ -252,7 +291,7 @@ class VM(object):
                 logging.critical("Oh, dear, an exception occurred")
             self.cleanup()
 
-class MyOptParser(optparse.OptionParser):
+class _MyOptParser(optparse.OptionParser):
     def format_arg_help(self, formatter):
         result = []
         for arg in self.arg_help:
