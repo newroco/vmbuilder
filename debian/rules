@@ -13,7 +13,7 @@ include /usr/share/cdbs/1/class/python-distutils.mk
 build/python-vm-builder:: doc-stamp
 
 doc-stamp:
-	epydoc VMBuilder
+	epydoc --no-private VMBuilder
 	touch $@
 
 cleanbuilddir/python-vm-builder::
