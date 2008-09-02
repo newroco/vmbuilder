@@ -50,41 +50,5 @@ class KVM(Hypervisor):
         fp.close()
         os.chmod(script, stat.S_IRWXU | stat.S_IRWXU | stat.S_IROTH | stat.S_IXOTH)
         self.vm.result_files.append(script)
-        diskxml = ''
-        for (id, img) in enumerate(self.imgs):
-            diskxml += """
-    <disk type='file' device='disk'>
-      <source file='%s'/>
-      <target dev='hd%c'/>
-    </disk>""" % (img, 'abcd'[id])
-
-        xml = '%s/domain.xml' % self.vm.destdir
-        fp = open(xml, 'w')
-        fp.write("""<domain type='kvm'>
-  <name>%s</name>
-  <memory>%d</memory>
-  <vcpu>1</vcpu>
-  <os>
-    <type>hvm</type>
-    <boot dev='hd'/>
-  </os>
-  <features>
-    <acpi/>
-  </features>
-  <clock offset='utc'/>
-  <on_poweroff>destroy</on_poweroff>
-  <on_reboot>restart</on_reboot>
-  <on_crash>destroy</on_crash>
-  <devices>
-    <emulator>/usr/bin/kvm</emulator>
-    <interface type='network'>
-      <source network='default'/>
-    </interface>
-    <input type='mouse' bus='ps2'/>
-    <graphics type='vnc' port='-1' listen='127.0.0.1'/>
-    %s
-  </devices>
-</domain>""" % (self.vm.hostname, self.vm.mem, diskxml))
-        fp.close()
 
 register_hypervisor(KVM)
