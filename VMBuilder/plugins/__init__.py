@@ -35,6 +35,10 @@ def find_plugins():
 class Plugin(object):
     def __init__(self, vm):
         self.vm = vm
+        self.register_options()
+
+    def register_options(self):
+        pass
 
     def preflight_check(self):
         """Override this method with checks for anything that might cause the VM creation to fail
