@@ -183,6 +183,8 @@ class Disk(object):
 
         logging.info('Converting %s to %s, format %s' % (self.filename, format, destfile))
         run_cmd('qemu-img', 'convert', '-O', format, self.filename, destfile)
+        os.unlink(self.filename)
+        self.filename = os.path.abspath(destfile)
         return destfile
 
     class Partition(object):
