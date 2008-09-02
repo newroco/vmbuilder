@@ -167,10 +167,10 @@ class VM(object):
             raise VMBuilderUserError("Invalid hypervisor. Valid hypervisors: %s" % " ".join(VMBuilder.hypervisors.keys()))
 
     def set_defaults(self):
-        for plugin in VMBuilder._plugins:
-            self.plugins.append(plugin(self))
-
         if self.distro and self.hypervisor:
+            for plugin in VMBuilder._plugins:
+                self.plugins.append(plugin(self))
+
             self.optparser.set_defaults(destdir='%s-%s' % (self.distro.arg, self.hypervisor.arg))
 
             (settings, dummy) = self.optparser.parse_args([])
