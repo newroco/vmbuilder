@@ -18,7 +18,6 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from   VMBuilder import register_plugin, Plugin, VMBuilderUserError
-import libvirt
 
 class Libvirt(Plugin):
     name = 'libvirt integration'
@@ -32,9 +31,10 @@ class Libvirt(Plugin):
         return self.conn.listDefinedDomains() + [self.conn.lookupById(id).name for id in self.conn.listDomainsID()]
 
     def preflight_check(self):
-        print repr(self.vm.libvirt)
         if not self.vm.libvirt:
             return True
+
+        import libvirt
 
         self.conn = libvirt.open(self.vm.libvirt)
         if self.vm.hostname in self.all_domains():
