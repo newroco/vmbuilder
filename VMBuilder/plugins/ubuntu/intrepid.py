@@ -22,7 +22,7 @@ from VMBuilder.plugins.ubuntu.hardy import Hardy
 
 class Intrepid(Hardy):
 	def xen_kernel_path(self):
-		return '/boot/vminuz-2.6.27-2-server'
+		return '/boot/vmlinuz-2.6.27-2-server'
 
 	def xen_ramdisk_path(self):
 		return '/boot/initrd.img-2.6.27-2-server'
