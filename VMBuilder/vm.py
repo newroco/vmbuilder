@@ -69,7 +69,7 @@ class VM(object):
         #: directory where we build up the guest filesystem
         self.tmproot = None
 
-        self.optparser = _MyOptParser(epilog="ubuntu-vm-builder is Copyright (C) 2007-2008 Canonical Ltd. and written by Soren Hansen <soren@canonical.com>.", usage='%prog hypervisor distro [options]')
+        self.optparser = _MyOptParser(epilog="ubuntu-vm-builder is Copyright (C) 2007-2008 Canonical Ltd. and written by Soren Hansen <soren@canonical.com>.", usage='%prog distro hypervisor [options]')
         self.optparser.arg_help = (('hypervisor', self.hypervisor_help), ('distro', self.distro_help))
         self._register_base_settings()
 
