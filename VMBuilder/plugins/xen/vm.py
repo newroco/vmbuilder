@@ -49,7 +49,7 @@ kernel = '%s'
 ramdisk = '%s'
 memory = %d
 
-root = '/dev/xvda1,w'
+root = '/dev/xvda1 ro'
 disk = [
 %s
 ]
@@ -62,7 +62,7 @@ on_poweroff = 'destroy'
 on_reboot   = 'restart'
 on_crash    = 'restart'
 
-extra = '2 console=xvc0'
+extra = 'xencons=tty console=tty1 console=hvc0'
 
 """  %   (self.vm.name,
           self.vm.distro.xen_kernel_path(),
