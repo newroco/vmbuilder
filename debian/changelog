@@ -1,3 +1,9 @@
+vm-builder (0.8.1-0ubuntu2) intrepid; urgency=low
+
+  * blah 
+
+ -- Chuck Short <zulcss@ubuntu.com>  Thu, 04 Sep 2008 10:10:17 -0400
+
 vm-builder (0.8.1-0ubuntu1) intrepid; urgency=low
 
   * Added lots of inline documentation.
