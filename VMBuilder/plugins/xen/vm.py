@@ -68,7 +68,7 @@ extra = '2 console=xvc0'
           self.vm.distro.xen_kernel_path(),
           self.vm.distro.xen_ramdisk_path(),
           self.vm.mem,
-          ',\n'.join(["'file:%s,xvd%d,w'" % (os.path.abspath(img), id+1) for (img, id) in zip(destimages, range(len(destimages)))]),
+          ',\n'.join(["'tap:aio:%s,xvda%d,w'" % (os.path.abspath(img), id+1) for (img, id) in zip(destimages, range(len(destimages)))]),
           self.vm.name))
         fp.close()
         self.vm.result_files.append(xenconf)
