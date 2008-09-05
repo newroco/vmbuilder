@@ -47,6 +47,9 @@ class Dapper(suite.Suite):
 
         logging.debug("Installing fstab")
         self.install_fstab()
+
+	logging.debug("Creating devices")
+	self.create_devices()
     
         if self.vm.hypervisor.needs_bootloader:
             logging.debug("Installing grub")
@@ -229,6 +232,13 @@ proc                                            /proc           proc    defaults
         for part in parts:
             retval += "/dev/%s%-38s %15s %7s %15s %d       %d\n" % (self.disk_prefix, part.get_suffix(), part.mntpnt, part.fstab_fstype(), part.fstab_options(), 0, 0)
         return retval
+
+    def create_devices(self):
+	self.run_in_target('mknod', '/dev/xvda', 'b', '202', '0')
+	self.run_in_target('mknod', '/dev/xvda1', 'b', '202', '1')
+	self.run_in_target('mknod', '/dev/xvda2', 'b', '202', '2')
+	self.run_in_target('mknod', '/dev/xvda3', 'b', '202', '3')
+	self.run_in_target('mknod', '/dev/xvc0', 'c', '204', '191')
 
     def install_file(self, path, contents):
         fp = open('%s%s' % (self.destdir, path), 'w')
