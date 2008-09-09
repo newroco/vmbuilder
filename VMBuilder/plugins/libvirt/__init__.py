@@ -23,7 +23,7 @@ class Libvirt(Plugin):
     name = 'libvirt integration'
 
     def register_options(self):
-        group = self.vm.setting_group('libvirt integation')
+        group = self.vm.setting_group('libvirt integration')
         group.add_option('--libvirt', metavar='URI', help='Add VM to given URI')
         self.vm.register_setting_group(group)
 
