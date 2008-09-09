@@ -72,6 +72,10 @@ class VM(object):
 
         self.optparser = _MyOptParser(epilog="ubuntu-vm-builder is Copyright (C) 2007-2008 Canonical Ltd. and written by Soren Hansen <soren@canonical.com>.", usage='%prog hypervisor distro [options]')
         self.optparser.arg_help = (('hypervisor', self.hypervisor_help), ('distro', self.distro_help))
+
+        self.confparser = ConfigParser.SafeConfigParser()
+        self.confparser.read(['/etc/vmbuilder.cfg', os.path.expanduser('~/.vmbuilder.cfg')])
+
         self._register_base_settings()
 
     def cleanup(self):
@@ -167,7 +171,47 @@ class VM(object):
         else:
             raise VMBuilderUserError("Invalid hypervisor. Valid hypervisors: %s" % " ".join(VMBuilder.hypervisors.keys()))
 
+    def get_conf_value(self, key):
+        # This is horrible. Did I mention I hate people who (ab)use exceptions
+        # to handle non-exceptional events?
+        confvalue = None
+        try:
+            confvalue = self.confparser.get('DEFAULT', key)
+        except ConfigParser.NoSectionError, e:
+            pass
+        except ConfigParser.NoOptionError, e:
+            pass
+
+        try:
+            confvalue = self.confparser.get(self.hypervisor.arg, key)
+        except ConfigParser.NoSectionError, e:
+            pass
+        except ConfigParser.NoOptionError, e:
+            pass
+
+        try:
+            confvalue = self.confparser.get(self.distro.arg, key)
+        except ConfigParser.NoSectionError, e:
+            pass
+        except ConfigParser.NoOptionError, e:
+            pass
+
+        try:
+            confvalue = self.confparser.get('%s/%s' % (self.hypervisor.arg, self.distro.arg), key)
+        except ConfigParser.NoSectionError, e:
+            pass
+        except ConfigParser.NoOptionError, e:
+            pass
+
+        logging.debug('Returning value %s for configuration key %s' % (repr(confvalue), key))
+        return confvalue
+
     def set_defaults(self):
+        """
+        is called to give all the plugins and the distro and hypervisor plugin a chance to set
+        some reasonable defaults, which the frontend then can inspect and present
+        """
+
         if self.distro and self.hypervisor:
             for plugin in VMBuilder._plugins:
                 self.plugins.append(plugin(self))
@@ -176,7 +220,11 @@ class VM(object):
 
             (settings, dummy) = self.optparser.parse_args([])
             for (k,v) in settings.__dict__.iteritems():
-                setattr(self, k, v)
+                confvalue = self.get_conf_value(k)
+                if confvalue:
+                    setattr(self, k, confvalue)
+                else:
+                    setattr(self, k, v)
 
     def create_directory_structure(self):
         """Creates the directory structure where we'll be doing all the work
@@ -354,5 +402,4 @@ class _MyOptParser(optparse.OptionParser):
         formatter.dedent()
         # Drop the last "\n", or the header if no options or option groups:
         return "".join(result[:-1])
-
 

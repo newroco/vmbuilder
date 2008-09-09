@@ -18,13 +18,13 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #    CLI plugin
-import VMBuilder
-import VMBuilder.hypervisor
+from gettext import gettext
 import logging
 import optparse
 import sys
 import textwrap
-from gettext import gettext
+import VMBuilder
+import VMBuilder.hypervisor
 _ = gettext
 
 class CLI(VMBuilder.Frontend):
@@ -43,7 +43,7 @@ class CLI(VMBuilder.Frontend):
             vm.set_hypervisor(args[0])
             vm.set_distro(args[1])
             vm.optparser.enable_interspersed_args()
-            (settings, args) = vm.optparser.parse_args()
+            (settings, args) = vm.optparser.parse_args(values=_Foo())
             for (k,v) in settings.__dict__.iteritems():
                 setattr(vm, k, v)
 
@@ -69,5 +69,8 @@ class CLI(VMBuilder.Frontend):
             offset += vm.swapsize+1
             if vm.optsize > 0:
                 disk.add_part(offset, vm.optsize, 'ext3', '/opt')
+
+class _Foo(object):
+    pass
 
 VMBuilder.register_frontend(CLI)
