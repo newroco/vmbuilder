@@ -65,7 +65,7 @@ class Ubuntu(Distro):
         group = self.vm.setting_group('Settings for the initial user')
         group.add_option('--user', default='ubuntu', help='Username of initial user [default: %default]')
         group.add_option('--name', default='Ubuntu', help='Full name of initial user [default: %default]')
-        group.add_option('--pass', default='ubuntu', dest='passwd', help='Password of initial user [default: %default]')
+        group.add_option('--pass', default='ubuntu', help='Password of initial user [default: %default]')
         self.vm.register_setting_group(group)
 
         group = self.vm.setting_group('Other options')
