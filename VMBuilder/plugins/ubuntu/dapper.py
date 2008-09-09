@@ -255,11 +255,14 @@ proc                                            /proc           proc    defaults
         return retval
 
     def create_devices(self):
-        self.run_in_target('mknod', '/dev/xvda', 'b', '202', '0')
-        self.run_in_target('mknod', '/dev/xvda1', 'b', '202', '1')
-        self.run_in_target('mknod', '/dev/xvda2', 'b', '202', '2')
-        self.run_in_target('mknod', '/dev/xvda3', 'b', '202', '3')
-        self.run_in_target('mknod', '/dev/xvc0', 'c', '204', '191')
+        import VMBuilder.plugins.xen
+
+        if isinstance(self.vm.hypervisor, VMBuilder.plugins.xen.Xen):
+            self.run_in_target('mknod', '/dev/xvda', 'b', '202', '0')
+            self.run_in_target('mknod', '/dev/xvda1', 'b', '202', '1')
+            self.run_in_target('mknod', '/dev/xvda2', 'b', '202', '2')
+            self.run_in_target('mknod', '/dev/xvda3', 'b', '202', '3')
+            self.run_in_target('mknod', '/dev/xvc0', 'c', '204', '191')
 
     def install_file(self, path, contents):
         fp = open('%s%s' % (self.destdir, path), 'w')
