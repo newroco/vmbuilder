@@ -184,7 +184,7 @@ class VM(object):
         When create_directory_structure returns, the following attributes will be set:
 
          - L{VM.destdir}: The final destination for the disk images
-         - L{VM.workdir}: The temporary directory where' we'll too all the work
+         - L{VM.workdir}: The temporary directory where we'll do all the work
          - L{VM.rootmnt}: The root mount point where all the target filesystems will be mounted
          - L{VM.tmproot}: The directory where we build up the guest filesystem
 
@@ -268,7 +268,7 @@ class VM(object):
         A series of preliminary checks are performed:
          - We check if we're being run as root, since 
            the filesystem handling requires root priv's
-         - Each plugin's prefligh_check method is called.
+         - Each plugin's preflight_check method is called.
            See L{VMBuilder.plugins.Plugin} documentation for details
          - L{create_directory_structure} is called
          - VMBuilder.disk.create_partitions is called
