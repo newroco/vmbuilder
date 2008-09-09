@@ -45,6 +45,9 @@ class Dapper(suite.Suite):
         logging.debug("debootstrapping")
         self.debootstrap()
 
+        logging.debug("Setting up sources.list")
+        self.install_sources_list()
+
         logging.debug("Installing fstab")
         self.install_fstab()
 
@@ -190,6 +193,24 @@ done
         run_cmd('sed', '-ie', 's/^# kopt=root=\([^ ]*\)\(.*\)/# kopt=root=\/dev\/hd%s%d\\2/g' % (bootdev.disk.devletters, bootdev.get_index()+1), '%s/boot/grub/menu.lst' % self.destdir)
         run_cmd('sed', '-ie', 's/^# groot.*/# groot %s/g' % bootdev.get_grub_id(), '%s/boot/grub/menu.lst' % self.destdir)
         run_cmd('sed', '-ie', '/^# kopt_2_6/ d', '%s/boot/grub/menu.lst' % self.destdir)
+
+    def install_sources_list(self):
+        self.install_file('/etc/apt/sources.list', self.sources_list())
+        self.run_in_target('apt-get', 'update')
+
+    def sources_list(self):
+        lines = []
+        components = self.vm.components = ['main', 'universe', 'restricted']
+        lines.append('# This is your shiny, new sources.list')
+        lines.append('deb %s %s %s' % (self.vm.mirror, self.vm.suite, ' '.join(self.vm.components)))
+        lines.append('deb %s %s-updates %s' % (self.vm.mirror, self.vm.suite, ' '.join(self.vm.components)))
+        lines.append('deb %s %s-security %s' % (self.vm.mirror, self.vm.suite, ' '.join(self.vm.components)))
+        lines.append('deb http://security.ubuntu.com/ubuntu %s-security %s' % (self.vm.suite, ' '.join(self.vm.components)))
+
+        if self.vm.ppa:
+            lines += ['deb http://ppa.launchpad.net/%s/ubuntu %s %s' % (ppa, self.vm.suite, ' '.join(self.vm.components)) for ppa in self.vm.ppa]
+
+        return ''.join(['%s\n' % line for line in lines])
 
     def install_fstab(self):
         self.install_file('/etc/fstab', self.fstab())
