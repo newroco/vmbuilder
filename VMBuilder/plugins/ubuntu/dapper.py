@@ -101,7 +101,7 @@ class Dapper(suite.Suite):
 
     def create_initial_user(self):
         self.run_in_target('adduser', '--disabled-password', '--gecos', self.vm.name, self.vm.user)
-        self.run_in_target('chpasswd', stdin=('%s:%s\n' % (self.vm.user, self.vm.passwd)))
+        self.run_in_target('chpasswd', stdin=('%s:%s\n' % (self.vm.user, getattr(self.vm, 'pass'))))
         self.run_in_target('addgroup', '--system', 'admin')
         self.run_in_target('adduser', self.vm.user, 'admin')
         fp = open('%s/etc/sudoers' %  self.destdir, 'a')
