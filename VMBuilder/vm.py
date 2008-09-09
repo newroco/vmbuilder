@@ -18,19 +18,20 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #    The VM class
-import VMBuilder
-import VMBuilder.util      as util
-import VMBuilder.log       as log
-import VMBuilder.disk      as disk
-from   VMBuilder.disk      import Disk, Filesystem
-from   VMBuilder.exception import VMBuilderException, VMBuilderUserError
-from   gettext import gettext
+import ConfigParser
+from   gettext             import gettext
 import logging
 import os
 import optparse
 import shutil
 import tempfile
 import textwrap
+import VMBuilder
+import VMBuilder.util      as util
+import VMBuilder.log       as log
+import VMBuilder.disk      as disk
+from   VMBuilder.disk      import Disk, Filesystem
+from   VMBuilder.exception import VMBuilderException, VMBuilderUserError
 _ = gettext
 
 class VM(object):
