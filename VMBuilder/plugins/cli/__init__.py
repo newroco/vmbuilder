@@ -36,6 +36,15 @@ class CLI(VMBuilder.Frontend):
             vm.register_setting('--rootsize', metavar='SIZE', type='int', default=4096, help='Size (in MB) of the root filesystem [default: %default]')
             vm.register_setting('--optsize', metavar='SIZE', type='int', default=0, help='Size (in MB) of the /opt filesystem. If not set, no /opt filesystem will be added.')
             vm.register_setting('--swapsize', metavar='SIZE', type='int', default=1024, help='Size (in MB) of the swap partition [default: %default]')
+            vm.register_setting('--part', metavar='PATH', type='string', defaut='', help='Allows to specify a partition table in partfile each  line  of  partfile  should  specify (root first):
+      mountpoint size
+where  size  is  in megabytes. You can have up to 4 virtual disks, a new disk starts on a line with ’---’.  ie :
+      root 1000
+      /opt 1000
+      swap 256
+      ---
+      /var 2000
+      /var/log 1500')
             vm.optparser.disable_interspersed_args()
             (foo, args) = vm.optparser.parse_args()
             if len(args) < 2:
@@ -54,22 +63,70 @@ class CLI(VMBuilder.Frontend):
             print >> sys.stderr, e
 
     def set_disk_layout(self, vm):
-        if vm.hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
-            vm.add_filesystem(size='%dM' % vm.rootsize, type='ext3', mntpnt='/')
-            vm.add_filesystem(size='%dM' % vm.swapsize, type='swap', mntpnt=None)
-            if vm.optsize > 0:
-                vm.add_filesystem(size='%dM' % optsize, type='ext3', mntpnt='/opt')
+        if vm.part == '':
+            if vm.hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
+                vm.add_filesystem(size='%dM' % vm.rootsize, type='ext3', mntpnt='/')
+                vm.add_filesystem(size='%dM' % vm.swapsize, type='swap', mntpnt=None)
+                if vm.optsize > 0:
+                    vm.add_filesystem(size='%dM' % optsize, type='ext3', mntpnt='/opt')
+            else:
+                size = vm.rootsize + vm.swapsize + vm.optsize
+                disk = vm.add_disk(size='%dM' % size)
+                offset = 0
+                disk.add_part(offset, vm.rootsize, 'ext3', '/')
+                offset += vm.rootsize+1
+                disk.add_part(offset, vm.swapsize, 'swap', 'swap')
+                offset += vm.swapsize+1
+                if vm.optsize > 0:
+                    disk.add_part(offset, vm.optsize, 'ext3', '/opt')
         else:
-            size = vm.rootsize + vm.swapsize + vm.optsize
-            disk = vm.add_disk(size='%dM' % size)
-            offset = 0
-            disk.add_part(offset, vm.rootsize, 'ext3', '/')
-            offset += vm.rootsize+1
-            disk.add_part(offset, vm.swapsize, 'swap', 'swap')
-            offset += vm.swapsize+1
-            if vm.optsize > 0:
-                disk.add_part(offset, vm.optsize, 'ext3', '/opt')
+            # We need to parse the file specified
+            if vm.hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
+                try:
+                    for pair in [x.strip().split(' ',1) for x in file(vm.path)]:
+                        if pair[0] == 'root':
+                            vm.add_filesystem(size='%dM' % pair[1], type='ext3', mntpnt='/')
+                        elif pair[0] == 'swap':
+                            vm.add_filesystem(size='%dM' % vm.swapsize, type='swap', mntpnt=None)
+                        elif pair[0] == '---':
+                            #not much to do in this case
+                        else:
+                            vm.add_filesystem(size='%dM' % pair[1], type='ext3', mntpnt=pair[0])
+                        
+                except IOError:
+                    vm.optparser.error("Error %s parsing %s: %s" % (errno, vm.path, strerror))
+            
+            else:
+                try:
+                    curdisk = dict()
+                    size = 0
+                    for pair in [x.strip().split(' ',1) for x in file(vm.path)]:
+                        if pair[0] == '---':
+                            self.do_disk(vm, curdisk, size)
+                            curdisk.clear()
+                            size = 0
+                        else
+                            curdisk.setdefault(pair[0],pair[1])
+                            size += pair[1]
 
+                    self.do_disk(vm, curdisk, size)
+
+                except IOError:
+                    vm.optparser.error("Error %s parsing %s: %s" % (errno, vm.path, strerror))
+    
+    def do_disk(self, vm, curdisk, size):
+        disk = vm.add_disk(size='%dM' % size)
+        offset = 0
+        for pair in curdisk:
+            if pair[0] == 'root':
+                disk.add_part(offset, pair[1], 'ext3', '/')
+            if pair[0] == 'swap':
+                disk.add_part(offset, pair[1], pair[0], pair[0])
+            else
+                disk.add_part(offset, pair[1], 'ext3', pair[0])
+            offset += pair[1]+1
+
+            
 class _Foo(object):
     pass
 
