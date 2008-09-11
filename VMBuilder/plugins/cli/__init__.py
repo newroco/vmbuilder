@@ -43,7 +43,7 @@ class CLI(VMBuilder.Frontend):
             vm.set_hypervisor(args[0])
             vm.set_distro(args[1])
             vm.optparser.enable_interspersed_args()
-            (settings, args) = vm.optparser.parse_args(values=_Foo())
+            (settings, args) = vm.optparser.parse_args(values=optparse.Values())
             for (k,v) in settings.__dict__.iteritems():
                 setattr(vm, k, v)
 
@@ -69,8 +69,5 @@ class CLI(VMBuilder.Frontend):
             offset += vm.swapsize+1
             if vm.optsize > 0:
                 disk.add_part(offset, vm.optsize, 'ext3', '/opt')
-
-class _Foo(object):
-    pass
 
 VMBuilder.register_frontend(CLI)
