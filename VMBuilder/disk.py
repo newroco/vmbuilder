@@ -250,7 +250,20 @@ class Filesystem(object):
         if not self.preallocated:
             logging.info('Not preallocated, so we create it.')
             if not self.filename:
-                self.filename = tempfile.mktemp(dir=self.vm.workdir)
+                if self.mntpnt:
+                    self.filename = re.sub('[^\w\s/]', '', self.mntpnt).strip().lower()
+                    self.filename = re.sub('[\w/]', '_', self.filename)
+                    if self.filename == '_':
+                        self.filename = 'root'
+                elif self.type == TYPE_SWAP:
+                    self.filename = 'swap'
+                else:
+                    raise VMBuilderException('mntpnt not set')
+
+                self.filename = '%s/%s' % (self.vm.workdir, self.filename)
+                while os.path.exists('%s.img' % self.filename):
+                    self.filename += '_'
+                self.filename += '.img'
                 logging.info('A name wasn\'t specified either, so we make one up: %s' % self.filename)
             run_cmd('qemu-img', 'create', '-f', 'raw', self.filename, '%dM' % self.size)
         self.mkfs()
