@@ -226,6 +226,9 @@ class VM(object):
                 else:
                     setattr(self, k, v)
 
+            self.distro.set_defaults()
+            self.hypervisor.set_defaults()
+
     def create_directory_structure(self):
         """Creates the directory structure where we'll be doing all the work
 
