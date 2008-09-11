@@ -19,13 +19,14 @@
 #
 #    Virtual disk management
 
-from   VMBuilder.util      import run_cmd 
-from   VMBuilder.exception import VMBuilderUserError, VMBuilderException
-import VMBuilder
 import logging
+import os.path
+import re
 import string
 import tempfile
-import os.path
+import VMBuilder
+from   VMBuilder.util      import run_cmd 
+from   VMBuilder.exception import VMBuilderUserError, VMBuilderException
 
 TYPE_EXT2 = 0
 TYPE_EXT3 = 1
