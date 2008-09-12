@@ -132,6 +132,12 @@ ff00::0 ip6-mcastprefix
 ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters
 ff02::3 ip6-allhosts''' % (self.vm.hostname, self.vm.domain, self.vm.hostname))
+        self.install_file('/etc/network/interfaces', """auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+""")
 
     def unprevent_daemons_starting(self):
         os.unlink('%s/usr/sbin/policy-rc.d' % self.destdir)
