@@ -44,12 +44,9 @@ class Ubuntu(Distro):
         group.add_option('--removepkg', action='append', metavar='PKG', help='Remove PKG from the guest (can be specfied multiple times)')
         self.vm.register_setting_group(group)
 
-        domainname = '.'.join(socket.gethostbyname_ex(socket.gethostname())[0].split('.')[1:])
-
         group = self.vm.setting_group('General OS options')
         self.host_arch = run_cmd('dpkg-architecture', '-qDEB_HOST_ARCH').rstrip()
         group.add_option('-a', '--arch', default=self.host_arch, help='Specify the target architecture.  Valid options: amd64 i386 lpia (defaults to host arch)')
-        group.add_option('--domain', default=domainname, help='Set DOMAIN as the domain name of the guest. Default: The domain of the machine running this script.')
         group.add_option('--hostname', default='ubuntu', help='Set NAME as the hostname of the guest. Default: ubuntu. Also uses this name as the VM name.')
         self.vm.register_setting_group(group)
 
@@ -107,7 +104,6 @@ class Ubuntu(Distro):
         self.xen_ramdisk_path = getattr(self.suite, 'xen_ramdisk_path', lambda: None)
 
         self.suite.install(destdir)
-
 
     def install_bootloader(self):
         devmapfile = '%s/device.map' % self.vm.workdir

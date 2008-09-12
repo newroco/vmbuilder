@@ -133,6 +133,33 @@ ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters
 ff02::3 ip6-allhosts''' % (self.vm.hostname, self.vm.domain, self.vm.hostname))
 
+        interfaces = '''# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+auto eth0 '''
+        if self.ip == 'dhcp':
+            interfaces += '''
+ifface eth0 inet dhcp
+'''
+        else:
+            interfaces += '''
+iface eth0 inet static
+        address %s
+        netmask %s 
+        network %s
+        broadcast %s
+        gateway %s
+        # dns-* options are implemented by the resolvconf package, if installed
+        dns-nameservers %s
+        dns-search %s''' % (self.vm.ip, self.vm.mask, self.vm.net, self.vm.bcast, self.vm.gw, self.vm.dns, self.vm.domain)
+        
+        self.install_file('/etc/network/interfaces', interfaces)
+
     def unprevent_daemons_starting(self):
         os.unlink('%s/usr/sbin/policy-rc.d' % self.destdir)
 

@@ -125,6 +125,17 @@ class VM(object):
         self.register_setting('--tmpfs', metavar="OPTS", help='Use a tmpfs as the working directory, specifying its size or "-" to use tmpfs default (suid,dev,size=1G).')
         self.register_setting('-m', '--mem', type='int', default=128, help='Assign MEM megabytes of memory to the guest vm. [default: %default]')
 
+        group = self.setting_group('Network related options')
+        domainname = '.'.join(socket.gethostbyname_ex(socket.gethostname())[0].split('.')[1:])
+        group.add_option('--domain', default=domainname, help='Set DOMAIN as the domain name of the guest. Default: The domain of the machine running this script: %default.')
+        group.add_option('--ip', metavar='ADDRESS', default='dhcp', help='IP address in dotted form [default: %default]')
+        group.add_option('--mask', metavar='VALUE', default='255.255.255.0', help='IP mask in dotted form [default: %default]. Useless if --ip is not specified.')
+        group.add_option('--net', metavar='ADDRESS', default='X.X.X.0', help='IP net address in dotted form [default: %default]. Useless if --ip is not specified.')
+        group.add_option('--bcast', metavar='VALUE', default='X.X.X.255', help='IP broadcast in dotted form [default: %default]. Useless if --ip is not specified.')
+        group.add_option('--gw', metavar='ADDRESS', default='X.X.X.1', help='Gateway (router) address in dotted form [default: %default]. Useless if --ip is not specified.')
+        group.add_option('--dns', metavar='ADDRESS', default='X.X.X.1', help='DNS address in dotted form [default: %default]. Useless if --ip is not specified.')
+        self.register_setting_group(group)
+
     def add_disk(self, *args, **kwargs):
         """Adds a disk image to the virtual machine"""
         disk = Disk(self, *args, **kwargs)
@@ -148,7 +159,7 @@ class VM(object):
         "Deploy" the VM, by asking the plugins in turn to deploy it.
 
         If no non-hypervior and non-distro plugin accepts to deploy
-        the image, the hypervisor's default deployment is used.
+        the image, thfe hypervisor's default deployment is used.
 
         Returns when the first True is returned.
         """
@@ -205,6 +216,25 @@ class VM(object):
 
         logging.debug('Returning value %s for configuration key %s' % (repr(confvalue), key))
         return confvalue
+    
+    def preflight_check(self):
+        """
+        is called to check that the option passed make any sense
+        """
+        
+        if self.ip != 'dhcp':
+            numip = long(inet_aton(self.ip))
+            if self.net == 'X.X.X.0':
+                self.net = inet_ntoa(string( numip ^ 0x000F ))
+            if self.bcast == 'X.X.X.255':
+                self.bcast = inet_ntoa(string( (numip ^ 0x000F) + 0xF ))
+            if self.gw == 'X.X.X.1':
+                self.gw = inet_ntoa(string( (numip ^ 0x000F ) + 0x1 ))
+            if self.dns == 'X.X.X.1':
+                self.dns = inet_ntoa(string( (numip ^ 0x000F ) + 0x1 ) )
+
+        # give plugin a chance to check their specific option
+        self.call_hooks('preflight_check')
 
     def set_defaults(self):
         """
@@ -329,8 +359,8 @@ class VM(object):
 
         """
         util.checkroot()
-        
-        self.call_hooks('preflight_check')
+    
+        self.preflight_check()
 
         finished = False
         try:
