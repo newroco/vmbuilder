@@ -39,6 +39,9 @@ class Plugin(object):
 
     def register_options(self):
         pass
+    
+    def set_defaults(self):
+        pass
 
     def preflight_check(self):
         """Override this method with checks for anything that might cause the VM creation to fail
