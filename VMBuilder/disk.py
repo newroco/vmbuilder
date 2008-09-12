@@ -153,7 +153,6 @@ class Disk(object):
         end = begin+length-1
         logging.debug("add_part - begin %d, length %d, end %d" % (begin, length, end))
         for part in self.partitions:
-            #logging.debug("add_part - part.begin %d, part.end %d" (part.begin, part.end))
             if (begin >= part.begin and begin <= part.end) or \
                 (end >= part.begin and end <= part.end):
                 raise Exception('Partitions are overlapping')
