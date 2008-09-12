@@ -86,34 +86,35 @@ class CLI(VMBuilder.Frontend):
                         else:
                             vm.add_filesystem(size='%dM' % int(pair[1]), type='ext3', mntpnt=pair[0])
                         
-                except IOError:
-                    vm.optparser.error("Error %s parsing %s: %s" % (errno, vm.part, strerror))
+                except IOError, (errno, strerror):
+                    vm.optparser.error("%s parsing --part option: %s" % (errno, strerror))
             
             else:
                 try:
-                    curdisk = dict()
+                    curdisk = list()
                     size = 0
                     for x in file(vm.part):
                         pair = x.strip().split(' ',1) 
                         if pair[0] == '---':
                             self.do_disk(vm, curdisk, size)
-                            curdisk.clear()
+                            del(curdisk)
+                            curdisk = list()
                             size = 0
                         elif pair[0] != '':
                             logging.debug("part: %s, size: %d" % (pair[0], int(pair[1])))
-                            curdisk[pair[0]] = pair[1]
+                            curdisk.append((pair[0], pair[1]))
                             size += int(pair[1])
 
                     self.do_disk(vm, curdisk, size)
 
-                except IOError:
-                    vm.optparser.error("Error %s parsing %s: %s" % (errno, vm.part, strerror))
+                except IOError, (errno, strerror):
+                    vm.optparser.error("%s parsing --part option: %s" % (errno, strerror))
     
     def do_disk(self, vm, curdisk, size):
         disk = vm.add_disk(size='%dM' % (size+1) )
         logging.debug("do_disk - size: %d" % size)
         offset = 0
-        for pair in curdisk.items():
+        for pair in curdisk:
             logging.debug("do_disk - part: %s, size: %s, offset: %d" % (pair[0], pair[1], offset))
             if pair[0] == 'root':
                 disk.add_part(offset, int(pair[1]), 'ext3', '/')
