@@ -222,6 +222,8 @@ class VM(object):
         is called to check that the option passed make any sense
         """
         
+        logging.debug("ip: %s" % self.ip)
+
         if self.ip != 'dhcp':
             numip = long(inet_aton(self.ip))
             if self.net == 'X.X.X.0':
@@ -232,6 +234,12 @@ class VM(object):
                 self.gw = inet_ntoa(string( (numip ^ 0x000F ) + 0x1 ))
             if self.dns == 'X.X.X.1':
                 self.dns = inet_ntoa(string( (numip ^ 0x000F ) + 0x1 ) )
+
+            logging.debug("net: %s" % self.net)
+            logging.debug("broadcast: %s" % self.bcast)
+            logging.debug("gateway: %s" % self.gw)
+            logging.debug("dns: %s" % self.dns)
+
 
         # give plugin a chance to check their specific option
         self.call_hooks('preflight_check')
