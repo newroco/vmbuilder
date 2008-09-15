@@ -218,33 +218,6 @@ class VM(object):
         logging.debug('Returning value %s for configuration key %s' % (repr(confvalue), key))
         return confvalue
     
-    def preflight_check(self):
-        """
-        is called to check that the option passed make any sense
-        """
-        
-        logging.debug("ip: %s" % self.ip)
-
-        if self.ip != 'dhcp':
-            numip = long(inet_aton(self.ip))
-            if self.net == 'X.X.X.0':
-                self.net = inet_ntoa(string( numip ^ 0x000F ))
-            if self.bcast == 'X.X.X.255':
-                self.bcast = inet_ntoa(string( (numip ^ 0x000F) + 0xF ))
-            if self.gw == 'X.X.X.1':
-                self.gw = inet_ntoa(string( (numip ^ 0x000F ) + 0x1 ))
-            if self.dns == 'X.X.X.1':
-                self.dns = inet_ntoa(string( (numip ^ 0x000F ) + 0x1 ) )
-
-            logging.debug("net: %s" % self.net)
-            logging.debug("broadcast: %s" % self.bcast)
-            logging.debug("gateway: %s" % self.gw)
-            logging.debug("dns: %s" % self.dns)
-
-
-        # give plugin a chance to check their specific option
-        self.call_hooks('preflight_check')
-
     def set_defaults(self):
         """
         is called to give all the plugins and the distro and hypervisor plugin a chance to set
@@ -267,6 +240,25 @@ class VM(object):
 
             self.distro.set_defaults()
             self.hypervisor.set_defaults()
+
+            logging.debug("ip: %s" % self.ip)
+
+            if self.ip != 'dhcp':
+                numip = long(inet_aton(self.ip))
+                if self.net == 'X.X.X.0':
+                    self.net = inet_ntoa(string( numip ^ 0x000F ))
+                if self.bcast == 'X.X.X.255':
+                    self.bcast = inet_ntoa(string( (numip ^ 0x000F) + 0xF ))
+                if self.gw == 'X.X.X.1':
+                    self.gw = inet_ntoa(string( (numip ^ 0x000F ) + 0x1 ))
+                if self.dns == 'X.X.X.1':
+                    self.dns = inet_ntoa(string( (numip ^ 0x000F ) + 0x1 ) )
+
+                logging.debug("net: %s" % self.net)
+                logging.debug("broadcast: %s" % self.bcast)
+                logging.debug("gateway: %s" % self.gw)
+                logging.debug("dns: %s" % self.dns)
+
 
     def create_directory_structure(self):
         """Creates the directory structure where we'll be doing all the work
@@ -369,7 +361,7 @@ class VM(object):
         """
         util.checkroot()
     
-        self.preflight_check()
+        self.call_hooks('preflight_check')
 
         finished = False
         try:
