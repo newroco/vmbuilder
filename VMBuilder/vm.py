@@ -26,6 +26,7 @@ import optparse
 import shutil
 import tempfile
 import textwrap
+import socket
 import VMBuilder
 import VMBuilder.util      as util
 import VMBuilder.log       as log
