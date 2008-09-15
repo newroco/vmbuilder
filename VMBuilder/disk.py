@@ -85,7 +85,7 @@ class Disk(object):
             if directory:
                 self.filename = '%s/%s' % (directory, self.filename)
             logging.info('Creating disk image: %s' % self.filename)
-            run_cmd('qemu-img', 'create', '-f', 'raw', self.filename, '%dM' % self.size)
+            run_cmd(qemu_img_path(), 'create', '-f', 'raw', self.filename, '%dM' % self.size)
 
         # From here, we assume that self.filename refers to whatever holds the disk image,
         # be it a file, a partition, logical volume, actual disk..
@@ -183,7 +183,7 @@ class Disk(object):
         destfile = '%s/%s.%s' % (destdir, filename, format)
 
         logging.info('Converting %s to %s, format %s' % (self.filename, format, destfile))
-        run_cmd('qemu-img', 'convert', '-O', format, self.filename, destfile)
+        run_cmd(qemu_img_path(), 'convert', '-O', format, self.filename, destfile)
         os.unlink(self.filename)
         self.filename = os.path.abspath(destfile)
         return destfile
@@ -266,7 +266,7 @@ class Filesystem(object):
                     self.filename += '_'
                 self.filename += '.img'
                 logging.info('A name wasn\'t specified either, so we make one up: %s' % self.filename)
-            run_cmd('qemu-img', 'create', '-f', 'raw', self.filename, '%dM' % self.size)
+            run_cmd(qemu_img_path(), 'create', '-f', 'raw', self.filename, '%dM' % self.size)
         self.mkfs()
 
     def mkfs(self):
@@ -378,3 +378,11 @@ def index_to_devname(index, suffix=''):
     if index < 0:
         return suffix
     return suffix + index_to_devname(index / 26 -1, string.ascii_lowercase[index % 26])
+
+def qemu_img_path():
+    exes = ['kvm-img', 'qemu-img']
+    for dir in os.environ['PATH'].split(os.path.pathsep):
+        for exe in exes:
+            path = '%s%s%s' % (dir, os.path.sep, exe)
+            if os.access(path, os.X_OK):
+                return path
