@@ -22,6 +22,7 @@ import logging
 import os
 import suite
 import shutil
+import socket
 import VMBuilder.disk as disk
 from   VMBuilder.util import run_cmd
 
