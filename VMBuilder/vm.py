@@ -241,25 +241,6 @@ class VM(object):
             self.distro.set_defaults()
             self.hypervisor.set_defaults()
 
-            logging.debug("ip: %s" % self.ip)
-
-            if self.ip != 'dhcp':
-                numip = long(inet_aton(self.ip))
-                if self.net == 'X.X.X.0':
-                    self.net = inet_ntoa(string( numip ^ 0x000F ))
-                if self.bcast == 'X.X.X.255':
-                    self.bcast = inet_ntoa(string( (numip ^ 0x000F) + 0xF ))
-                if self.gw == 'X.X.X.1':
-                    self.gw = inet_ntoa(string( (numip ^ 0x000F ) + 0x1 ))
-                if self.dns == 'X.X.X.1':
-                    self.dns = inet_ntoa(string( (numip ^ 0x000F ) + 0x1 ) )
-
-                logging.debug("net: %s" % self.net)
-                logging.debug("broadcast: %s" % self.bcast)
-                logging.debug("gateway: %s" % self.gw)
-                logging.debug("dns: %s" % self.dns)
-
-
     def create_directory_structure(self):
         """Creates the directory structure where we'll be doing all the work
 

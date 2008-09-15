@@ -121,6 +121,24 @@ class Dapper(suite.Suite):
         return 'linux-image-%s' % (self.vm.flavour or self.default_flavour[self.vm.arch],)
 
     def config_network(self):
+        logging.debug("ip: %s" % self.vm.ip)
+
+        if self.vm.ip != 'dhcp':
+            numip = long(inet_aton(self.vm.ip))
+            if self.vm.net == 'X.X.X.0':
+                self.vm.net = inet_ntoa(string( numip ^ 0x000F ))
+            if self.vm.bcast == 'X.X.X.255':
+                self.vm.bcast = inet_ntoa(string( (numip ^ 0x000F) + 0xF ))
+            if self.vm.gw == 'X.X.X.1':
+                self.vm.gw = inet_ntoa(string( (numip ^ 0x000F ) + 0x1 ))
+            if self.vm.dns == 'X.X.X.1':
+                self.vm.dns = inet_ntoa(string( (numip ^ 0x000F ) + 0x1 ) )
+
+            logging.debug("net: %s" % self.vm.net)
+            logging.debug("broadcast: %s" % self.vm.bcast)
+            logging.debug("gateway: %s" % self.vm.gw)
+            logging.debug("dns: %s" % self.vm.dns)
+
         self.install_file('/etc/hostname', self.vm.hostname)
         self.install_file('/etc/hosts', '''127.0.0.1 localhost
 127.0.1.1 %s.%s %s
@@ -142,7 +160,7 @@ iface lo inet loopback
 
 # The primary network interface
 auto eth0 '''
-        if self.ip == 'dhcp':
+        if self.vm.ip == 'dhcp':
             interfaces += '''
 ifface eth0 inet dhcp
 '''
