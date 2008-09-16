@@ -56,13 +56,15 @@ class EC2(Plugin):
         if not self.vm.ec2:
             return False
         bundle_cmdline = ['ec2-bundle-image', '--image', self.vm.filesystems[0].filename, '--cert', self.vm.ec2_cert, '--privatekey', self.vm.ec2_key, '--user', self.vm.ec2_user, '--prefix', self.vm.hostname, '-r', ['i386', 'x86_64'][self.vm.arch == 'amd64'], '-d', self.vm.workdir, '--kernel', 'aki-a71cf9ce', '--ramdisk', 'ari-a51cf9cc']
-
         run_cmd(*bundle_cmdline)
 
         upload_cmdline = ['ec2-upload-bundle', '--manifest', '%s/%s.manifest.xml' % (self.vm.workdir, self.vm.hostname), '--bucket', self.vm.ec2_bucket, '--access-key', self.vm.ec2_access_key, '--secret-key', self.vm.ec2_secret_key]
-
         run_cmd(*upload_cmdline)
-        
+
+        from boto.ec2.connection import EC2Connection
+        conn = EC2Connection(self.vm.ec2_access_key, self.vm.ec2_secret_key)
+        print conn.register_image('%s/%s.manifest.xml' % (self.vm.ec2_bucket, self.vm.hostname))
+
         return True
 
 register_plugin(EC2)
