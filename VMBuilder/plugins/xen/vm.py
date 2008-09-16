@@ -38,6 +38,7 @@ class Xen(Hypervisor):
             logging.info('Moving %s to %s' % (filesystem.filename, destfile))
             self.vm.result_files.append(destfile)
             run_cmd('cp', '--sparse=always', filesystem.filename, destfile)
+            os.unlink(filesystem.filename)
             filesystem.filename = os.path.abspath(destfile)
             destimages.append(destfile)
     
