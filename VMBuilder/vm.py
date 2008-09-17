@@ -131,11 +131,11 @@ class VM(object):
         domainname = '.'.join(socket.gethostbyname_ex(socket.gethostname())[0].split('.')[1:])
         group.add_option('--domain', default=domainname, help='Set DOMAIN as the domain name of the guest. Default: The domain of the machine running this script: %default.')
         group.add_option('--ip', metavar='ADDRESS', default='dhcp', help='IP address in dotted form [default: %default]')
-        group.add_option('--mask', metavar='VALUE', default='255.255.255.0', help='IP mask in dotted form [default: %default]. Useless if --ip is not specified.')
-        group.add_option('--net', metavar='ADDRESS', default='X.X.X.0', help='IP net address in dotted form [default: %default]. Useless if --ip is not specified.')
-        group.add_option('--bcast', metavar='VALUE', default='X.X.X.255', help='IP broadcast in dotted form [default: %default]. Useless if --ip is not specified.')
-        group.add_option('--gw', metavar='ADDRESS', default='X.X.X.1', help='Gateway (router) address in dotted form [default: %default]. Useless if --ip is not specified.')
-        group.add_option('--dns', metavar='ADDRESS', default='X.X.X.1', help='DNS address in dotted form [default: %default]. Useless if --ip is not specified.')
+        group.add_option('--mask', metavar='VALUE', default='', help='IP mask in dotted form [default: appropriate value for the class of the ip address]. Useless if --ip is not specified.')
+        group.add_option('--net', metavar='ADDRESS', default='X.X.X.0', help='IP net address in dotted form [default: %default or the appropriate value for the mask or the class]. Useless if --ip is not specified.')
+        group.add_option('--bcast', metavar='VALUE', default='X.X.X.255', help='IP broadcast in dotted form [default: %default or the appropriate value for the mask or the class]. Useless if --ip is not specified.')
+        group.add_option('--gw', metavar='ADDRESS', default='X.X.X.1', help='Gateway (router) address in dotted form [default: %default or the appropriate value for the mask or the class]. Useless if --ip is not specified.')
+        group.add_option('--dns', metavar='ADDRESS', default='X.X.X.1', help='DNS address in dotted form [default: %default or the appropriate value for the mask or the class]. Useless if --ip is not specified.')
         self.register_setting_group(group)
 
     def add_disk(self, *args, **kwargs):
@@ -253,15 +253,19 @@ class VM(object):
                 numip = struct.unpack('I', socket.inet_aton(self.ip))[0] 
             except socket.error:
                 raise VMBuilderUserError('%s is not a valid ip address' % self.ip)
-            ipclass = numip & 0xFF
-            if (ipclass > 0) and (ipclass < 127):
-                mask = 0xFF
-            elif (ipclass > 128) and (ipclass < 192):
-                mask = OxFFFF
-            elif (ipclass < 224):
-                mask = 0xFFFFFF
+            
+            if self.mask == '':
+                ipclass = numip & 0xFF
+                if (ipclass > 0) and (ipclass < 127):
+                    mask = 0xFF
+                elif (ipclass > 128) and (ipclass < 192):
+                    mask = OxFFFF
+                elif (ipclass < 224):
+                    mask = 0xFFFFFF
+                else:
+                    raise VMBuilderUserError('The class of the ip address specified (%s) does not seem right' % self.ip)
             else:
-                raise VMBuilderUserError('The class of the ip address specified (%s) does not seem right' % self.ip)
+                mask = struct.unpack('I', socket.inet_aton(self.mask))[0]
 
             numnet = numip & mask
 
