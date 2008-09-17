@@ -27,6 +27,7 @@ import shutil
 import tempfile
 import textwrap
 import socket
+import struct
 import VMBuilder
 import VMBuilder.util      as util
 import VMBuilder.log       as log
@@ -241,6 +242,44 @@ class VM(object):
             self.distro.set_defaults()
             self.hypervisor.set_defaults()
 
+    def ipdefaults (self):
+        """
+        is called to validate the ip configuration given and set defaults
+        """
+
+        logging.debug("ip: %s" % self.ip)
+        if self.ip != 'dhcp':
+            try:
+                numip = struct.unpack('I', socket.inet_aton(self.ip))[0] 
+            except socket.error:
+                raise VMBuilderUserError('%s is not a valid ip address' % self.ip)
+            ipclass = numip & 0xFF
+            if (ipclass > 0) and (ipclass < 127):
+                mask = 0xFF
+            elif (ipclass > 128) and (ipclass < 192):
+                mask = OxFFFF
+            elif (ipclass < 224):
+                mask = 0xFFFFFF
+            else:
+                raise VMBuilderUserError('The class of the ip address specified (%s) does not seem right' % self.ip)
+
+            numnet = numip & mask
+
+            if self.net == 'X.X.X.0':
+                self.net = socket.inet_ntoa( struct.pack('I', numnet ) )
+            if self.bcast == 'X.X.X.255':
+                self.bcast = socket.inet_ntoa( struct.pack('I', numnet + (mask ^ 0xFFFFFFFF)))
+            if self.gw == 'X.X.X.1':
+                self.gw = socket.inet_ntoa( struct.pack('I', numnet + 0x01000000 ) )
+            if self.dns == 'X.X.X.1':
+                self.dns = self.gw
+
+            logging.debug("net: %s" % self.net)
+            logging.debug("broadcast: %s" % self.bcast)
+            logging.debug("gateway: %s" % self.gw)
+            logging.debug("dns: %s" % self.dns)
+
+
     def create_directory_structure(self):
         """Creates the directory structure where we'll be doing all the work
 
@@ -343,6 +382,8 @@ class VM(object):
         util.checkroot()
     
         self.call_hooks('preflight_check')
+
+        self.ipdefaults()
 
         finished = False
         try:

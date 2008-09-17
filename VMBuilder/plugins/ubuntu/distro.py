@@ -22,7 +22,6 @@ from   VMBuilder           import register_distro, Distro
 from   VMBuilder.util      import run_cmd
 from   VMBuilder.exception import VMBuilderUserError
 import socket
-import struct
 import logging
 
 class Ubuntu(Distro):
@@ -98,26 +97,6 @@ class Ubuntu(Distro):
             not self.suite.check_arch_validity(self.vm.arch):
             raise VMBuilderUserError('%s is not a valid architecture. Valid architectures are: %s' % (self.vm.arch, 
                                                                                                       ' '.join(self.valid_archs[self.host_arch])))
-
-        logging.debug("ip: %s" % self.vm.ip)
-        if self.vm.ip != 'dhcp':
-            try:
-                numip = struct.unpack('I', socket.inet_aton(self.vm.ip))[0] & struct.unpack('I', socket.inet_aton('255.255.255.0'))[0] 
-            except socket.error:
-                raise VMBuilderUserError('%s is not a valid ip address' % self.vm.ip) 
-            if self.vm.net == 'X.X.X.0':
-                self.vm.net = socket.inet_ntoa( struct.pack('I', numip ) )
-            if self.vm.bcast == 'X.X.X.255':
-                self.vm.bcast = socket.inet_ntoa( struct.pack('I', numip + 0xFF000000 ) )
-            if self.vm.gw == 'X.X.X.1':
-                self.vm.gw = socket.inet_ntoa( struct.pack('I', numip + 0x01000000 ) )
-            if self.vm.dns == 'X.X.X.1':
-                self.vm.dns = self.vm.gw
-            
-            logging.debug("net: %s" % self.vm.net)
-            logging.debug("broadcast: %s" % self.vm.bcast)
-            logging.debug("gateway: %s" % self.vm.gw)
-            logging.debug("dns: %s" % self.vm.dns)
 
     def install(self, destdir):
         self.destdir = destdir

@@ -145,7 +145,7 @@ iface lo inet loopback
 auto eth0 '''
         if self.vm.ip == 'dhcp':
             interfaces += '''
-ifface eth0 inet dhcp
+iface eth0 inet dhcp
 '''
         else:
             interfaces += '''
