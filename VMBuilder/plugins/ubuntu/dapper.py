@@ -22,6 +22,7 @@ import logging
 import os
 import suite
 import shutil
+import VMBuilder
 import VMBuilder.disk as disk
 from   VMBuilder.util import run_cmd
 
@@ -104,13 +105,8 @@ class Dapper(suite.Suite):
         self.run_in_target('chpasswd', stdin=('%s:%s\n' % (self.vm.user, getattr(self.vm, 'pass'))))
         self.run_in_target('addgroup', '--system', 'admin')
         self.run_in_target('adduser', self.vm.user, 'admin')
-        fp = open('%s/etc/sudoers' %  self.destdir, 'a')
-        fp.write("""
 
-# Members of the admin group may gain root privileges
-%admin ALL=(ALL) ALL
-""")
-        fp.close()
+        self.install_from_template('/etc/sudoers', 'sudoers')
         for group in ['adm', 'audio', 'cdrom', 'dialout', 'floppy', 'video', 'plugdev', 'dip', 'netdev', 'powerdev', 'lpadmin', 'scanner']:
             self.run_in_target('adduser', self.vm.user, group, ignore_fail=True)
 
@@ -122,16 +118,7 @@ class Dapper(suite.Suite):
 
     def config_network(self):
         self.install_file('/etc/hostname', self.vm.hostname)
-        self.install_file('/etc/hosts', '''127.0.0.1 localhost
-127.0.1.1 %s.%s %s
-
-# The following lines are desirable for IPv6 capable hosts
-::1 ip6-localhost ip6-loopback
-fe00::0 ip6-localnet
-ff00::0 ip6-mcastprefix
-ff02::1 ip6-allnodes
-ff02::2 ip6-allrouters
-ff02::3 ip6-allhosts''' % (self.vm.hostname, self.vm.domain, self.vm.hostname))
+        self.install_from_template('/etc/hosts', 'etc_hosts', { 'hostname' : self.vm.hostname, 'domain' : self.vm.domain }) 
         self.install_file('/etc/network/interfaces', """auto lo
 iface lo inet loopback
 
@@ -143,28 +130,7 @@ iface eth0 inet dhcp
         os.unlink('%s/usr/sbin/policy-rc.d' % self.destdir)
 
     def prevent_daemons_starting(self):
-        path = '%s/usr/sbin/policy-rc.d' % self.destdir
-        fp  = open(path, 'w')
-        fp.write("""#!/bin/sh
-
-while true; do
-    case "$1" in
-        -*)
-            shift
-            ;;
-        makedev)
-            exit 0
-            ;;
-        x11-common)
-            exit 0
-            ;;
-        *)
-            exit 101
-            ;;
-    esac
-done
-""")
-        os.chmod(path, 0755)
+        os.chmod(self.install_from_template('/usr/sbin/policy-rc.d', 'nostart-policy-rc.d'), 0755)
 
     def install_extras(self):
         if not self.vm.addpkg and not self.vm.removepkg:
@@ -201,31 +167,14 @@ done
         run_cmd('sed', '-ie', '/^# kopt_2_6/ d', '%s/boot/grub/menu.lst' % self.destdir)
 
     def install_sources_list(self):
-        self.install_file('/etc/apt/sources.list', self.sources_list())
+        self.install_from_template('/etc/apt/sources.list', 'sources.list')
         self.run_in_target('apt-get', 'update')
 
-    def sources_list(self):
-        lines = []
-        components = self.vm.components = ['main', 'universe', 'restricted']
-        lines.append('# This is your shiny, new sources.list')
-        lines.append('deb %s %s %s' % (self.vm.mirror, self.vm.suite, ' '.join(self.vm.components)))
-        lines.append('deb %s %s-updates %s' % (self.vm.mirror, self.vm.suite, ' '.join(self.vm.components)))
-        lines.append('deb %s %s-security %s' % (self.vm.mirror, self.vm.suite, ' '.join(self.vm.components)))
-        lines.append('deb http://security.ubuntu.com/ubuntu %s-security %s' % (self.vm.suite, ' '.join(self.vm.components)))
-
-        if self.vm.ppa:
-            lines += ['deb http://ppa.launchpad.net/%s/ubuntu %s %s' % (ppa, self.vm.suite, ' '.join(self.vm.components)) for ppa in self.vm.ppa]
-
-        return ''.join(['%s\n' % line for line in lines])
-
     def install_fstab(self):
-        self.install_file('/etc/fstab', self.fstab())
+        self.install_from_template('/etc/fstab', 'dapper_fstab', { 'parts' : disk.get_ordered_partitions(self.vm.disks), 'prefix' : self.disk_prefix })
 
     def install_device_map(self):
-        self.install_file('/boot/grub/device.map', self.device_map())
-
-    def device_map(self):
-        return '\n'.join(['(%s) /dev/%s%s' % (self.disk_prefix, disk.get_grub_id(), disk.devletters) for disk in self.vm.disks])
+        self.install_from_template('/boot/grub/device.map', 'devicemap', { 'prefix' : self.disk_prefix })
 
     def debootstrap(self):
         cmd = ['/usr/sbin/debootstrap', '--arch=%s' % self.vm.arch, self.vm.suite, self.destdir ]
@@ -234,31 +183,12 @@ done
         run_cmd(*cmd)
 
     def install_kernel(self):
-        self.install_file('/etc/kernel-img.conf', ''' 
-do_symlinks = yes
-relative_links = yes
-do_bootfloppy = no
-do_initrd = yes
-link_in_boot = no
-postinst_hook = %s
-postrm_hook = %s
-do_bootloader = no''' % (self.updategrub, self.updategrub))
+        self.install_from_template('/etc/kernel-img.conf', 'kernelimg', { 'updategrub' : self.updategrub }) 
         run_cmd('chroot', self.destdir, 'apt-get', '--force-yes', '-y', 'install', self.kernel_name(), 'grub')
 
     def install_grub(self):
         self.run_in_target('apt-get', '--force-yes', '-y', 'install', 'grub')
         run_cmd('cp', '-a', '%s%s/%s/' % (self.destdir, self.grubroot, self.vm.arch == 'amd64' and 'x86_64-pc' or 'i386-pc'), '%s/boot/grub' % self.destdir) 
-
-    def fstab(self):
-        retval = '''# /etc/fstab: static file system information.
-#
-# <file system>                                 <mount point>   <type>  <options>       <dump>  <pass>
-proc                                            /proc           proc    defaults        0       0
-'''
-        parts = disk.get_ordered_partitions(self.vm.disks)
-        for part in parts:
-            retval += "/dev/%s%-38s %15s %7s %15s %d       %d\n" % (self.disk_prefix, part.get_suffix(), part.mntpnt, part.fstab_fstype(), part.fstab_options(), 0, 0)
-        return retval
 
     def create_devices(self):
         import VMBuilder.plugins.xen
@@ -270,10 +200,16 @@ proc                                            /proc           proc    defaults
             self.run_in_target('mknod', '/dev/xvda3', 'b', '202', '3')
             self.run_in_target('mknod', '/dev/xvc0', 'c', '204', '191')
 
+    def install_from_template(self, path, tmplname, context=None):
+        return self.install_file(path, VMBuilder.util.render_template('ubuntu', self.vm, tmplname, context))
+        
     def install_file(self, path, contents):
-        fp = open('%s%s' % (self.destdir, path), 'w')
+        fullpath = '%s%s' % (self.destdir, path)
+        fp = open(fullpath, 'w')
         fp.write(contents)
         fp.close()
+        return fullpath
+
 
     def run_in_target(self, *args, **kwargs):
         return run_cmd('chroot', self.destdir, *args, **kwargs)

@@ -18,12 +18,14 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #    Various utility functions
+import logging
 import os
+import os.path
+import pwd
 import subprocess
 import sys
-import logging
-import pwd
-from exception import VMBuilderException, VMBuilderUserError
+from   Cheetah.Template import Template
+from   exception        import VMBuilderException, VMBuilderUserError
 
 def run_cmd(*argv, **kwargs):
     """
@@ -104,3 +106,20 @@ def fix_ownership(files):
     for file in files:
         give_to_caller(file)
 
+def template_base():
+    if os.path.exists('VMBuilder') and os.path.isdir('VMBuilder'):
+        return 'VMBuilder/plugins'
+    else:
+        return '/etc/vmbuilder'
+
+def render_template(plugin, vm, tmplname, context=None):
+    searchList = []
+    if context:
+        searchList.append(context)
+    searchList.append(vm)
+    tmplfile = '%s/%s/templates/%s.tmpl' % (template_base(), plugin, tmplname)
+    t = Template(file=tmplfile, searchList=searchList)
+    output = t.respond()
+    logging.debug('Output from template \'%s\': %s' % (tmplfile, output))
+    return output
+ 

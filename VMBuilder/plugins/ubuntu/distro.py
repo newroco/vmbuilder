@@ -81,7 +81,9 @@ class Ubuntu(Distro):
                 self.vm.mirror = 'http://archive.ubuntu.com/ubuntu'
 
         if not self.vm.components:
-            self.vm.components = "main,restricted,universe"
+            self.vm.components = ['main', 'restricted', 'universe']
+        else:
+            self.vm.components = self.vm.components.split(',')
         
     def preflight_check(self):
         """While not all of these are strictly checks, their failure would inevitably

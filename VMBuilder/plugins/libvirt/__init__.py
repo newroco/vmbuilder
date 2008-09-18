@@ -18,6 +18,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from   VMBuilder import register_plugin, Plugin, VMBuilderUserError
+import VMBuilder.util
 
 class Libvirt(Plugin):
     name = 'libvirt integration'
@@ -45,38 +46,8 @@ class Libvirt(Plugin):
             # Not for us
             return False
 
-        diskxml = ''
-        for (id, disk) in enumerate(self.vm.disks):
-            diskxml += """
-    <disk type='file' device='disk'>
-      <source file='%s'/>
-      <target dev='hd%c'/>
-    </disk>""" % (disk.filename, disk.devletters())
-        vmxml = """<domain type='kvm'>
-  <name>%s</name>
-  <memory>%d</memory>
-  <vcpu>1</vcpu>
-  <os>
-    <type>hvm</type>
-    <boot dev='hd'/>
-  </os>
-  <features>
-    <acpi/>
-  </features>
-  <clock offset='utc'/>
-  <on_poweroff>destroy</on_poweroff>
-  <on_reboot>restart</on_reboot>
-  <on_crash>destroy</on_crash>
-  <devices>
-    <emulator>/usr/bin/kvm</emulator>
-    <interface type='network'>
-      <source network='default'/>
-    </interface>
-    <input type='mouse' bus='ps2'/>
-    <graphics type='vnc' port='-1' listen='127.0.0.1'/>
-    %s
-  </devices>
-</domain>""" % (self.vm.hostname, self.vm.mem, diskxml)
+        vmxml = VMBuilder.util.render_template('libvirt', self.vm, 'libvirtxml')
+
         if self.vm.hostname in self.all_domains():
             raise VMBuilderUserError('Domain %s already exists at %s' % (self.vm.hostname, self.vm.libvirt))
         else:
