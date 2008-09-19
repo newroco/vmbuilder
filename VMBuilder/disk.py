@@ -152,6 +152,7 @@ class Disk(object):
         @param mntpnt: Intended mountpoint inside the guest of the new partition
         """
         end = begin+length-1
+        logging.debug("add_part - begin %d, length %d, end %d" % (begin, length, end))
         for part in self.partitions:
             if (begin >= part.begin and begin <= part.end) or \
                 (end >= part.begin and end <= part.end):
