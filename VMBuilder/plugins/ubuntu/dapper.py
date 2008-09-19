@@ -22,6 +22,7 @@ import logging
 import os
 import suite
 import shutil
+import socket
 import VMBuilder
 import VMBuilder.disk as disk
 from   VMBuilder.util import run_cmd
@@ -119,12 +120,7 @@ class Dapper(suite.Suite):
     def config_network(self):
         self.install_file('/etc/hostname', self.vm.hostname)
         self.install_from_template('/etc/hosts', 'etc_hosts', { 'hostname' : self.vm.hostname, 'domain' : self.vm.domain }) 
-        self.install_file('/etc/network/interfaces', """auto lo
-iface lo inet loopback
-
-auto eth0
-iface eth0 inet dhcp
-""")
+        self.install_from_template('/etc/network/interfaces', 'interfaces')
 
     def unprevent_daemons_starting(self):
         os.unlink('%s/usr/sbin/policy-rc.d' % self.destdir)

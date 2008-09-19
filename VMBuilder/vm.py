@@ -26,6 +26,8 @@ import optparse
 import shutil
 import tempfile
 import textwrap
+import socket
+import struct
 import VMBuilder
 import VMBuilder.util      as util
 import VMBuilder.log       as log
@@ -125,6 +127,17 @@ class VM(object):
         self.register_setting('--tmpfs', metavar="OPTS", help='Use a tmpfs as the working directory, specifying its size or "-" to use tmpfs default (suid,dev,size=1G).')
         self.register_setting('-m', '--mem', type='int', default=128, help='Assign MEM megabytes of memory to the guest vm. [default: %default]')
 
+        group = self.setting_group('Network related options')
+        domainname = '.'.join(socket.gethostbyname_ex(socket.gethostname())[0].split('.')[1:])
+        group.add_option('--domain', default=domainname, help='Set DOMAIN as the domain name of the guest. Default: The domain of the machine running this script: %default.')
+        group.add_option('--ip', metavar='ADDRESS', default='dhcp', help='IP address in dotted form [default: %default]')
+        group.add_option('--mask', metavar='VALUE', help='IP mask in dotted form [default: based on ip setting]. Ignored if --ip is not specified.')
+        group.add_option('--net', metavar='ADDRESS', help='IP net address in dotted form [default: based on ip setting]. Ignored if --ip is not specified.')
+        group.add_option('--bcast', metavar='VALUE', help='IP broadcast in dotted form [default: based on ip setting]. Ignored if --ip is not specified.')
+        group.add_option('--gw', metavar='ADDRESS', help='Gateway (router) address in dotted form [default: based on ip setting (first valid address in the network)]. Ignored if --ip is not specified.')
+        group.add_option('--dns', metavar='ADDRESS', help='DNS address in dotted form [default: based on ip setting (first valid address in the network)] Ignored if --ip is not specified.')
+        self.register_setting_group(group)
+
     def add_disk(self, *args, **kwargs):
         """Adds a disk image to the virtual machine"""
         disk = Disk(self, *args, **kwargs)
@@ -148,7 +161,7 @@ class VM(object):
         "Deploy" the VM, by asking the plugins in turn to deploy it.
 
         If no non-hypervior and non-distro plugin accepts to deploy
-        the image, the hypervisor's default deployment is used.
+        the image, thfe hypervisor's default deployment is used.
 
         Returns when the first True is returned.
         """
@@ -205,7 +218,7 @@ class VM(object):
 
         logging.debug('Returning value %s for configuration key %s' % (repr(confvalue), key))
         return confvalue
-
+    
     def set_defaults(self):
         """
         is called to give all the plugins and the distro and hypervisor plugin a chance to set
@@ -228,6 +241,53 @@ class VM(object):
 
             self.distro.set_defaults()
             self.hypervisor.set_defaults()
+
+
+    def ip_defaults(self):
+        """
+        is called to validate the ip configuration given and set defaults
+        """
+
+        logging.debug("ip: %s" % self.ip)
+
+        if self.ip != 'dhcp':
+            try:
+                numip = struct.unpack('I', socket.inet_aton(self.ip))[0] 
+            except socket.error:
+                raise VMBuilderUserError('%s is not a valid ip address' % self.ip)
+             
+            if not self.mask:
+                ipclass = numip & 0xFF
+                if (ipclass > 0) and (ipclass <= 127):
+                    mask = 0xFF
+                elif (ipclass > 128) and (ipclass < 192):
+                    mask = OxFFFF
+                elif (ipclass < 224):
+                    mask = 0xFFFFFF
+                else:
+                    raise VMBuilderUserError('The class of the ip address specified (%s) does not seem right' % self.ip)
+            else:
+                mask = struct.unpack('I', socket.inet_aton(self.mask))[0]
+
+            numnet = numip & mask
+
+            if not self.net:
+                self.net = socket.inet_ntoa( struct.pack('I', numnet ) )
+            if not self.bcast:
+                self.bcast = socket.inet_ntoa( struct.pack('I', numnet + (mask ^ 0xFFFFFFFF)))
+            if not self.gw:
+                self.gw = socket.inet_ntoa( struct.pack('I', numnet + 0x01000000 ) )
+            if not self.dns:
+                self.dns = self.gw
+
+            self.mask = socket.inet_ntoa( struct.pack('I', mask ) )
+
+            logging.debug("net: %s" % self.net)
+            logging.debug("netmask: %s" % self.mask)
+            logging.debug("broadcast: %s" % self.bcast)
+            logging.debug("gateway: %s" % self.gw)
+            logging.debug("dns: %s" % self.dns)
+
 
     def create_directory_structure(self):
         """Creates the directory structure where we'll be doing all the work
@@ -310,6 +370,10 @@ class VM(object):
             logging.info("Installing bootloader")
             self.distro.install_bootloader()
 
+    def preflight_check(self):
+        self.ip_defaults()
+        self.call_hooks('preflight_check')
+
     def create(self):
         """
         The core vm creation method
@@ -329,9 +393,7 @@ class VM(object):
 
         """
         util.checkroot()
-        
-        self.call_hooks('preflight_check')
-
+    
         finished = False
         try:
             self.create_directory_structure()

@@ -98,8 +98,8 @@ class Disk(object):
             part.create(self)
 
         logging.info('Creating loop devices corresponding to the created partitions')
-        kpartx_output = run_cmd('kpartx', '-av', self.filename)
         self.vm.add_clean_cb(lambda : self.unmap(ignore_fail=True))
+        kpartx_output = run_cmd('kpartx', '-av', self.filename)
         
         parts = kpartx_output.split('\n')[2:-1]
         mapdevs = []
