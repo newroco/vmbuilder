@@ -129,7 +129,7 @@ class VM(object):
 
         group = self.setting_group('Network related options')
         domainname = '.'.join(socket.gethostbyname_ex(socket.gethostname())[0].split('.')[1:])
-        group.add_option('--domain', default=domainname, help='Set DOMAIN as the domain name of the guest. Default: The domain of the machine running this script: %default.')
+        group.add_option('--domain', metavar=DOMAIN, default=domainname, help='Set DOMAIN as the domain name of the guest. Default: The domain of the machine running this script: %default.')
         group.add_option('--ip', metavar='ADDRESS', default='dhcp', help='IP address in dotted form [default: %default]')
         group.add_option('--mask', metavar='VALUE', help='IP mask in dotted form [default: based on ip setting]. Ignored if --ip is not specified.')
         group.add_option('--net', metavar='ADDRESS', help='IP net address in dotted form [default: based on ip setting]. Ignored if --ip is not specified.')
@@ -138,6 +138,10 @@ class VM(object):
         group.add_option('--dns', metavar='ADDRESS', help='DNS address in dotted form [default: based on ip setting (first valid address in the network)] Ignored if --ip is not specified.')
         self.register_setting_group(group)
 
+        group = self.setting_group('Scripts')
+        group.add_option('--first-boot', metavar=PATH, help='Specify a script that will be copied into the guest and executed the first time the machine boots.  This script must not be interactive.')
+        group.add_option('--first-login', metavar=PATH, help='Specify a script that will be copied into the guest and will be executed the first time the user logs in. This script can be interactive.')
+        self.register_setting_group(group)
     def add_disk(self, *args, **kwargs):
         """Adds a disk image to the virtual machine"""
         disk = Disk(self, *args, **kwargs)
@@ -288,6 +292,17 @@ class VM(object):
             logging.debug("gateway: %s" % self.gw)
             logging.debug("dns: %s" % self.dns)
 
+    def check_scripts(self):
+        """
+        is called to validate that the first-boot and first-login script are present if provided.
+        """
+
+        if (self.first-boot != ''):
+            if !os.path.isfile(self.first-boot):
+                raise VMBuilderUserError('The path to the first-boot script is invalid: %s. Make sure you are providing a full path.' % self.first-boot)
+        if (self.first-login != ''):
+            if !os.path.isfile(self.first-login):
+                raise VMBuilderUserError('The path to the first-login script is invalid: %s.  Make sure you are providing a full path.' % self.first-login)
 
     def create_directory_structure(self):
         """Creates the directory structure where we'll be doing all the work
@@ -372,6 +387,7 @@ class VM(object):
 
     def preflight_check(self):
         self.ip_defaults()
+        self.check_scripts()
         self.call_hooks('preflight_check')
 
     def create(self):

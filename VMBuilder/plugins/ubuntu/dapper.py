@@ -84,6 +84,9 @@ class Dapper(suite.Suite):
         self.create_initial_user()
 
         self.install_authorized_keys()
+        
+        logging.debug("Installing scripts")
+        self.install_scripts()
 
         logging.debug("Unmounting volatile lrm filesystems")
         self.unmount_volatile()
@@ -186,6 +189,7 @@ class Dapper(suite.Suite):
         self.run_in_target('apt-get', '--force-yes', '-y', 'install', 'grub')
         run_cmd('cp', '-a', '%s%s/%s/' % (self.destdir, self.grubroot, self.vm.arch == 'amd64' and 'x86_64-pc' or 'i386-pc'), '%s/boot/grub' % self.destdir) 
 
+
     def create_devices(self):
         import VMBuilder.plugins.xen
 
@@ -209,4 +213,21 @@ class Dapper(suite.Suite):
 
     def run_in_target(self, *args, **kwargs):
         return run_cmd('chroot', self.destdir, *args, **kwargs)
+
+    def install_scripts(self)
+        fd = open(self.vm.first-boot, 'r')
+        content = fd.read()
+        fd.close()
+        install_file(self, '/root/firstboot.sh', content)
+        os.chmod('/root/firstboot.sh', 700)
+        os.rename('/etc/rc.local', '/etc/rc.local.orig')
+        self.install_from_template('/etc/rc.local', 'firstbootrc')
+
+        fd = open(self.vm.first-login,'r')
+        content = fd.read()
+        fd.close()
+        install_file(self, '/root/firstlogin.sh', content)
+        os.chmod('/root/firstlogin.sh', 744)
+        os.rename('/etc/bash.bashrc', '/etc/bash.bashrc.orig')
+        self.install_from_template('/etc/bash.bashrc', 'firstloginrc')
 
