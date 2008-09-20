@@ -215,7 +215,7 @@ class Dapper(suite.Suite):
         return run_cmd('chroot', self.destdir, *args, **kwargs)
 
     def install_scripts(self):
-        fd = open(self.vm.first-boot, 'r')
+        fd = open(self.vm.firstboot, 'r')
         content = fd.read()
         fd.close()
         install_file(self, '/root/firstboot.sh', content)
@@ -223,7 +223,7 @@ class Dapper(suite.Suite):
         os.rename('/etc/rc.local', '/etc/rc.local.orig')
         self.install_from_template('/etc/rc.local', 'firstbootrc')
 
-        fd = open(self.vm.first-login,'r')
+        fd = open(self.vm.firstlogin,'r')
         content = fd.read()
         fd.close()
         install_file(self, '/root/firstlogin.sh', content)
