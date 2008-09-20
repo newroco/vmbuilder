@@ -298,10 +298,10 @@ class VM(object):
         """
 
         if (self.first-boot != ''):
-            if !os.path.isfile(self.first-boot):
+            if not(os.path.isfile(self.first-boot)):
                 raise VMBuilderUserError('The path to the first-boot script is invalid: %s. Make sure you are providing a full path.' % self.first-boot)
         if (self.first-login != ''):
-            if !os.path.isfile(self.first-login):
+            if not(os.path.isfile(self.first-login)):
                 raise VMBuilderUserError('The path to the first-login script is invalid: %s.  Make sure you are providing a full path.' % self.first-login)
 
     def create_directory_structure(self):

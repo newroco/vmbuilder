@@ -214,7 +214,7 @@ class Dapper(suite.Suite):
     def run_in_target(self, *args, **kwargs):
         return run_cmd('chroot', self.destdir, *args, **kwargs)
 
-    def install_scripts(self)
+    def install_scripts(self):
         fd = open(self.vm.first-boot, 'r')
         content = fd.read()
         fd.close()
