@@ -215,19 +215,22 @@ class Dapper(suite.Suite):
         return run_cmd('chroot', self.destdir, *args, **kwargs)
 
     def install_scripts(self):
-        fd = open(self.vm.firstboot, 'r')
-        content = fd.read()
-        fd.close()
-        install_file(self, '/root/firstboot.sh', content)
-        os.chmod('/root/firstboot.sh', 700)
-        os.rename('/etc/rc.local', '/etc/rc.local.orig')
-        self.install_from_template('/etc/rc.local', 'firstbootrc')
+        if (self.vm.firstboot != ""):
+            fd = open(self.vm.firstboot, 'r')
+            content = fd.read()
+            fd.close()
+            self.install_file('/root/firstboot.sh', content)
+            os.chmod('%s/root/firstboot.sh' % self.destdir, 700)
+            os.rename('%s/etc/rc.local' % self.destdir, '%s/etc/rc.local.orig' % self.destdir)
+            self.install_from_template('/etc/rc.local', 'firstbootrc')
+            os.chmod('%s/etc/rc.local' % self.destdir, 755)
 
-        fd = open(self.vm.firstlogin,'r')
-        content = fd.read()
-        fd.close()
-        install_file(self, '/root/firstlogin.sh', content)
-        os.chmod('/root/firstlogin.sh', 744)
-        os.rename('/etc/bash.bashrc', '/etc/bash.bashrc.orig')
-        self.install_from_template('/etc/bash.bashrc', 'firstloginrc')
+        if (self.vm.firstlogin != ""):
+            fd = open(self.vm.firstlogin,'r')
+            content = fd.read()
+            fd.close()
+            self.install_file('/root/firstlogin.sh', content)
+            os.chmod('%s/root/firstlogin.sh' % self.destdir, 755)
+            os.rename('%s/etc/bash.bashrc' % self.destdir, '%s/etc/bash.bashrc.orig' % self.destdir)
+            self.install_from_template('/etc/bash.bashrc', 'firstloginrc')
 

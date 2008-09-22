@@ -117,7 +117,7 @@ def render_template(plugin, vm, tmplname, context=None):
     if context:
         searchList.append(context)
     searchList.append(vm)
-    tmplfile = '%s/%s/templates/%s.tmpl' % (template_base(), plugin, tmplname)
+    tmplfile = '%s/%s/%s.tmpl' % (template_base(), plugin, tmplname)
     t = Template(file=tmplfile, searchList=searchList)
     output = t.respond()
     logging.debug('Output from template \'%s\': %s' % (tmplfile, output))
