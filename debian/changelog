@@ -4,6 +4,8 @@ vm-builder (0.8.1-0ubuntu3) intrepid; urgency=low
   * Fixed regression on --ip and friends (LP: #268920)
   * Added missing dependancy on dpkg-dev (LP: #270324)
   * Fixed regression on --part (LP: #268718)
+  * Added hint for more help (LP: #269323)
+  * Fixed regression on on --firstboot and --firstlogin (LP: #268957)
   
   [Soren Hansen <soren@ubuntu.com>]
   * Re-add VMWare support. (LP: #268140) 

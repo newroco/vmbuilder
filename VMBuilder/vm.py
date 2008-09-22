@@ -139,8 +139,8 @@ class VM(object):
         self.register_setting_group(group)
 
         group = self.setting_group('Scripts')
-        group.add_option('--firstboot', metavar='PATH', help='Specify a script that will be copied into the guest and executed the first time the machine boots.  This script must not be interactive.')
-        group.add_option('--firstlogin', metavar='PATH', help='Specify a script that will be copied into the guest and will be executed the first time the user logs in. This script can be interactive.')
+        group.add_option('--firstboot', metavar='PATH', default='', help='Specify a script that will be copied into the guest and executed the first time the machine boots.  This script must not be interactive.')
+        group.add_option('--firstlogin', metavar='PATH', default='', help='Specify a script that will be copied into the guest and will be executed the first time the user logs in. This script can be interactive.')
         self.register_setting_group(group)
 
     def add_disk(self, *args, **kwargs):
@@ -473,6 +473,8 @@ class _MyOptParser(optparse.OptionParser):
             result.append(formatter.format_heading(_("Arguments")))
             formatter.indent()
             result.append(self.format_arg_help(formatter))
+            result.append("\n")
+            result.append("Hypervisor and distro specific help available when arguments are supplied.\n")
             result.append("\n")
             formatter.dedent()
         result.append(formatter.format_heading(_("Options")))
