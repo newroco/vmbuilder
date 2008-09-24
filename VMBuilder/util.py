@@ -24,7 +24,6 @@ import os.path
 import pwd
 import subprocess
 import sys
-from   Cheetah.Template import Template
 from   exception        import VMBuilderException, VMBuilderUserError
 
 def run_cmd(*argv, **kwargs):
@@ -106,18 +105,19 @@ def fix_ownership(files):
     for file in files:
         give_to_caller(file)
 
-def template_base():
-    if os.path.exists('VMBuilder') and os.path.isdir('VMBuilder'):
-        return 'VMBuilder/plugins'
-    else:
-        return '/etc/vmbuilder'
-
 def render_template(plugin, vm, tmplname, context=None):
+    # Import here to avoid having to build-dep on python-cheetah
+    from   Cheetah.Template import Template
     searchList = []
     if context:
         searchList.append(context)
     searchList.append(vm)
-    tmplfile = '%s/%s/templates/%s.tmpl' % (template_base(), plugin, tmplname)
+
+    if os.path.exists('VMBuilder') and os.path.isdir('VMBuilder'):
+        template_dir = 'VMBuilder/plugins/%s/templates' % plugin
+    else:
+        template_dir = '/etc/vmbuilder/%s' % plugin
+    tmplfile = '%s/%s.tmpl' % (template_dir, tmplname)
     t = Template(file=tmplfile, searchList=searchList)
     output = t.respond()
     logging.debug('Output from template \'%s\': %s' % (tmplfile, output))
