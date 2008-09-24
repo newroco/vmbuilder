@@ -1,17 +1,11 @@
-vm-builder (0.8.1-0ubuntu3) intrepid; urgency=low
+vm-builder (0.9-0ubuntu1) intrepid; urgency=low
 
   [Nicolas Barcet <nicolas.barcet@ubuntu.com>]
   * Fixed regression on --ip and friends (LP: #268920)
   * Added missing dependancy on dpkg-dev (LP: #270324)
   * Fixed regression on --part (LP: #268718)
   
-  [Soren Hansen <soren@ubuntu.com>]
-  * Re-add VMWare support. (LP: #268140) 
-  * Fixed sources.list generation for Ubuntu. (LP: #268155)
-  * Added configuration file handling. (LP: #268170)
-  * Fix up Xen support (device and configuration file creation). (LP: #268142)
-
- -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Thu, 11 Sep 2008 23:45:02 +0200
+ -- Soren Hansen <soren@ubuntu.com>  Wed, 24 Sep 2008 09:58:35 +0200
 
 vm-builder (0.8.1-0ubuntu2) intrepid; urgency=low
 
