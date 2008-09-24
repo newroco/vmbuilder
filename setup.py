@@ -3,7 +3,7 @@ import VMBuilder.plugins
 from glob import glob
 
 setup(name='VMBuilder',
-      version='0.8.1',
+      version='0.9',
       description='Uncomplicated VM Builder',
       author='Soren Hansen',
       author_email='soren@canonical.com',
