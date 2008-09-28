@@ -48,7 +48,7 @@ class firstscripts(Plugin):
                 raise VMBuilderUserError('The path to the first-login script is invalid: %s.  Make sure you are providing a full path.' % self.vm.firstlogin)
         
 
-    def install(self):
+    def install_plugin(self):
         '''This is the install event for plugins
         '''
 

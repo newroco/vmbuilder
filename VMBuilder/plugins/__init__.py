@@ -50,7 +50,7 @@ class Plugin(object):
         """
         pass
 
-    def install(self):
+    def install_plugin(self):
         """This is called just before the local dirs are converted into images
         """
         pass
