@@ -404,6 +404,8 @@ class VM(object):
 
             self.install()
 
+            self.call_hooks('install')
+
             self.umount_partitions()
 
             self.hypervisor.finalize()

@@ -47,7 +47,10 @@ class firstscripts(Plugin):
                 raise VMBuilderUserError('The path to the first-login script is invalid: %s.  Make sure you are providing a full path.' % self.vm.firstlogin)
         
 
-    def deploy(self):
+    def install(self):
+        '''This is the install event for plugins
+        '''
+
         logging.debug("Installing scripts")
         if (self.vm.firstboot != ""):
             fd = open(self.vm.firstboot, 'r')
@@ -71,11 +74,20 @@ class firstscripts(Plugin):
 
         return True
 
+    def deploy(self):
+        '''This is the deploy even for plugins
+        We do not use this event here
+        '''
+        return True
+
     def install_file(self, path, contents):
-        fullpath = '%s%s' % (self.destdir, path)
+        fullpath = '%s%s' % (self.vm.installdir, path)
         fp = open(fullpath, 'w')
         fp.write(contents)
         fp.close()
         return fullpath
+
+    def install_from_template(self, path, tmplname, context=None):
+        return self.install_file(path, VMBuilder.util.render_template('ubuntu', self.vm, tmplname, context))
 
 register_plugin(firstscripts)
