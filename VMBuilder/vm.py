@@ -138,11 +138,6 @@ class VM(object):
         group.add_option('--dns', metavar='ADDRESS', help='DNS address in dotted form [default: based on ip setting (first valid address in the network)] Ignored if --ip is not specified.')
         self.register_setting_group(group)
 
-        group = self.setting_group('Scripts')
-        group.add_option('--firstboot', metavar='PATH', default='', help='Specify a script that will be copied into the guest and executed the first time the machine boots.  This script must not be interactive.')
-        group.add_option('--firstlogin', metavar='PATH', default='', help='Specify a script that will be copied into the guest and will be executed the first time the user logs in. This script can be interactive.')
-        self.register_setting_group(group)
-
     def add_disk(self, *args, **kwargs):
         """Adds a disk image to the virtual machine"""
         disk = Disk(self, *args, **kwargs)
@@ -293,19 +288,6 @@ class VM(object):
             logging.debug("gateway: %s" % self.gw)
             logging.debug("dns: %s" % self.dns)
 
-    def check_scripts(self):
-        """
-        is called to validate that the first-boot and first-login script are present if provided.
-        """
-
-        logging.debug("check script")
-        if (self.firstboot != ''):
-            if not(os.path.isfile(self.firstboot)):
-                raise VMBuilderUserError('The path to the first-boot script is invalid: %s. Make sure you are providing a full path.' % self.firstboot)
-        if (self.firstlogin != ''):
-            if not(os.path.isfile(self.firstlogin)):
-                raise VMBuilderUserError('The path to the first-login script is invalid: %s.  Make sure you are providing a full path.' % self.firstlogin)
-
     def create_directory_structure(self):
         """Creates the directory structure where we'll be doing all the work
 
@@ -389,7 +371,6 @@ class VM(object):
 
     def preflight_check(self):
         self.ip_defaults()
-        self.check_scripts()
         self.call_hooks('preflight_check')
 
     def create(self):

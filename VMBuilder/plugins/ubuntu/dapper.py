@@ -84,9 +84,6 @@ class Dapper(suite.Suite):
         self.create_initial_user()
 
         self.install_authorized_keys()
-        
-        logging.debug("Installing scripts")
-        self.install_scripts()
 
         logging.debug("Unmounting volatile lrm filesystems")
         self.unmount_volatile()
@@ -213,24 +210,4 @@ class Dapper(suite.Suite):
 
     def run_in_target(self, *args, **kwargs):
         return run_cmd('chroot', self.destdir, *args, **kwargs)
-
-    def install_scripts(self):
-        if (self.vm.firstboot != ""):
-            fd = open(self.vm.firstboot, 'r')
-            content = fd.read()
-            fd.close()
-            self.install_file('/root/firstboot.sh', content)
-            os.chmod('%s/root/firstboot.sh' % self.destdir, 700)
-            os.rename('%s/etc/rc.local' % self.destdir, '%s/etc/rc.local.orig' % self.destdir)
-            self.install_from_template('/etc/rc.local', 'firstbootrc')
-            os.chmod('%s/etc/rc.local' % self.destdir, 755)
-
-        if (self.vm.firstlogin != ""):
-            fd = open(self.vm.firstlogin,'r')
-            content = fd.read()
-            fd.close()
-            self.install_file('/root/firstlogin.sh', content)
-            os.chmod('%s/root/firstlogin.sh' % self.destdir, 755)
-            os.rename('%s/etc/bash.bashrc' % self.destdir, '%s/etc/bash.bashrc.orig' % self.destdir)
-            self.install_from_template('/etc/bash.bashrc', 'firstloginrc')
 
