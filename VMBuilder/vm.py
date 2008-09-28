@@ -360,6 +360,8 @@ class VM(object):
 
         logging.info("Installing guest operating system. This might take some time...")
         self.distro.install(self.installdir)
+
+        self.call_hooks('install')
     
         if not self.in_place:
             logging.info("Copying to disk images")
@@ -403,8 +405,6 @@ class VM(object):
             self.mount_partitions()
 
             self.install()
-
-            self.call_hooks('install')
 
             self.umount_partitions()
 

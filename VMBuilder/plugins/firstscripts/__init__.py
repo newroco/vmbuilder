@@ -22,6 +22,7 @@ from VMBuilder.util import run_cmd
 
 import os
 import logging
+import VMBuilder
 
 class firstscripts(Plugin):
     """
