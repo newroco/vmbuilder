@@ -21,11 +21,12 @@ from VMBuilder import register_plugin, Plugin, VMBuilderUserError
 from VMBuilder.util import run_cmd
 
 import os
+import logging
 
 class firstscripts(Plugin):
-"""
-Plugin to provide --firstboot and --firstlogin scripts capabilities
-"""
+    """
+    Plugin to provide --firstboot and --firstlogin scripts capabilities
+    """
     name = 'First-Scripts plugin'
 
     def register_options(self):
@@ -39,11 +40,11 @@ Plugin to provide --firstboot and --firstlogin scripts capabilities
         
         if (self.vm.firstboot != ''):
             if not(os.path.isfile(self.vm.firstboot)):
-                raise VMBuilderUserError('The path to the first-boot script is invalid: %s. Make sure you are providing a full path.' % self.firstboot)
+                raise VMBuilderUserError('The path to the first-boot script is invalid: %s. Make sure you are providing a full path.' % self.vm.firstboot)
                 
         if (self.vm.firstlogin != ''):
             if not(os.path.isfile(self.vm.firstlogin)):
-                raise VMBuilderUserError('The path to the first-login script is invalid: %s.  Make sure you are providing a full path.' % self.firstlogin)
+                raise VMBuilderUserError('The path to the first-login script is invalid: %s.  Make sure you are providing a full path.' % self.vm.firstlogin)
         
 
     def deploy(self):
