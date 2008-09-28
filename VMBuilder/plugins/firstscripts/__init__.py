@@ -71,4 +71,11 @@ class firstscripts(Plugin):
 
         return True
 
+    def install_file(self, path, contents):
+        fullpath = '%s%s' % (self.destdir, path)
+        fp = open(fullpath, 'w')
+        fp.write(contents)
+        fp.close()
+        return fullpath
+
 register_plugin(firstscripts)
