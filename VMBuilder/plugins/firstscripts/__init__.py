@@ -54,18 +54,18 @@ class firstscripts(Plugin):
             content = fd.read()
             fd.close()
             self.install_file('/root/firstboot.sh', content)
-            os.chmod('%s/root/firstboot.sh' % self.destdir, 700)
-            os.rename('%s/etc/rc.local' % self.destdir, '%s/etc/rc.local.orig' % self.destdir)
+            os.chmod('%s/root/firstboot.sh' % self.vm.installdir, 700)
+            os.rename('%s/etc/rc.local' % self.vm.installdir, '%s/etc/rc.local.orig' % self.vm.installdir)
             self.install_from_template('/etc/rc.local', 'firstbootrc')
-            os.chmod('%s/etc/rc.local' % self.destdir, 755)
+            os.chmod('%s/etc/rc.local' % self.vm.installdir, 755)
 
         if (self.vm.firstlogin != ""):
             fd = open(self.vm.firstlogin,'r')
             content = fd.read()
             fd.close()
             self.install_file('/root/firstlogin.sh', content)
-            os.chmod('%s/root/firstlogin.sh' % self.destdir, 755)
-            os.rename('%s/etc/bash.bashrc' % self.destdir, '%s/etc/bash.bashrc.orig' % self.destdir)
+            os.chmod('%s/root/firstlogin.sh' % self.vm.installdir, 755)
+            os.rename('%s/etc/bash.bashrc' % self.vm.installdir, '%s/etc/bash.bashrc.orig' % self.vm.installdir)
             self.install_from_template('/etc/bash.bashrc', 'firstloginrc')
 
 
