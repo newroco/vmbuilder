@@ -129,7 +129,7 @@ class VM(object):
 
         group = self.setting_group('Network related options')
         domainname = '.'.join(socket.gethostbyname_ex(socket.gethostname())[0].split('.')[1:])
-        group.add_option('--domain', default=domainname, help='Set DOMAIN as the domain name of the guest. Default: The domain of the machine running this script: %default.')
+        group.add_option('--domain', metavar='DOMAIN', default=domainname, help='Set DOMAIN as the domain name of the guest. Default: The domain of the machine running this script: %default.')
         group.add_option('--ip', metavar='ADDRESS', default='dhcp', help='IP address in dotted form [default: %default]')
         group.add_option('--mask', metavar='VALUE', help='IP mask in dotted form [default: based on ip setting]. Ignored if --ip is not specified.')
         group.add_option('--net', metavar='ADDRESS', help='IP net address in dotted form [default: based on ip setting]. Ignored if --ip is not specified.')
@@ -288,7 +288,6 @@ class VM(object):
             logging.debug("gateway: %s" % self.gw)
             logging.debug("dns: %s" % self.dns)
 
-
     def create_directory_structure(self):
         """Creates the directory structure where we'll be doing all the work
 
@@ -361,6 +360,8 @@ class VM(object):
 
         logging.info("Installing guest operating system. This might take some time...")
         self.distro.install(self.installdir)
+
+        self.call_hooks('post_install')
     
         if not self.in_place:
             logging.info("Copying to disk images")
@@ -373,6 +374,18 @@ class VM(object):
     def preflight_check(self):
         self.ip_defaults()
         self.call_hooks('preflight_check')
+
+    def install_file(self, path, contents=None, source=None, mode=None):
+        fullpath = '%s%s' % (self.installdir, path)
+        if source and not contents:
+            shutil.copy(path, fullpath) 
+        else:
+            fp = open(fullpath, 'w')
+            fp.write(contents)
+            fp.close()
+        if mode:
+            os.chmod(fullpath, mode)
+        return fullpath
 
     def create(self):
         """
@@ -398,6 +411,7 @@ class VM(object):
     
         finished = False
         try:
+            self.preflight_check()
             self.create_directory_structure()
 
             disk.create_partitions(self)
@@ -456,6 +470,8 @@ class _MyOptParser(optparse.OptionParser):
             result.append(formatter.format_heading(_("Arguments")))
             formatter.indent()
             result.append(self.format_arg_help(formatter))
+            result.append("\n")
+            result.append("Hypervisor and distro specific help available when arguments are supplied.\n")
             result.append("\n")
             formatter.dedent()
         result.append(formatter.format_heading(_("Options")))

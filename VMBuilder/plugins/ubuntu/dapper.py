@@ -118,7 +118,7 @@ class Dapper(suite.Suite):
         return 'linux-image-%s' % (self.vm.flavour or self.default_flavour[self.vm.arch],)
 
     def config_network(self):
-        self.install_file('/etc/hostname', self.vm.hostname)
+        self.vm.install_file('/etc/hostname', self.vm.hostname)
         self.install_from_template('/etc/hosts', 'etc_hosts', { 'hostname' : self.vm.hostname, 'domain' : self.vm.domain }) 
         self.install_from_template('/etc/network/interfaces', 'interfaces')
 
@@ -196,17 +196,9 @@ class Dapper(suite.Suite):
             self.run_in_target('mknod', '/dev/xvda3', 'b', '202', '3')
             self.run_in_target('mknod', '/dev/xvc0', 'c', '204', '191')
 
-    def install_from_template(self, path, tmplname, context=None):
-        return self.install_file(path, VMBuilder.util.render_template('ubuntu', self.vm, tmplname, context))
+    def install_from_template(self, *args, **kwargs):
+        return self.vm.distro.install_from_template(*args, **kwargs)
         
-    def install_file(self, path, contents):
-        fullpath = '%s%s' % (self.destdir, path)
-        fp = open(fullpath, 'w')
-        fp.write(contents)
-        fp.close()
-        return fullpath
-
-
     def run_in_target(self, *args, **kwargs):
         return run_cmd('chroot', self.destdir, *args, **kwargs)
 

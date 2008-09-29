@@ -18,6 +18,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import os
+import VMBuilder
 
 def load_plugins():
     for plugin in find_plugins():
@@ -44,11 +45,26 @@ class Plugin(object):
         pass
 
     def preflight_check(self):
-        """Override this method with checks for anything that might cause the VM creation to fail
+        """
+        Override this method with checks for anything that might cause the VM creation to fail
         
         raise an exception if you can see already that this won't work
         """
         pass
 
+    def post_install(self):
+        """
+        This is called just after the distro is installed, before it gets copied to the fs images.
+        """
+        pass
+
     def deploy(self):
+        """
+        Perform deployment of the VM.
+
+        If True is returned, no further deployment will be done.
+        """
         return False
+
+    def install_from_template(self, path, tmplname, context=None, mode=None):
+        return self.vm.install_file(path, VMBuilder.util.render_template(self.__module__.split('.')[2], self.vm, tmplname, context), mode=mode)
