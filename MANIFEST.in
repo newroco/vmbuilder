@@ -1,0 +1,1 @@
+include VMBuilder/plugins/*/templates/*.tmpl
