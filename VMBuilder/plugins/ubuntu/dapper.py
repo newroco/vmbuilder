@@ -134,7 +134,7 @@ class Dapper(suite.Suite):
         cmd = ['apt-get', 'install', '-y', '--force-yes']
         cmd += self.vm.addpkg or []
         cmd += ['%s-' % pkg for pkg in self.vm.removepkg or []]
-        self.run_in_target(*cmd)
+        self.run_in_target(env={ 'DEBIAN_FRONTEND' : 'noninteractive' }, *cmd)
         
     def unmount_volatile(self):
         for mntpnt in glob.glob('%s/lib/modules/*/volatile' % self.destdir):
