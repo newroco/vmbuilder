@@ -38,17 +38,16 @@ class Firstscripts(Plugin):
         self.vm.register_setting_group(group)
 
     def preflight_check(self):
-        logging.debug("Checking if firstboot script %s exists" % (self.vm.firstboot,))
         
-        if (self.vm.firstboot != ''):
+        if self.vm.firstboot:
+            logging.debug("Checking if firstboot script %s exists" % (self.vm.firstboot,))
             if not(os.path.isfile(self.vm.firstboot)):
                 raise VMBuilderUserError('The path to the first-boot script is invalid: %s. Make sure you are providing a full path.' % self.vm.firstboot)
                 
-        logging.debug("Checking if first login script %s exists" % (self.vm.firstlogin,))
-        if (self.vm.firstlogin != ''):
+        if self.vm.firstlogin:
+            logging.debug("Checking if first login script %s exists" % (self.vm.firstlogin,))
             if not(os.path.isfile(self.vm.firstlogin)):
                 raise VMBuilderUserError('The path to the first-login script is invalid: %s.  Make sure you are providing a full path.' % self.vm.firstlogin)
-        
 
     def post_install(self):
         logging.debug("Installing firstboot script %s" % (self.vm.firstboot,))
