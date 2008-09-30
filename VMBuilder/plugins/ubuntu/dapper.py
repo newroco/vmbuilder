@@ -123,7 +123,7 @@ class Dapper(suite.Suite):
         self.install_from_template('/etc/network/interfaces', 'interfaces')
 
         #fix bug lp:276365
-        os.mkdir('%s/var/run/nettork' % self.destdir, '755')
+        os.mkdir('%s/var/run/nettork' % self.destdir, 755)
 
     def unprevent_daemons_starting(self):
         os.unlink('%s/usr/sbin/policy-rc.d' % self.destdir)
