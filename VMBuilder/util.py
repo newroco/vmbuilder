@@ -32,30 +32,36 @@ def run_cmd(*argv, **kwargs):
 
     Locale is reset to C to make parsing error messages possible.
 
-    @type  stdin: a string
-    @param stdin: input to provide to the process on stdin
+    @type  stdin: string
+    @param stdin: input to provide to the process on stdin. If None, process'
+                  stdin will be attached to /dev/null
     @type  ignore_fail: boolean
     @param ignore_fail: If True, a non-zero exit code from the command will not 
                         cause an exception to be raised.
+    @type  env: dict
+    @param env: Dictionary of extra environment variables to set in the new process
 
     @rtype:  string
     @return: string containing the stdout of the process
     """
 
-    stdin= kwargs.get('stdin', None)
+    env = kwargs.get('env', {})
+    stdin = kwargs.get('stdin', None)
     ignore_fail = kwargs.get('ignore_fail', False)
     stdout = stderr = ''
     args = [str(arg) for arg in argv]
     logging.debug(args.__repr__())
-    if stdin is not None:
+    if stdin:
+        logging.debug('stdin was set and it was a string: %s' % (stdin,))
         stdin_arg = subprocess.PIPE
     else:
-        stdin_arg = sys.stdin
-    env = os.environ
-    env['LANG'] = 'C'
-    env['LC_ALL'] = 'C'
-    proc = subprocess.Popen(args, True, stdin=stdin_arg, stderr=subprocess.PIPE, stdout=subprocess.PIPE, env=env)
-    if stdin is not None:
+        stdin_arg = file('/dev/null', 'w')
+    proc_env = os.environ
+    proc_env['LANG'] = 'C'
+    proc_env['LC_ALL'] = 'C'
+    proc_env.update(env)
+    proc = subprocess.Popen(args, True, stdin=stdin_arg, stderr=subprocess.PIPE, stdout=subprocess.PIPE, env=proc_env)
+    if stdin:
         proc.stdin.write(stdin)
         proc.stdin.close()
     for buf in proc.stderr:
