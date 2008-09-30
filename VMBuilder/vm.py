@@ -378,7 +378,7 @@ class VM(object):
     def install_file(self, path, contents=None, source=None, mode=None):
         fullpath = '%s%s' % (self.installdir, path)
         if source and not contents:
-            shutil.copy(path, fullpath) 
+            shutil.copy(source, fullpath) 
         else:
             fp = open(fullpath, 'w')
             fp.write(contents)
