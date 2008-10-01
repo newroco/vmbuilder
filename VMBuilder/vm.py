@@ -116,12 +116,13 @@ class VM(object):
         return optparse.OptionGroup(self.optparser, *args, **kwargs)
 
     def _register_base_settings(self):
-        self.register_setting('-c', dest='altconfig', default='~/.ubuntu-vm-builder', help='Specify a optional configuration file [default: %default]')
+        self.register_setting('-c', dest='altconfig', default='~/.vmbuilder.cfg', help='Specify a optional configuration file [default: %default]')
         self.register_setting('-d', '--dest', help='Specify the destination directory. [default: <hypervisor>-<distro>]')
         self.register_setting('--debug', action='callback', callback=log.set_verbosity, help='Show debug information')
         self.register_setting('-v', '--verbose', action='callback', callback=log.set_verbosity, help='Show progress information')
         self.register_setting('-q', '--quiet', action='callback', callback=log.set_verbosity, help='Silent operation')
         self.register_setting('-t', '--tmp', default=os.environ.get('TMPDIR', '/tmp'), help='Use TMP as temporary working space for image generation. Defaults to $TMPDIR if it is defined or /tmp otherwise. [default: %default]')
+        self.register_setting('--templates', metavar='DIR', help='Prepend DIR to template search path.')
         self.register_setting('-o', '--overwrite', action='store_true', default=False, help='Force overwrite of destination directory if it already exist. [default: %default]')
         self.register_setting('--in-place', action='store_true', default=False, help='Install directly into the filesystem images. This is needed if your \$TMPDIR is nodev and/or nosuid, but will result in slightly larger file system images.')
         self.register_setting('--tmpfs', metavar="OPTS", help='Use a tmpfs as the working directory, specifying its size or "-" to use tmpfs default (suid,dev,size=1G).')

@@ -119,13 +119,21 @@ def render_template(plugin, vm, tmplname, context=None):
         searchList.append(context)
     searchList.append(vm)
 
-    if os.path.exists('VMBuilder') and os.path.isdir('VMBuilder'):
-        template_dir = 'VMBuilder/plugins/%s/templates' % plugin
-    else:
-        template_dir = '/etc/vmbuilder/%s' % plugin
-    tmplfile = '%s/%s.tmpl' % (template_dir, tmplname)
-    t = Template(file=tmplfile, searchList=searchList)
-    output = t.respond()
-    logging.debug('Output from template \'%s\': %s' % (tmplfile, output))
-    return output
- 
+    tmpldirs = ['VMBuilder/plugins/%s/templates',
+                os.path.expanduser('~/.vmbuilder/%s'),
+                '/etc/vmbuilder/%s']
+
+    if vm.templates:
+        tmpldirs.prepend('%s/%%s' % vm.templates)
+    
+    tmpldirs = [dir % plugin for dir in tmpldirs]
+
+    for dir in tmpldirs:
+        tmplfile = '%s/%s.tmpl' % (dir, tmplname)
+        if os.path.exists(tmplfile):
+            t = Template(file=tmplfile, searchList=searchList)
+            output = t.respond()
+            logging.debug('Output from template \'%s\': %s' % (tmplfile, output))
+            return output
+
+    raise VMBuilderException('Template %s.tmpl not found in any of %s' % (tmplname, ', '.join(tmpldirs)))
