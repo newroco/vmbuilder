@@ -178,6 +178,10 @@ class Disk(object):
         @rtype:  string
         @return: the name of the converted image
         """
+        if self.preallocated:
+            # We don't convert preallocated disk images. That would be silly.
+            return self.filename
+
         filename = os.path.basename(self.filename)
         if '.' in filename:
             filename = filename[:filename.rindex('.')]
