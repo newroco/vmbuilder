@@ -1,10 +1,14 @@
-vm-builder (0.9-0ubuntu2) intrepid; urgency=low
+vm-builder (0.9-0ubuntu2) UNRELEASED; urgency=low
 
+  [ Nicolas Barcet ]
   [Nicolas Barcet <nicolas.barcet@ubuntu.com>]
   * Added hint for more help (LP: #269323)
   * Added firstscripts plugin to fix regression on on --firstboot and --firstlogin (LP: #268957)
 
- -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Thu, 28 Sep 2008 23:45:02 +0200
+  [ Soren Hansen ]
+  * Include ubuntu-vm-builder package.
+
+ -- Soren Hansen <soren@ubuntu.com>  Thu, 02 Oct 2008 22:39:16 +0200
 
 vm-builder (0.9-0ubuntu1) intrepid; urgency=low
 
