@@ -47,6 +47,11 @@ class EC2(Plugin):
         if not self.vm.ec2_user:
             raise VMBuilderUserError('When building for EC2 you must provide your EC2 user ID (your AWS account number, not your AWS access key ID)')
 
+        try:
+            run_cmd('ec2-bundle-image')
+        except VMBuilderException, e:
+            raise VMBuilderUserError('You need to have the Amazon EC2 AMI tools installed')
+
         if not self.vm.addpkg:
              self.vm.addpkg = []
 
@@ -56,6 +61,7 @@ class EC2(Plugin):
         if not self.vm.ec2:
             return False
         bundle_cmdline = ['ec2-bundle-image', '--image', self.vm.filesystems[0].filename, '--cert', self.vm.ec2_cert, '--privatekey', self.vm.ec2_key, '--user', self.vm.ec2_user, '--prefix', self.vm.hostname, '-r', ['i386', 'x86_64'][self.vm.arch == 'amd64'], '-d', self.vm.workdir, '--kernel', 'aki-a71cf9ce', '--ramdisk', 'ari-a51cf9cc']
+
         run_cmd(*bundle_cmdline)
 
         upload_cmdline = ['ec2-upload-bundle', '--manifest', '%s/%s.manifest.xml' % (self.vm.workdir, self.vm.hostname), '--bucket', self.vm.ec2_bucket, '--access-key', self.vm.ec2_access_key, '--secret-key', self.vm.ec2_secret_key]
