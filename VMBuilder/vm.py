@@ -236,7 +236,10 @@ class VM(object):
             for (k,v) in settings.__dict__.iteritems():
                 confvalue = self.get_conf_value(k)
                 if confvalue:
-                    setattr(self, k, confvalue)
+                    if self.optparser.get_option('--%s' % k).action == 'append':
+                        setattr(self, k, confvalue.split(', '))
+                    else:
+                        setattr(self, k, confvalue)
                 else:
                     setattr(self, k, v)
 
