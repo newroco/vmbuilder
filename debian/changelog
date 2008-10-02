@@ -2,9 +2,10 @@ vm-builder (0.9-0ubuntu2) intrepid; urgency=low
 
   [Nicolas Barcet <nicolas.barcet@ubuntu.com>]
   * Added hint for more help (LP: #269323)
-  * Added firstscripts plugin to fix regression on on --firstboot and --firstlogin (LP: #268957)
+  * Added firstscripts plugin to fix regression on --firstboot and --firstlogin (LP: #268957)
+  * Added postinst plugin to fix regression on --exec and add --copy (LP: #268955) 
 
- -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Thu, 28 Sep 2008 23:45:02 +0200
+ -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Thu, 02 Oct 2008 20:02:02 +0200
 
 vm-builder (0.9-0ubuntu1) intrepid; urgency=low
 
