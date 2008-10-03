@@ -7,6 +7,7 @@ vm-builder (0.9-0ubuntu2) UNRELEASED; urgency=low
 
   [ Soren Hansen ]
   * Include ubuntu-vm-builder package.
+  * Read additional config file given by '-c'. (LP: #276813)
 
  -- Soren Hansen <soren@ubuntu.com>  Fri, 03 Oct 2008 12:19:27 +0200
 

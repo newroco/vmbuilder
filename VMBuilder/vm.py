@@ -115,8 +115,12 @@ class VM(object):
     def setting_group(self, *args, **kwargs):
         return optparse.OptionGroup(self.optparser, *args, **kwargs)
 
+    def load_config(self, option, opt_str, value, parser):
+        logging.debug('Reading additional config file: %s' % value)
+        self.confparser.read(value)
+
     def _register_base_settings(self):
-        self.register_setting('-c', dest='altconfig', default='~/.vmbuilder.cfg', help='Specify a optional configuration file [default: %default]')
+        self.register_setting('-c', action='callback', type='string', callback=self.load_config, help='Specify a additional configuration file')
         self.register_setting('-d', '--dest', help='Specify the destination directory. [default: <hypervisor>-<distro>]')
         self.register_setting('--debug', action='callback', callback=log.set_verbosity, help='Show debug information')
         self.register_setting('-v', '--verbose', action='callback', callback=log.set_verbosity, help='Show progress information')
