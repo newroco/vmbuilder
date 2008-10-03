@@ -116,6 +116,27 @@ Gateway (router) address in dotted form [default: based on ip setting (first val
 DNS address in dotted form [default: based on ip setting (first valid address in the network)] 
 .RE
 
+.SS Post install actions:
+.TP
+.B \-\-copy FILE         
+Read 'source dest' lines from FILE, copying source files from host to dest in the guest's file system.
+.TP
+.B \-\-execscript SCRIPT, \-\-exec SCRIPT
+Run SCRIPT after distro installation finishes. Script will be called with the guest's chroot as first argument, so you can use 'chroot $1 <cmd>' to run code in the virtual machine.
+
+.SS libvirt integration:
+.TP
+.B \-\-libvirt=URI
+Add VM to given URI
+
+.SS Scripts:
+.TP
+.Bi \-\-firstboot PATH    
+Specify a script that will be copied into the guest and executed the first time the machine boots.  This script must not be interactive.
+.TP
+.B \-\-firstlogin PATH   
+Specify a script that will be copied into the guest and will be executed the first time the user logs in.  This script can be interactive.
+
 .SH DEVELOPMENT
 .B vmbuilder
 is a python program that offers a very simple mechanism to increase functionalities, interfaces, support other distribution and hypervisors. Feel free to join the project at https://launchpad.net/vmbuilder
