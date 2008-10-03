@@ -55,7 +55,7 @@ class CLI(VMBuilder.Frontend):
 
     def set_usage(self, vm):
         vm.optparser.set_usage('%prog hypervisor distro [options]')
-        vm.optparser.arg_help = (('hypervisor', self.hypervisor_help), ('distro', self.distro_help))
+        vm.optparser.arg_help = (('hypervisor', vm.hypervisor_help), ('distro', vm.distro_help))
 
     def handle_args(self, vm, args):
         if len(args) < 2:
