@@ -5,8 +5,9 @@ vmbuilder \- builds virtual machines from the command line
 .B vmbuilder <hypervisor> <distro> 
 [\fIOPTIONS\fR]...
 .TP
-  hypervisor            Hypervisor. Valid options: xen kvm vmw6 vmserver
-  distro                Distro. Valid options: ubuntu
+<hypervisor>  Hypervisor image format. Valid options: xen kvm vmw6 vmserver
+.TP
+<distro>      Distribution. Valid options: ubuntu
 .SH DESCRIPTION
 This manual page documents the
 .B vmbuilder
@@ -26,7 +27,7 @@ for a full options list.
 show this help message and exit
 .TP
 .B \-c ALTCONFIG          
-Specify an optional configuration file [default:~/.vmbuilder.cfg].
+Specify the path to an optional configuration file [default:~/.vmbuilder.cfg].
 .TP
 .B \-d DEST, \-\-dest DEST  
 Specify the destination directory. [default:<hypervisor>-<distro>]
@@ -117,17 +118,19 @@ DNS address in dotted form [default: based on ip setting (first valid address in
 
 .SH DEVELOPMENT
 .B vmbuilder
-offer a very simple mechanism to increase functionalities, interfaces, support other distribution and hypervisors. Feel free to join the project at https://launchpad.net/vmbuilder
+is a python program that offers a very simple mechanism to increase functionalities, interfaces, support other distribution and hypervisors. Feel free to join the project at https://launchpad.net/vmbuilder
 
 .SH COMPATIBILTY
 .B vmbuilder
-offers a command line interface compatibility with its ancestor ubuntu-vm-builder.  This compatibility does not include template or configration files.
+includes a command line interface compatibility with its ancestor
+.B ubuntu-vm-builder.
+This compatibility does not include template or configration files.
 
 .SH SUPPORT
 Feel free to join #ubuntu-virt on freenode to get some help or just say hello.
 
 .SH SEE ALSO
-apt-proxy, apt-mirror
+apt-proxy(8), apt-mirror(8)
 
 .SH AUTHOR
 vmbuilder is Copyright (C) 2007-2008 Canonical Ltd. and written by Soren Hansen <soren@canonical.com> with the help of others, see /usr/share/doc/python-vm-builder/AUTHORS for more details.
