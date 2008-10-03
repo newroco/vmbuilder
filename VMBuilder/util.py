@@ -22,10 +22,52 @@ import logging
 import os
 import os.path
 import pwd
+import select
 import subprocess
 import sys
+import time
 from   exception        import VMBuilderException, VMBuilderUserError
 
+class NonBufferedFile():
+    def __init__(self, file):
+        self.file = file
+        self.buf = ''
+
+    def __getattr__(self, attr):
+        if attr == 'closed':
+            return self.file.closed
+        else:
+            raise AttributeError()
+
+    def __iter__(self):
+        return self
+
+    def read_will_block(self):
+        (ins, foo, bar) = select.select([self.file], [], [], 1)
+
+        if self.file not in ins:
+            return True
+        return False
+
+    def next(self):
+        if self.file.closed:
+            raise StopIteration()
+
+        while not self.read_will_block():
+            c = self.file.read(1)
+            if not c:
+                self.file.close()
+                ret = self.buf + c
+                self.buf = ''
+                return ret
+            else:
+                self.buf += c
+            if self.buf.endswith('\n'):
+                ret = self.buf
+                self.buf = ''
+                return ret
+        raise StopIteration()
+    
 def run_cmd(*argv, **kwargs):
     """
     Runs a command.
@@ -60,19 +102,26 @@ def run_cmd(*argv, **kwargs):
     proc_env['LANG'] = 'C'
     proc_env['LC_ALL'] = 'C'
     proc_env.update(env)
-    proc = subprocess.Popen(args, True, stdin=stdin_arg, stderr=subprocess.PIPE, stdout=subprocess.PIPE, env=proc_env)
+    proc = subprocess.Popen(args, stdin=stdin_arg, stderr=subprocess.PIPE, stdout=subprocess.PIPE, env=proc_env)
+
     if stdin:
         proc.stdin.write(stdin)
         proc.stdin.close()
-    for buf in proc.stderr:
-        if ignore_fail:
+
+    mystdout = NonBufferedFile(proc.stdout)
+    mystderr = NonBufferedFile(proc.stderr)
+
+    while not (mystdout.closed and mystderr.closed):
+		# Block until either of them has something to offer
+        select.select(filter(lambda x:not x.closed, [mystdout.file, mystderr.file]), [], [])
+        for buf in mystderr:
+            stderr += buf
+            (ignore_fail and logging.debug or logging.info)(buf.rstrip())
+
+        for buf in mystdout:
             logging.debug(buf.rstrip())
-        else:
-            logging.info(buf.rstrip())
-        stderr += buf
-    for buf in proc.stdout:
-        logging.debug(buf.rstrip())
-        stdout += buf
+            stdout += buf
+
     status = proc.wait()
     if not ignore_fail and status != 0:
         raise VMBuilderException, "Process (%s) returned %d. stdout: %s, stderr: %s" % (args.__repr__(), status, stdout, stderr)
