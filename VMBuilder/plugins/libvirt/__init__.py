@@ -38,7 +38,7 @@ class Libvirt(Plugin):
         import libvirt
 
         self.conn = libvirt.open(self.vm.libvirt)
-        if self.vm.hostname in self.all_domains():
+        if self.vm.hostname in self.all_domains() and not self.vm.overwrite:
             raise VMBuilderUserError('Domain %s already exists at %s' % (self.vm.hostname, self.vm.libvirt))
 
     def deploy(self):
@@ -48,7 +48,7 @@ class Libvirt(Plugin):
 
         vmxml = VMBuilder.util.render_template('libvirt', self.vm, 'libvirtxml')
 
-        if self.vm.hostname in self.all_domains():
+        if self.vm.hostname in self.all_domains() and not self.vm.overwrite:
             raise VMBuilderUserError('Domain %s already exists at %s' % (self.vm.hostname, self.vm.libvirt))
         else:
             self.conn.defineXML(vmxml)
