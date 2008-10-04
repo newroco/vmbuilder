@@ -57,9 +57,10 @@ class NonBufferedFile():
             c = self.file.read(1)
             if not c:
                 self.file.close()
-                ret = self.buf + c
-                self.buf = ''
-                return ret
+                if self.buf:
+                    return self.buf
+                else:
+                    raise StopIteration
             else:
                 self.buf += c
             if self.buf.endswith('\n'):
@@ -113,7 +114,7 @@ def run_cmd(*argv, **kwargs):
 
     while not (mystdout.closed and mystderr.closed):
 		# Block until either of them has something to offer
-        select.select(filter(lambda x:not x.closed, [mystdout.file, mystderr.file]), [], [])
+        select.select([x.file for x in [mystdout, mystderr] if not x.closed], [], [])
         for buf in mystderr:
             stderr += buf
             (ignore_fail and logging.debug or logging.info)(buf.rstrip())
