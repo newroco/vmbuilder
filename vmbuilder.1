@@ -131,7 +131,7 @@ Add VM to given URI
 
 .SS Scripts:
 .TP
-.Bi \-\-firstboot PATH    
+.B \-\-firstboot PATH    
 Specify a script that will be copied into the guest and executed the first time the machine boots.  This script must not be interactive.
 .TP
 .B \-\-firstlogin PATH   
@@ -145,7 +145,7 @@ is a python program that offers a very simple mechanism to increase functionalit
 .B vmbuilder
 includes a command line interface compatibility with its ancestor
 .B ubuntu-vm-builder.
-This compatibility does not include template or configration files.
+This compatibility does not include template or configration files which now use a newer format. Programs or script that were relying on ubuntu-vm-builder should continue working without any issues if the do not use templates or configuration files.
 
 .SH SUPPORT
 Feel free to join #ubuntu-virt on freenode to get some help or just say hello.
