@@ -33,7 +33,7 @@ class CLI(VMBuilder.Frontend):
     def run(self):
         try:
             next = False
-            conf = ''
+            conf = None
             for val in sys.argv:
                 if (val == '-c') | (val == '--config'):
                     next = True

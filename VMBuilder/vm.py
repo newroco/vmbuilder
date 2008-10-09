@@ -52,7 +52,7 @@ class VM(object):
     
 
     """
-    def __init__(self, conf):
+    def __init__(self, conf=None):
         self.hypervisor = None #: hypervisor object, representing the hypervisor the vm is destined for
         self.distro = None
 
@@ -80,6 +80,8 @@ class VM(object):
         if conf:
             if not(os.path.isfile(conf)):
                 raise VMBuilderUserError('The path to the configuration file is not valid: %s.' % conf)
+        else:
+            conf = ''
 
         self.confparser.read(['/etc/vmbuilder.cfg', os.path.expanduser('~/.vmbuilder.cfg'), conf])
 
