@@ -259,7 +259,7 @@ class VM(object):
         logging.debug("ip: %s" % self.ip)
 
         if self.ip != 'dhcp':
-            if (!self.domain) | (self.domain == ''):
+            if self.domain == '':
                 raise VMBuilderUserError('Domain is undefined and host has no domain set.')
 
             try:
