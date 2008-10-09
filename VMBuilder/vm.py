@@ -121,7 +121,7 @@ class VM(object):
 
     def _register_base_settings(self):
         self.register_setting('-c', action='callback', type='string', callback=self.load_config, help='Specify a additional configuration file')
-        self.register_setting('-d', '--dest', help='Specify the destination directory. [default: <hypervisor>-<distro>]')
+        self.register_setting('-d', '--dest', dest='destdir', help='Specify the destination directory. [default: <hypervisor>-<distro>]')
         self.register_setting('--debug', action='callback', callback=log.set_verbosity, help='Show debug information')
         self.register_setting('-v', '--verbose', action='callback', callback=log.set_verbosity, help='Show progress information')
         self.register_setting('-q', '--quiet', action='callback', callback=log.set_verbosity, help='Silent operation')

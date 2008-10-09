@@ -5,6 +5,7 @@ vm-builder (0.9-0ubuntu2) UNRELEASED; urgency=low
   * Added firstscripts plugin to fix regression on --firstboot and --firstlogin (LP: #268957)
   * Added postinst plugin to fix regression on --exec and add --copy (LP: #268955) 
   * Added man page
+  * Fix --dest problem (LP: #280091)
 
   [ Soren Hansen ]
   * Include ubuntu-vm-builder package.
