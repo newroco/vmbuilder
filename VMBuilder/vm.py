@@ -77,8 +77,9 @@ class VM(object):
 
         self.confparser = ConfigParser.SafeConfigParser()
 
-        if not(os.path.isfile(conf)):
-            raise VMBuilderUserError('The path to the configuration file is not valid: %s.' % conf)
+        if conf:
+            if not(os.path.isfile(conf)):
+                raise VMBuilderUserError('The path to the configuration file is not valid: %s.' % conf)
 
         self.confparser.read(['/etc/vmbuilder.cfg', os.path.expanduser('~/.vmbuilder.cfg'), conf])
 
