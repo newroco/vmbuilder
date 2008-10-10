@@ -27,7 +27,7 @@ for a full options list.
 show this help message and exit
 .TP
 .B \-c ALTCONFIG          
-Specify the path to an optional configuration file [default:~/.vmbuilder.cfg].
+Specify the path to an optional configuration file. [default:None]. /etc/vmbuilder.cfg and ~/.vmbuilder.cfg are always read if present.  
 .TP
 .B \-d DEST, \-\-dest DEST  
 Specify the destination directory. [default:<hypervisor>-<distro>]
@@ -152,6 +152,10 @@ Feel free to join #ubuntu-virt on freenode to get some help or just say hello.
 
 .SH SEE ALSO
 apt-proxy(8), apt-mirror(8)
+.TP
+The vmbuilder tutorial available at https://help.ubuntu.com/community/JeOSVMBuilder
+.TP
+The CheetahTemplate documentation for syntax of the template files at http://www.cheetahtemplate.org/docs/users_guide_html/
 
 .SH AUTHOR
 vmbuilder is Copyright (C) 2007-2008 Canonical Ltd. and written by Soren Hansen <soren@canonical.com> with the help of others, see /usr/share/doc/python-vm-builder/AUTHORS for more details.
