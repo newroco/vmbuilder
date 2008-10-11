@@ -26,17 +26,23 @@ class EC2(Plugin):
     def register_options(self):
         group = self.vm.setting_group('EC2 integation')
         group.add_option('--ec2', action='store_true', help='Build for EC2')
+	group.add_option('--ec2-name', metavar='EC2_NAME', help='Name for the EC2 instance')
         group.add_option('--ec2-cert', metavar='CERTFILE', help='PEM encoded public certificate for EC2')
         group.add_option('--ec2-key', metavar='KEYFILE', help='PEM encoded private key for EC2')
         group.add_option('--ec2-user', metavar='AWS_ACCOUNT', help='EC2 user ID (a.k.a. AWS account number, not AWS access key ID)')
         group.add_option('--ec2-bucket', metavar='BUCKET', help='S3 bucket to hold the AMI')
         group.add_option('--ec2-access-key', metavar='ACCESS_ID', help='AWS access key ID')
         group.add_option('--ec2-secret-key', metavar='SECRET_ID', help='AWS secret access key')
+	group.add_option('--ec2-kernel', metavar='EC2_KERNEL', help='EC2 AKI to use')
+	group.add_option('--ec2-ramdisk', metavar='EC2_RAMDISK', help='EC2 ARI to use')
         self.vm.register_setting_group(group)
 
     def preflight_check(self):
         if not self.vm.ec2:
             return True
+
+	if not self.vm.ec2_name:
+	   raise VMBuilderUserError('When building for EC2 you must supply the name for the instance.')
         
         if not self.vm.ec2_cert:
             raise VMBuilderUserError('When building for EC2 you must provide your PEM encoded public key certificate using the --ec2-cert option')
@@ -47,10 +53,11 @@ class EC2(Plugin):
         if not self.vm.ec2_user:
             raise VMBuilderUserError('When building for EC2 you must provide your EC2 user ID (your AWS account number, not your AWS access key ID)')
 
-        try:
-            run_cmd('ec2-bundle-image')
-        except VMBuilderException, e:
-            raise VMBuilderUserError('You need to have the Amazon EC2 AMI tools installed')
+	if not self.vm.ec2_kernel:
+	    raise VMBuilderUserError('When building for EC2 you must provide the AKI')
+
+	if not self.vm.ec2_ramdisk:
+	    raise VMBuilderUserError('When building for Ec2 you must provide the ARI')
 
         if not self.vm.addpkg:
              self.vm.addpkg = []
@@ -60,11 +67,11 @@ class EC2(Plugin):
     def deploy(self):
         if not self.vm.ec2:
             return False
-        bundle_cmdline = ['ec2-bundle-image', '--image', self.vm.filesystems[0].filename, '--cert', self.vm.ec2_cert, '--privatekey', self.vm.ec2_key, '--user', self.vm.ec2_user, '--prefix', self.vm.hostname, '-r', ['i386', 'x86_64'][self.vm.arch == 'amd64'], '-d', self.vm.workdir, '--kernel', 'aki-a71cf9ce', '--ramdisk', 'ari-a51cf9cc']
+        bundle_cmdline = ['ec2-bundle-image', '--image', self.vm.filesystems[0].filename, '--cert', self.vm.ec2_cert, '--privatekey', self.vm.ec2_key, '--user', self.vm.ec2_user, '--prefix', self.vm.ec2_name, '-r', ['i386', 'x86_64'][self.vm.arch == 'amd64'], '-d', self.vm.workdir, '--kernel', self.vm.ec2_kernel, '--ramdisk', self.vm.ec2_ramdisk]
 
         run_cmd(*bundle_cmdline)
 
-        upload_cmdline = ['ec2-upload-bundle', '--manifest', '%s/%s.manifest.xml' % (self.vm.workdir, self.vm.hostname), '--bucket', self.vm.ec2_bucket, '--access-key', self.vm.ec2_access_key, '--secret-key', self.vm.ec2_secret_key]
+        upload_cmdline = ['ec2-upload-bundle', '--manifest', '%s/%s.manifest.xml' % (self.vm.workdir, self.vm.ec2_name), '--bucket', self.vm.ec2_bucket, '--access-key', self.vm.ec2_access_key, '--secret-key', self.vm.ec2_secret_key]
         run_cmd(*upload_cmdline)
 
         from boto.ec2.connection import EC2Connection
