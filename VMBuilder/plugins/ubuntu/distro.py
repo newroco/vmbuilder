@@ -20,7 +20,7 @@
 import VMBuilder
 from   VMBuilder           import register_distro, Distro
 from   VMBuilder.util      import run_cmd
-from   VMBuilder.exception import VMBuilderUserError
+from   VMBuilder.exception import VMBuilderUserError, VMBuilderException
 import socket
 import logging
 
