@@ -6,6 +6,7 @@ vm-builder (0.9-0ubuntu3) UNRELEASED; uregency low
   [Nicolas Barcet]
   * Error out if domain is undefined (LP: #280125)
   * Fix --dest so that it is actually used now (LP: #280091)
+  * Fix -c handling, values are now used (LP: #279159)
 
  -- Nicolas Barcet <nicolas.barcet@ubuntu.com>
 

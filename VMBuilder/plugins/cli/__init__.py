@@ -32,7 +32,16 @@ class CLI(VMBuilder.Frontend):
        
     def run(self):
         try:
-            vm = VMBuilder.VM()
+            next = False
+            conf = None
+            for val in sys.argv:
+                if (val == '-c') | (val == '--config'):
+                    next = True
+                elif next:
+                    conf = val
+                    break
+
+            vm = VMBuilder.VM(conf)
             vm.register_setting('--rootsize', metavar='SIZE', type='int', default=4096, help='Size (in MB) of the root filesystem [default: %default]')
             vm.register_setting('--optsize', metavar='SIZE', type='int', default=0, help='Size (in MB) of the /opt filesystem. If not set, no /opt filesystem will be added.')
             vm.register_setting('--swapsize', metavar='SIZE', type='int', default=1024, help='Size (in MB) of the swap partition [default: %default]')

@@ -52,7 +52,7 @@ class VM(object):
     
 
     """
-    def __init__(self):
+    def __init__(self, conf=None):
         self.hypervisor = None #: hypervisor object, representing the hypervisor the vm is destined for
         self.distro = None
 
@@ -76,7 +76,14 @@ class VM(object):
         self.optparser.arg_help = (('hypervisor', self.hypervisor_help), ('distro', self.distro_help))
 
         self.confparser = ConfigParser.SafeConfigParser()
-        self.confparser.read(['/etc/vmbuilder.cfg', os.path.expanduser('~/.vmbuilder.cfg')])
+
+        if conf:
+            if not(os.path.isfile(conf)):
+                raise VMBuilderUserError('The path to the configuration file is not valid: %s.' % conf)
+        else:
+            conf = ''
+
+        self.confparser.read(['/etc/vmbuilder.cfg', os.path.expanduser('~/.vmbuilder.cfg'), conf])
 
         self._register_base_settings()
 
@@ -115,13 +122,9 @@ class VM(object):
     def setting_group(self, *args, **kwargs):
         return optparse.OptionGroup(self.optparser, *args, **kwargs)
 
-    def load_config(self, option, opt_str, value, parser):
-        logging.debug('Reading additional config file: %s' % value)
-        self.confparser.read(value)
-
     def _register_base_settings(self):
-        self.register_setting('-c', action='callback', type='string', callback=self.load_config, help='Specify a additional configuration file')
         self.register_setting('-d', '--dest', dest='destdir', help='Specify the destination directory. [default: <hypervisor>-<distro>]')
+        self.register_setting('-c', '--config',  type='string', help='Specify a additional configuration file')
         self.register_setting('--debug', action='callback', callback=log.set_verbosity, help='Show debug information')
         self.register_setting('-v', '--verbose', action='callback', callback=log.set_verbosity, help='Show progress information')
         self.register_setting('-q', '--quiet', action='callback', callback=log.set_verbosity, help='Silent operation')
