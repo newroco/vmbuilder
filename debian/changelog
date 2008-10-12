@@ -1,7 +1,11 @@
 vm-builder (0.9-0ubuntu3) UNRELEASED; uregency low
 
- [Johan Euphrosine]
+  [Johan Euphrosine]
   * Fix exception when suite provided does not exist (LP: #281801) and provide unit test for it
+ 
+  [Nicolas Barcet]
+  * Error out if domain is undefined (LP: #280125)
+
 
  -- Nicolas Barcet <nicolas.barcet@ubuntu.com>
 
