@@ -9,6 +9,7 @@ vm-builder (0.9-0ubuntu3) UNRELEASED; urgency=low
   * Fix --dest so that it is actually used now (LP: #280091)
   * Fix -c handling, values are now used (LP: #279159)
   * Create /var/run/network to fix bug LP: #276365
+  * Handle fsimage type vm as well (xen) (LP: #282109)
 
  -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Sun, 12 Oct 2008 12:02:15 +0200
 

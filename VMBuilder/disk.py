@@ -303,6 +303,19 @@ class Filesystem(object):
             logging.debug('Unmounting %s', self.mntpath) 
             run_cmd('umount', self.mntpath)
 
+    def get_suffix(self):
+        """Returns 'a4' for a device that would be called /dev/sda4 in the guest..
+           This allows other parts of VMBuilder to set the prefix to something suitable."""
+        return '%s%d' % (self.devletters(), 1)
+        
+    def devletters(self):
+        """
+        @rtype: string
+        @return: the series of letters that ought to correspond to the device inside
+                 the VM. E.g. the first filesystem of a VM would return 'a', while the 702nd would return 'zz'
+        """
+        return index_to_devname(self.vm.filesystems.index(self))
+                
 def parse_size(size_str):
     """Takes a size like qemu-img would accept it and returns the size in MB"""
     try:
@@ -333,7 +346,7 @@ def str_to_type(type):
         return str_to_type_map[type]
     except KeyError, e:
         raise Exception('Unknown partition type: %s' % type)
-
+        
 def bootpart(disks):
     """Returns the partition which contains /boot"""
     return path_to_partition(disks, '/boot/foo')

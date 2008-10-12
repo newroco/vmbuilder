@@ -107,7 +107,7 @@ class CLI(VMBuilder.Frontend):
                             pass
                         else:
                             vm.add_filesystem(pair[1], type='ext3', mntpnt=pair[0])
-                        
+
                 except IOError, (errno, strerror):
                     vm.optparser.error("%s parsing --part option: %s" % (errno, strerror))
             else:
