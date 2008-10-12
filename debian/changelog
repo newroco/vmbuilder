@@ -1,7 +1,8 @@
-vm-builder (0.9-0ubuntu3) UNRELEASED; uregency low
+vm-builder (0.9-0ubuntu3) UNRELEASED; urgency=low
 
   [Johan Euphrosine]
-  * Fix exception when suite provided does not exist (LP: #281801) and provide unit test for it
+  * Fix exception when suite provided does not exist (LP: #281801) 
+    and provide unit test for it
 
   [Nicolas Barcet]
   * Error out if domain is undefined (LP: #280125)
@@ -9,13 +10,14 @@ vm-builder (0.9-0ubuntu3) UNRELEASED; uregency low
   * Fix -c handling, values are now used (LP: #279159)
   * Create /var/run/network to fix bug LP: #276365
 
- -- Nicolas Barcet <nicolas.barcet@ubuntu.com>
+ -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Sun, 12 Oct 2008 12:02:15 +0200
 
 vm-builder (0.9-0ubuntu2) intrepid; urgency=low
 
   [ Nicolas Barcet ]
   * Added hint for more help (LP: #269323)
-  * Added firstscripts plugin to fix regression on --firstboot and --firstlogin (LP: #268957)
+  * Added firstscripts plugin to fix regression on --firstboot and
+    --firstlogin (LP: #268957)
   * Added postinst plugin to fix regression on --exec and add --copy (LP: #268955) 
   * Added man page
 
