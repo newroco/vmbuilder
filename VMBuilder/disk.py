@@ -235,11 +235,12 @@ class Disk(object):
             return self.disk.partitions.index(self)
 
 class Filesystem(object):
-    def __init__(self, vm, size=0, preallocated=False, type=None, mntpnt=None, filename=None):
+    def __init__(self, vm, size=0, preallocated=False, type=None, mntpnt=None, filename=None, devletter='a'):
         self.vm = vm
         self.filename = filename
         self.size = parse_size(size)
         self.preallocated = preallocated
+        self.devletter = devletter
            
         try:
             if int(type) == type:
@@ -306,7 +307,7 @@ class Filesystem(object):
     def get_suffix(self):
         """Returns 'a4' for a device that would be called /dev/sda4 in the guest..
            This allows other parts of VMBuilder to set the prefix to something suitable."""
-        return '%s%d' % (self.devletters(), 1)
+        return '%s%d' % (self.devletters(), self.get_index() + 1)
         
     def devletters(self):
         """
@@ -314,7 +315,11 @@ class Filesystem(object):
         @return: the series of letters that ought to correspond to the device inside
                  the VM. E.g. the first filesystem of a VM would return 'a', while the 702nd would return 'zz'
         """
-        return index_to_devname(self.vm.filesystems.index(self))
+        return self.devletter
+        
+    def get_index(self):
+        """Index of the disk (starting from 0)"""
+        return self.vm.filesystems.index(self)
                 
 def parse_size(size_str):
     """Takes a size like qemu-img would accept it and returns the size in MB"""
