@@ -170,7 +170,10 @@ class Dapper(suite.Suite):
         self.run_in_target('apt-get', 'update')
 
     def install_fstab(self):
-        self.install_from_template('/etc/fstab', 'dapper_fstab', { 'parts' : disk.get_ordered_partitions(self.vm.disks), 'prefix' : self.disk_prefix })
+        if self.vm.hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
+            self.install_from_template('/etc/fstab', 'dapper_fstab_fsimage', { 'fss' : disk.get_ordered_filesystems(self.vm), 'prefix' : self.disk_prefix })
+        else:
+            self.install_from_template('/etc/fstab', 'dapper_fstab', { 'parts' : disk.get_ordered_partitions(self.vm.disks), 'prefix' : self.disk_prefix })
 
     def install_device_map(self):
         self.install_from_template('/boot/grub/device.map', 'devicemap', { 'prefix' : self.disk_prefix })

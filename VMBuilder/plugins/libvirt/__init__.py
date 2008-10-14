@@ -45,8 +45,11 @@ class Libvirt(Plugin):
         if not self.vm.libvirt:
             # Not for us
             return False
-
-        vmxml = VMBuilder.util.render_template('libvirt', self.vm, 'libvirtxml')
+        
+        if self.vm.hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
+            vmxml = VMBuilder.util.render_template('libvirt', self.vm, 'libvirtxml_fsimage')
+        else:
+            vmxml = VMBuilder.util.render_template('libvirt', self.vm, 'libvirtxml')
 
         if self.vm.hostname in self.all_domains() and not self.vm.overwrite:
             raise VMBuilderUserError('Domain %s already exists at %s' % (self.vm.hostname, self.vm.libvirt))
