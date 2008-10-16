@@ -104,7 +104,7 @@ class Ubuntu(Distro):
         if not self.vm.components:
             self.vm.components = ['main', 'restricted', 'universe']
         else:
-            if isinstance(self.vm.componenents, types.StringType):
+            if isinstance(self.vm.components, types.StringType):
                 self.vm.components = self.vm.components.split(',')
 
     def install(self, destdir):
