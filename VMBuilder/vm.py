@@ -421,8 +421,6 @@ class VM(object):
         """
         util.checkroot()
 
-        self.preflight_check()
-    
         finished = False
         try:
             self.preflight_check()
