@@ -23,6 +23,7 @@ from   VMBuilder.util      import run_cmd
 from   VMBuilder.exception import VMBuilderUserError, VMBuilderException
 import socket
 import logging
+import types
 
 class Ubuntu(Distro):
     name = 'Ubuntu'
@@ -99,6 +100,12 @@ class Ubuntu(Distro):
             not self.suite.check_arch_validity(self.vm.arch):
             raise VMBuilderUserError('%s is not a valid architecture. Valid architectures are: %s' % (self.vm.arch, 
                                                                                                       ' '.join(self.valid_archs[self.host_arch])))
+
+        if not self.vm.components:
+            self.vm.components = ['main', 'restricted', 'universe']
+        else:
+            if isinstance(self.vm.componenents, types.StringType):
+                self.vm.components = self.vm.components.split(',')
 
     def install(self, destdir):
         self.destdir = destdir

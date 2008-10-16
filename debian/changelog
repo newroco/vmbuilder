@@ -13,8 +13,11 @@ vm-builder (0.9-0ubuntu3) UNRELEASED; urgency=low
   * Fix -c handling, values are now used (LP: #279159)
   * Create /var/run/network to fix bug LP: #276365
   * Handle fsimage type vms (Xen) in fstab and (hopefully) libvirt  (LP: #282109)
+  * components where not parsed correctly (LP: #283263)
+  * preflight_check() was called twice in a row in vm.py for no aparant
+    reasons
 
- -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Sun, 14 Oct 2008 14:16:15 +0200
+ -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Sun, 16 Oct 2008 17:43:15 +0200
 
 vm-builder (0.9-0ubuntu2) intrepid; urgency=low
 
