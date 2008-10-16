@@ -174,7 +174,7 @@ def render_template(plugin, vm, tmplname, context=None):
                 '/etc/vmbuilder/%s']
 
     if vm.templates:
-        tmpldirs.prepend('%s/%%s' % vm.templates)
+        tmpldirs.insert(0,'%s/%%s' % vm.templates)
     
     tmpldirs = [dir % plugin for dir in tmpldirs]
 
