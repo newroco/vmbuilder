@@ -16,6 +16,7 @@ vm-builder (0.9-0ubuntu3) UNRELEASED; urgency=low
   * components where not parsed correctly (LP: #283263)
   * preflight_check() was called twice in a row in vm.py for no aparant
     reasons
+  * change default to intrepid
 
  -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Sun, 16 Oct 2008 17:43:15 +0200
 
