@@ -18,7 +18,10 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import suite
-from VMBuilder.plugins.ubuntu.hardy import Hardy
+import logging
+import VMBuilder.disk as disk
+from   VMBuilder.util import run_cmd
+from   VMBuilder.plugins.ubuntu.hardy import Hardy
 
 class Intrepid(Hardy):
     def xen_kernel_path(self):
@@ -26,3 +29,10 @@ class Intrepid(Hardy):
 
     def xen_ramdisk_path(self):
         return '/boot/initrd.img-2.6.27-2-server'
+
+    def mangle_grub_menu_lst(self):
+        bootdev = disk.bootpart(self.vm.disks)
+        run_cmd('sed', '-ie', 's/^# kopt=root=\([^ ]*\)\(.*\)/# kopt=root=UUID=%s\\2/g' % bootdev.fs.uuid, '%s/boot/grub/menu.lst' % self.destdir)
+        run_cmd('sed', '-ie', 's/^# groot.*/# groot=%s/g' % bootdev.fs.uuid, '%s/boot/grub/menu.lst' % self.destdir)
+        run_cmd('sed', '-ie', '/^# kopt_2_6/ d', '%s/boot/grub/menu.lst' % self.destdir)
+

@@ -17,6 +17,7 @@ vm-builder (0.9-0ubuntu3) UNRELEASED; urgency=low
   * preflight_check() was called twice in a row in vm.py for no aparant
     reasons
   * change default to intrepid
+  * intrepid guest now boot
 
  -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Sun, 16 Oct 2008 17:43:15 +0200
 
