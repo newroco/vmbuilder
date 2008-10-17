@@ -26,7 +26,7 @@ class EC2(Plugin):
     def register_options(self):
         group = self.vm.setting_group('EC2 integation')
         group.add_option('--ec2', action='store_true', help='Build for EC2')
-        group.add_option('--ec2-name', metavar='EC2_NAME', help='Name for the EC2 instance. Conf name: ec2_name')
+        group.add_option('--ec2-name','--ec2-prefix', metavar='EC2_NAME', help='Name for the EC2 image. Conf name: ec2_name')
         group.add_option('--ec2-cert', metavar='CERTFILE', help='PEM encoded public certificate for EC2. Conf name: ec2_cert')
         group.add_option('--ec2-key', metavar='KEYFILE', help='PEM encoded private key for EC2. Conf name: ec2_key')
         group.add_option('--ec2-user', metavar='AWS_ACCOUNT', help='EC2 user ID (a.k.a. AWS account number, not AWS access key ID). Conf name: ec2_user')
