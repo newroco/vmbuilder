@@ -113,7 +113,7 @@ def run_cmd(*argv, **kwargs):
     mystderr = NonBufferedFile(proc.stderr)
 
     while not (mystdout.closed and mystderr.closed):
-		# Block until either of them has something to offer
+        # Block until either of them has something to offer
         select.select([x.file for x in [mystdout, mystderr] if not x.closed], [], [])
         for buf in mystderr:
             stderr += buf
@@ -174,7 +174,7 @@ def render_template(plugin, vm, tmplname, context=None):
                 '/etc/vmbuilder/%s']
 
     if vm.templates:
-        tmpldirs.prepend('%s/%%s' % vm.templates)
+        tmpldirs.insert(0,'%s/%%s' % vm.templates)
     
     tmpldirs = [dir % plugin for dir in tmpldirs]
 
