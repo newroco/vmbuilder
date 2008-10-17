@@ -161,7 +161,7 @@ class Dapper(suite.Suite):
 
     def mangle_grub_menu_lst(self):
         bootdev = disk.bootpart(self.vm.disks)
-        run_cmd('sed', '-ie', 's/^# kopt=root=\([^ ]*\)\(.*\)/# kopt=root=\/dev\/hd%s%d\\2/g' % (bootdev.disk.devletters, bootdev.get_index()+1), '%s/boot/grub/menu.lst' % self.destdir)
+        run_cmd('sed', '-ie', 's/^# kopt=root=\([^ ]*\)\(.*\)/# kopt=root=\/dev\/hd%s%d\\2/g' % (bootdev.disk.devletters(), bootdev.get_index()+1), '%s/boot/grub/menu.lst' % self.destdir)
         run_cmd('sed', '-ie', 's/^# groot.*/# groot %s/g' % bootdev.get_grub_id(), '%s/boot/grub/menu.lst' % self.destdir)
         run_cmd('sed', '-ie', '/^# kopt_2_6/ d', '%s/boot/grub/menu.lst' % self.destdir)
 

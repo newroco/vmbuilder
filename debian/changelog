@@ -13,11 +13,15 @@ vm-builder (0.9-0ubuntu3) UNRELEASED; urgency=low
   * Fix -c handling, values are now used (LP: #279159)
   * Create /var/run/network to fix bug LP: #276365
   * Handle fsimage type vms (Xen) in fstab and (hopefully) libvirt  (LP: #282109)
-  * components where not parsed correctly (LP: #283263)
+  * Components where not parsed correctly (LP: #283263)
   * preflight_check() was called twice in a row in vm.py for no aparant
     reasons
-  * change default to intrepid
-  * intrepid guest now boot
+  * Change default suite to intrepid
+  * Intrepid needs groot=uuid, else update-grub tries to outsmart us later on
+    and it won't boot as it cannot guess the uuid right.
+  * Couple fixes when calling devletters, which is a function
+  * Double parenthesis removed in devicemap.tmpl
+  * Added function isDomain to fix bug LP: #284746
 
  -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Sun, 16 Oct 2008 17:43:15 +0200
 
