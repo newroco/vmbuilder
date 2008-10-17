@@ -6,6 +6,7 @@ vm-builder (0.9-0ubuntu3) UNRELEASED; urgency=low
 
   [Chuck Short]
   * Added parameters required for EC2 plugin
+  * use ec2_name instead of hostname when submitting an AMI
 
   [Nicolas Barcet]
   * Error out if domain is undefined (LP: #280125)
