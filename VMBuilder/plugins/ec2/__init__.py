@@ -26,23 +26,23 @@ class EC2(Plugin):
     def register_options(self):
         group = self.vm.setting_group('EC2 integation')
         group.add_option('--ec2', action='store_true', help='Build for EC2')
-	group.add_option('--ec2-name', metavar='EC2_NAME', help='Name for the EC2 instance')
-        group.add_option('--ec2-cert', metavar='CERTFILE', help='PEM encoded public certificate for EC2')
-        group.add_option('--ec2-key', metavar='KEYFILE', help='PEM encoded private key for EC2')
-        group.add_option('--ec2-user', metavar='AWS_ACCOUNT', help='EC2 user ID (a.k.a. AWS account number, not AWS access key ID)')
-        group.add_option('--ec2-bucket', metavar='BUCKET', help='S3 bucket to hold the AMI')
-        group.add_option('--ec2-access-key', metavar='ACCESS_ID', help='AWS access key ID')
-        group.add_option('--ec2-secret-key', metavar='SECRET_ID', help='AWS secret access key')
-	group.add_option('--ec2-kernel', metavar='EC2_KERNEL', help='EC2 AKI to use')
-	group.add_option('--ec2-ramdisk', metavar='EC2_RAMDISK', help='EC2 ARI to use')
+        group.add_option('--ec2-name', metavar='EC2_NAME', help='Name for the EC2 instance. Conf name: ec2_name')
+        group.add_option('--ec2-cert', metavar='CERTFILE', help='PEM encoded public certificate for EC2. Conf name: ec2_cert')
+        group.add_option('--ec2-key', metavar='KEYFILE', help='PEM encoded private key for EC2. Conf name: ec2_key')
+        group.add_option('--ec2-user', metavar='AWS_ACCOUNT', help='EC2 user ID (a.k.a. AWS account number, not AWS access key ID). Conf name: ec2_user')
+        group.add_option('--ec2-bucket', metavar='BUCKET', help='S3 bucket to hold the AMI. Conf name: ec2_bucket')
+        group.add_option('--ec2-access-key', metavar='ACCESS_ID', help='AWS access key ID. Conf name: ec2_access_key')
+        group.add_option('--ec2-secret-key', metavar='SECRET_ID', help='AWS secret access key. Conf name: ec2_secret_key')
+        group.add_option('--ec2-kernel','--ec2-aki', metavar='EC2_KERNEL', help='EC2 AKI (kernel) to use. Conf name: ec2_kernel')
+        group.add_option('--ec2-ramdisk','--ec2-ari', metavar='EC2_RAMDISK', help='EC2 ARI (ramdisk) to use. Conf name: ec2_ramdisk')
         self.vm.register_setting_group(group)
 
     def preflight_check(self):
         if not self.vm.ec2:
             return True
 
-	if not self.vm.ec2_name:
-	   raise VMBuilderUserError('When building for EC2 you must supply the name for the instance.')
+    if not self.vm.ec2_name:
+        raise VMBuilderUserError('When building for EC2 you must supply the name for the instance.')
         
         if not self.vm.ec2_cert:
             raise VMBuilderUserError('When building for EC2 you must provide your PEM encoded public key certificate using the --ec2-cert option')
@@ -53,11 +53,11 @@ class EC2(Plugin):
         if not self.vm.ec2_user:
             raise VMBuilderUserError('When building for EC2 you must provide your EC2 user ID (your AWS account number, not your AWS access key ID)')
 
-	if not self.vm.ec2_kernel:
-	    raise VMBuilderUserError('When building for EC2 you must provide the AKI')
+    if not self.vm.ec2_kernel:
+        raise VMBuilderUserError('When building for EC2 you must provide the AKI')
 
-	if not self.vm.ec2_ramdisk:
-	    raise VMBuilderUserError('When building for Ec2 you must provide the ARI')
+    if not self.vm.ec2_ramdisk:
+        raise VMBuilderUserError('When building for Ec2 you must provide the ARI')
 
         if not self.vm.addpkg:
              self.vm.addpkg = []

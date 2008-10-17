@@ -22,6 +22,11 @@ vm-builder (0.9-0ubuntu3) UNRELEASED; urgency=low
   * Couple fixes when calling devletters, which is a function
   * Double parenthesis removed in devicemap.tmpl
   * Added function isDomain to fix bug LP: #284746
+  * Documented unusual conf name value in help to fix bug LP: #284614
+  * Fixed a bug in set_defaults occuring on reading untyped value from the
+    configuration file
+  * Added option name --ec2-kernel -> --ec2-aki  and --ec2-ramdisk -> --ec2-ari to match ec2
+    vocabulary (LP: #284765)
 
  -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Sun, 16 Oct 2008 17:43:15 +0200
 

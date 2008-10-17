@@ -123,7 +123,7 @@ class VM(object):
         return optparse.OptionGroup(self.optparser, *args, **kwargs)
 
     def _register_base_settings(self):
-        self.register_setting('-d', '--dest', dest='destdir', help='Specify the destination directory. [default: <hypervisor>-<distro>]')
+        self.register_setting('-d', '--dest', dest='destdir', help='Specify the destination directory. [default: <hypervisor>-<distro>]. Conf name: destdir')
         self.register_setting('-c', '--config',  type='string', help='Specify a additional configuration file')
         self.register_setting('--debug', action='callback', callback=log.set_verbosity, help='Show debug information')
         self.register_setting('-v', '--verbose', action='callback', callback=log.set_verbosity, help='Show progress information')
@@ -131,7 +131,7 @@ class VM(object):
         self.register_setting('-t', '--tmp', default=os.environ.get('TMPDIR', '/tmp'), help='Use TMP as temporary working space for image generation. Defaults to $TMPDIR if it is defined or /tmp otherwise. [default: %default]')
         self.register_setting('--templates', metavar='DIR', help='Prepend DIR to template search path.')
         self.register_setting('-o', '--overwrite', action='store_true', default=False, help='Force overwrite of destination directory if it already exist. [default: %default]')
-        self.register_setting('--in-place', action='store_true', default=False, help='Install directly into the filesystem images. This is needed if your \$TMPDIR is nodev and/or nosuid, but will result in slightly larger file system images.')
+        self.register_setting('--in-place', action='store_true', default=False, help='Install directly into the filesystem images. This is needed if your \$TMPDIR is nodev and/or nosuid, but will result in slightly larger file system images. Conf name: in_place')
         self.register_setting('--tmpfs', metavar="OPTS", help='Use a tmpfs as the working directory, specifying its size or "-" to use tmpfs default (suid,dev,size=1G).')
         self.register_setting('-m', '--mem', type='int', default=128, help='Assign MEM megabytes of memory to the guest vm. [default: %default]')
 
@@ -243,8 +243,11 @@ class VM(object):
             for (k,v) in settings.__dict__.iteritems():
                 confvalue = self.get_conf_value(k)
                 if confvalue:
-                    if self.optparser.get_option('--%s' % k).action == 'append':
-                        setattr(self, k, confvalue.split(', '))
+                    if self.optparser.get_option('--%s' % k):
+                        if self.optparser.get_option('--%s' % k).action == 'append':
+                            setattr(self, k, confvalue.split(', '))
+                        else:
+                            setattr(self, k, confvalue)
                     else:
                         setattr(self, k, confvalue)
                 else:
@@ -483,7 +486,7 @@ class _MyOptParser(optparse.OptionParser):
             formatter.indent()
             result.append(self.format_arg_help(formatter))
             result.append("\n")
-            result.append("Hypervisor and distro specific help available when arguments are supplied.\n")
+            result.append("*** Use vmbuilder <hypervisor> <distro> --help to get more options. Hypervisor, distro, and plugins specific help is only available when the first two arguments are supplied.\n")
             result.append("\n")
             formatter.dedent()
         result.append(formatter.format_heading(_("Options")))
