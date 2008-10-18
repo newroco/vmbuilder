@@ -63,6 +63,16 @@ class EC2(Plugin):
         if not self.vm.ec2_ramdisk:
             raise VMBuilderUserError('When building for Ec2 you must provide the ARI')
 
+        if not self.vm.ec2_bucket:
+            raise VMBuilderUserError('When building for EC2 you must provide an S3 bucket to hold the AMI')
+
+        if not self.vm.ec2_access_key:
+            raise VMBuilderUserError('When building for EC2 you must provide your AWS access key ID.')
+
+        if not self.vm.ec2_secret_key:
+            raise VMBuilderUserError('When building for EC2 you must provide your AWS secret access key.')
+
+
         if not self.vm.addpkg:
              self.vm.addpkg = []
 
