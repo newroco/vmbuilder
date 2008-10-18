@@ -28,6 +28,7 @@ vm-builder (0.9-0ubuntu3) UNRELEASED; urgency=low
     configuration file
   * Match ec2 vocabulary by adding option name and clarifying help 
     (LP: #284765, LP: #285170, LP: #285165)
+  * Added a check for xen hypervisor when ec2 is selected (LP: #285191)
 
   [Mathias Gug]
   * Fix --templates option.

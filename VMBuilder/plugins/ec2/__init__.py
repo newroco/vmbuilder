@@ -19,6 +19,7 @@
 #
 from VMBuilder import register_plugin, Plugin, VMBuilderUserError
 from VMBuilder.util import run_cmd
+import logging
 
 class EC2(Plugin):
     name = 'EC2 integration'
@@ -41,9 +42,12 @@ class EC2(Plugin):
         if not self.vm.ec2:
             return True
 
-    if not self.vm.ec2_name:
-        raise VMBuilderUserError('When building for EC2 you must supply the name for the instance.')
-        
+        if not self.vm.hypervisor.name == 'Xen':
+            raise VMBuilderUserError('When building for EC2 you must use the xen hypervisor.')
+
+        if not self.vm.ec2_name:
+            raise VMBuilderUserError('When building for EC2 you must supply the name for the instance.')
+
         if not self.vm.ec2_cert:
             raise VMBuilderUserError('When building for EC2 you must provide your PEM encoded public key certificate using the --ec2-cert option')
 
@@ -53,11 +57,11 @@ class EC2(Plugin):
         if not self.vm.ec2_user:
             raise VMBuilderUserError('When building for EC2 you must provide your EC2 user ID (your AWS account number, not your AWS access key ID)')
 
-    if not self.vm.ec2_kernel:
-        raise VMBuilderUserError('When building for EC2 you must provide the AKI')
+        if not self.vm.ec2_kernel:
+            raise VMBuilderUserError('When building for EC2 you must provide the AKI')
 
-    if not self.vm.ec2_ramdisk:
-        raise VMBuilderUserError('When building for Ec2 you must provide the ARI')
+        if not self.vm.ec2_ramdisk:
+            raise VMBuilderUserError('When building for Ec2 you must provide the ARI')
 
         if not self.vm.addpkg:
              self.vm.addpkg = []
@@ -67,6 +71,7 @@ class EC2(Plugin):
     def deploy(self):
         if not self.vm.ec2:
             return False
+
         bundle_cmdline = ['ec2-bundle-image', '--image', self.vm.filesystems[0].filename, '--cert', self.vm.ec2_cert, '--privatekey', self.vm.ec2_key, '--user', self.vm.ec2_user, '--prefix', self.vm.ec2_name, '-r', ['i386', 'x86_64'][self.vm.arch == 'amd64'], '-d', self.vm.workdir, '--kernel', self.vm.ec2_kernel, '--ramdisk', self.vm.ec2_ramdisk]
 
         run_cmd(*bundle_cmdline)
