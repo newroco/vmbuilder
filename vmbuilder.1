@@ -124,8 +124,10 @@ DNS address in dotted form [default: based on ip setting (first valid address in
 .B \-\-copy FILE         
 Read 'source dest' lines from FILE, copying source files from host to dest in the guest's file system.
 .TP
-.B \-\-execscript SCRIPT, \-\-exec SCRIPT. C
-Run SCRIPT after distro installation finishes. Script will be called with the guest's chroot as first argument, so you can use 'chroot $1 <cmd>' to run code in the virtual machine. Conf name: execscript.
+.B \-\-execscript SCRIPT, \-\-exec SCRIPT
+Run SCRIPT after distro installation finishes. Script will be called with the guest's chroot as first argument, so you can use
+.B chroot $1 <cmd>
+to run code in the virtual machine. Conf name: execscript.
 
 .SS libvirt integration:
 .TP
@@ -133,14 +135,6 @@ Run SCRIPT after distro installation finishes. Script will be called with the gu
 Add VM to given URI
 
 .SS Scripts:
-.TP
-.B --copy FILE
-Read 'source dest' lines from FILE, copying source files from host to dest in the guest's file system.
-.TP
-.B \-\-execscript, \-\-exec SCRIPT
-Run SCRIPT after distro installation finishes. Script will be called with the guest's chroot as first argument so you can use
-.B chroot $1 <cmd>
-to run code in the virtual machine. Conf name: execscript
 .TP
 .B \-\-firstboot PATH    
 Specify a script that will be copied into the guest and executed the first time the machine boots.  This script must not be interactive.
