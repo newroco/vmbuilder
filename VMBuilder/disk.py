@@ -281,7 +281,12 @@ class Filesystem(object):
         self.uuid = run_cmd('vol_id', '--uuid', self.filename).rstrip()
 
     def mkfs_fstype(self):
-        return { TYPE_EXT2: ['mkfs.ext2', '-F'], TYPE_EXT3: ['mkfs.ext3', '-F'], TYPE_XFS: ['mkfs.xfs'], TYPE_SWAP: ['mkswap'] }[self.type]
+        if self.vm.suite in ['dapper', 'edgy', 'feisty']:
+            logging.debug('%s: 128 bit inode' % self.vm.suite)
+            return { TYPE_EXT2: ['mkfs.ext2', '-F'], TYPE_EXT3: ['mkfs.ext3', '-I 128', '-F'], TYPE_XFS: ['mkfs.xfs'], TYPE_SWAP: ['mkswap'] }[self.type]
+        else:
+            logging.debug('%s: 256 bit inode' % self.vm.suite)
+            return { TYPE_EXT2: ['mkfs.ext2', '-F'], TYPE_EXT3: ['mkfs.ext3', '-F'], TYPE_XFS: ['mkfs.xfs'], TYPE_SWAP: ['mkswap'] }[self.type]
 
     def fstab_fstype(self):
         return { TYPE_EXT2: 'ext2', TYPE_EXT3: 'ext3', TYPE_XFS: 'xfs', TYPE_SWAP: 'swap' }[self.type]
