@@ -8,6 +8,8 @@ vm-builder (0.9-0ubuntu3) UNRELEASED; urgency=low
   * Added parameters required for EC2 plugin
   * use ec2_name instead of hostname when submitting an AMI
   * Update xen_kernel_path and xen_ramdisk_path for intrepid.
+  * Default to amazon kernels/ramdisk pairs for now.
+  * Split out ec2 module into its own package. (LP: #284762)
 
   [Nicolas Barcet]
   * Error out if domain is undefined (LP: #280125)
