@@ -281,7 +281,7 @@ class Filesystem(object):
         self.uuid = run_cmd('vol_id', '--uuid', self.filename).rstrip()
 
     def mkfs_fstype(self):
-        if self.vm.suite in ['dapper', 'edgy', 'feisty']:
+        if self.vm.suite in ['dapper', 'edgy', 'feisty', 'gutsy']:
             logging.debug('%s: 128 bit inode' % self.vm.suite)
             return { TYPE_EXT2: ['mkfs.ext2', '-F'], TYPE_EXT3: ['mkfs.ext3', '-I 128', '-F'], TYPE_XFS: ['mkfs.xfs'], TYPE_SWAP: ['mkswap'] }[self.type]
         else:
