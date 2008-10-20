@@ -33,6 +33,7 @@ vm-builder (0.9-0ubuntu3) UNRELEASED; urgency=low
     (LP: #284757)
   * Older suite need 128 bit inode for grub to recognize os. Thanks to Albert
     Damen for the pointer (LP: #285093)
+  * Add --net-virtio and --net-bridge option to libvirt plugin
 
   [Mathias Gug]
   * Fix --templates option.

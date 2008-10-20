@@ -15,8 +15,16 @@
   <on_crash>destroy</on_crash>
   <devices>
     <emulator>/usr/bin/kvm</emulator>
+#if $net_bridged
+    <interface type='bridge'>
+      <source bridge='br0'/>
+#else
     <interface type='network'>
       <source network='default'/>
+#end if
+#if $net_virtio
+      <model type='virtio'/>
+#end if
     </interface>
     <input type='mouse' bus='ps2'/>
     <graphics type='vnc' port='-1' listen='127.0.0.1'/>

@@ -26,6 +26,9 @@ class Libvirt(Plugin):
     def register_options(self):
         group = self.vm.setting_group('libvirt integration')
         group.add_option('--libvirt', metavar='URI', help='Add VM to given URI')
+        group.add_option('--net-bridged', default=False, action="store_true", help='Set up the network as bridged [default: %default]. Conf name: net_bridged')
+        group.add_option('--net-virtio', default=False, action="store_true",help='Set up the network to use virtio [default: %default]. Conf name: net_virtio')
+
         self.vm.register_setting_group(group)
 
     def all_domains(self):
