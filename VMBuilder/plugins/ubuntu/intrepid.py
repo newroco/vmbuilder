@@ -25,10 +25,10 @@ from   VMBuilder.plugins.ubuntu.hardy import Hardy
 
 class Intrepid(Hardy):
     def xen_kernel_path(self):
-        return '/boot/vmlinuz-2.6.27-2-server'
+        return '/boot/vmlinuz-2.6.27-7-server'
 
     def xen_ramdisk_path(self):
-        return '/boot/initrd.img-2.6.27-2-server'
+        return '/boot/initrd.img-2.6.27-7-server'
 
     def mangle_grub_menu_lst(self):
         bootdev = disk.bootpart(self.vm.disks)

@@ -58,10 +58,18 @@ class EC2(Plugin):
             raise VMBuilderUserError('When building for EC2 you must provide your EC2 user ID (your AWS account number, not your AWS access key ID)')
 
         if not self.vm.ec2_kernel:
-            raise VMBuilderUserError('When building for EC2 you must provide the AKI')
+            logging.info('No ec2-aki choosen setting to default. Use --ec2-kernel to change this')
+            if self.vm.arch == 'amd64':
+                self.vm.ec2_kernel = 'aki-a53adfcc'
+            else:
+                self.vm.ec2_kernel = 'aki-a71cf9ce'
 
         if not self.vm.ec2_ramdisk:
-            raise VMBuilderUserError('When building for Ec2 you must provide the ARI')
+            logging.debug('No ec2-ari choosen setting to default. Use --ec2-ramdisk to change this.')
+            if self.vm.arch == 'amd64':
+                self.vm.ec2_ramdisk = 'ari-b31cf9da'
+            else:
+                self.vm.ec2_ramdisk = 'ari-a51cf9cc'
 
         if not self.vm.ec2_bucket:
             raise VMBuilderUserError('When building for EC2 you must provide an S3 bucket to hold the AMI')
