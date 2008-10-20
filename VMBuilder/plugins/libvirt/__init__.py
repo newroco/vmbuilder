@@ -52,6 +52,9 @@ class Libvirt(Plugin):
         if self.isDomain(self.vm.hostname) and not self.vm.overwrite:
             raise VMBuilderUserError('Domain %s already exists at %s' % (self.vm.hostname, self.vm.libvirt))
 
+        if not self.vm.hypervisor.name == 'KVM':
+            raise VMBuilderUserError('The libvirt plugin is only equiped to work with KVM at the moment.')
+
     def deploy(self):
         if not self.vm.libvirt:
             # Not for us
