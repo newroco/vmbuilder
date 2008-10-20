@@ -58,6 +58,9 @@ class Libvirt(Plugin):
         if not self.vm.hypervisor.name == 'KVM':
             raise VMBuilderUserError('The libvirt plugin is only equiped to work with KVM at the moment.')
 
+        if self.vm.net_virtio and self.vm.suite in ['dapper', 'edgy', 'feisty', 'gutsy']:
+            raise VMBuilderUserError('Network virtio drivers are not present before 8.10 (hardy).')
+
     def deploy(self):
         if not self.vm.libvirt:
             # Not for us
