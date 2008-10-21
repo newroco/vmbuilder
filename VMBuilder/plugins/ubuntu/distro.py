@@ -20,7 +20,7 @@
 import VMBuilder
 from   VMBuilder           import register_distro, Distro
 from   VMBuilder.util      import run_cmd
-from   VMBuilder.exception import VMBuilderUserError, VMBuilderException
+from   VMBuilder.exception import VMBuilderUserError
 import socket
 import logging
 import types
@@ -90,7 +90,7 @@ class Ubuntu(Distro):
         and whatnot, we might as well go ahead an do this now."""
 
         if not self.vm.suite in self.suites:
-            raise VMBuilderException('Invalid suite. Valid suites are: %s' % ' '.join(self.suites))
+            raise VMBuilderUserError('Invalid suite. Valid suites are: %s' % ' '.join(self.suites))
         
         modname = 'VMBuilder.plugins.ubuntu.%s' % (self.vm.suite, )
         mod = __import__(modname, fromlist=[self.vm.suite])
