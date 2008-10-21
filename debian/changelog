@@ -40,6 +40,7 @@ vm-builder (0.9-0ubuntu3) UNRELEASED; urgency=low
     nothing else is supported yet.
   * Write out disk info in vmware's .vmx, converting it to use template while
     at it (LP: #286487)
+  * Add 'config.version = "8"' to vmware.tmpl to fix LP: #286531
 
   [Mathias Gug]
   * Fix --templates option.
