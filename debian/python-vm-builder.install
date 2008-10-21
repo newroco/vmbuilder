@@ -9,3 +9,4 @@ debian/tmp/usr/lib/python2.5/site-packages/VMBuilder/plugins/libvirt
 debian/tmp/usr/lib/python2.5/site-packages/VMBuilder/plugins/postinst
 debian/tmp/usr/lib/python2.5/site-packages/VMBuilder/plugins/ubuntu
 debian/tmp/usr/lib/python2.5/site-packages/VMBuilder/plugins/xen
+debian/tmp/usr/lib/python2.5/site-packages/VMBuilder/plugins/vmware

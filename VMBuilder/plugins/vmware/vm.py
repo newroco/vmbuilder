@@ -37,26 +37,11 @@ class VMWare(Hypervisor):
             self.vm.result_files.append(img_path)
 
     def deploy(self):
+        vmdesc = VMBuilder.util.render_template('vmware', self.vm, 'vmware',  { 'vmhwversion' : self.vmhwversion, 'mem' : self.vm.mem, 'hostname' : self.vm.hostname, 'arch' : self.vm.arch, 'guestos' : (self.vm.arch == 'amd64' and 'ubuntu-64' or 'ubuntu') })
+
         vmx = '%s/%s.vmx' % (self.vm.destdir, self.vm.hostname)
         fp = open(vmx, 'w')
-        fp.write("""config.version = "8"
-virtualHW.version = "%(vmhwversion)s"
-scsi0.present = "FALSE"
-scsi0.virtualDev = "lsilogic"
-memsize = "%(mem)d"
-Ethernet0.virtualDev = "vlance"
-Ethernet0.present = "TRUE"
-Ethernet0.connectionType = "bridged"
-displayName = "%(hostname)s %(arch)s"
-guestOS = "%(guestos)s"
-priority.grabbed = "normal"
-priority.ungrabbed = "normal"
-powerType.powerOff = "hard"
-powerType.powerOn = "hard"
-powerType.suspend = "hard"
-powerType.reset = "hard"
-floppy0.present = "FALSE"
-""" % { 'vmhwversion' : self.vmhwversion, 'mem' : self.vm.mem, 'hostname' : self.vm.hostname, 'arch' : self.vm.arch, 'guestos' : (self.vm.arch == 'amd64' and 'ubuntu-64' or 'ubuntu') })
+        fp.write(vmdesc)
         fp.close()
         os.chmod(vmx, stat.S_IRWXU | stat.S_IRWXU | stat.S_IROTH | stat.S_IXOTH)
         self.vm.result_files.append(vmx)

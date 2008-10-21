@@ -38,6 +38,8 @@ vm-builder (0.9-0ubuntu3) UNRELEASED; urgency=low
     Damen for the pointer (LP: #285093)
   * The libvirt plugin now errors out if used with something else than KVM, as
     nothing else is supported yet.
+  * Write out disk info in vmware's .vmx, converting it to use template while
+    at it (LP: #286487)
 
   [Mathias Gug]
   * Fix --templates option.
