@@ -46,7 +46,7 @@ class EC2(Plugin):
             raise VMBuilderUserError('When building for EC2 you must use the xen hypervisor.')
 
         if not self.vm.ec2_name:
-            raise VMBuilderUserError('When building for EC2 you must supply the name for the instance.')
+            raise VMBuilderUserError('When building for EC2 you must supply the name for the image.')
 
         if not self.vm.ec2_cert:
             raise VMBuilderUserError('When building for EC2 you must provide your PEM encoded public key certificate using the --ec2-cert option')
