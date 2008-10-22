@@ -358,6 +358,7 @@ class VM(object):
         fss = disk.get_ordered_filesystems(self)
         for fs in fss:
             fs.mount()
+            self.distro.post_mount(fs)
 
     def umount_partitions(self):
         """Unmounts all the vm's partitions and filesystems"""

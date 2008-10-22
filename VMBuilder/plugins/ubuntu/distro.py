@@ -115,6 +115,9 @@ class Ubuntu(Distro):
 
         self.suite.install(destdir)
 
+    def post_mount(self, fs):
+        self.suite.post_mount(fs)
+
     def install_bootloader(self):
         devmapfile = '%s/device.map' % self.vm.workdir
         devmap = open(devmapfile, 'w')

@@ -122,9 +122,6 @@ class Dapper(suite.Suite):
         self.install_from_template('/etc/hosts', 'etc_hosts', { 'hostname' : self.vm.hostname, 'domain' : self.vm.domain }) 
         self.install_from_template('/etc/network/interfaces', 'interfaces')
 
-        #fix bug lp:276365
-        os.mkdir('%s/var/run/network' % self.destdir, 755)
-
     def unprevent_daemons_starting(self):
         os.unlink('%s/usr/sbin/policy-rc.d' % self.destdir)
 
@@ -207,4 +204,11 @@ class Dapper(suite.Suite):
         
     def run_in_target(self, *args, **kwargs):
         return run_cmd('chroot', self.destdir, *args, **kwargs)
+
+    def post_mount(self, fs):
+        if fs.mntpnt == '/':
+            logging.debug("Creating /var/run in root filesystem")
+            os.makedirs('%s/var/run' % fs.mntpath)
+            logging.debug("Creating /var/lock in root filesystem")
+            os.makedirs('%s/var/lock' % fs.mntpath)
 

@@ -30,3 +30,5 @@ class Distro(VMBuilder.plugins.Plugin):
         """Install the distro into destdir"""
         raise NotImplemented('Distro subclasses need to implement the install method')
 
+    def post_mount(self, fs):
+        """Called each time a filesystem is mounted to let the distro add things to the filesystem"""
