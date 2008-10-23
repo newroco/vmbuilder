@@ -30,17 +30,7 @@ class Libvirt(Plugin):
 
     def all_domains(self):
         # This does not seem to work when any domain is already running
-        return self.conn.listDefinedDomains() + [self.conn.lookupById(id).name for id in self.conn.listDomainsID()]
-
-    def isDomain(self, name):
-        try:
-            self.conn.lookupByName(name)
-        except:
-            # Failed to find the domain
-            return False
-
-        return True
-
+        return self.conn.listDefinedDomains() + [self.conn.lookupByID(id).name() for id in self.conn.listDomainsID()]
 
     def preflight_check(self):
         if not self.vm.libvirt:
@@ -49,7 +39,7 @@ class Libvirt(Plugin):
         import libvirt
 
         self.conn = libvirt.open(self.vm.libvirt)
-        if self.isDomain(self.vm.hostname) and not self.vm.overwrite:
+        if self.vm.hostname in self.all_domains() and not self.vm.overwrite:
             raise VMBuilderUserError('Domain %s already exists at %s' % (self.vm.hostname, self.vm.libvirt))
 
         if not self.vm.hypervisor.name == 'KVM':
