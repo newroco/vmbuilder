@@ -30,7 +30,7 @@ show this help message and exit
 Specify the path to an optional configuration file. [default:None]. /etc/vmbuilder.cfg and ~/.vmbuilder.cfg are always read if present. The content of the configuration file is explained at https://help.ubuntu.com/community/JeOSVMBuilder#Using%20configuration%20files.
 .TP
 .B \-d DEST, \-\-dest DEST  
-Specify the destination directory. [default:<hypervisor>-<distro>]. Conf name: destdir.
+Specify the destination directory. [default:<hypervisor>-<distro>]. Config option: destdir.
 .TP
 .B \-\-debug
 Show (a lot of) debug information
@@ -51,7 +51,7 @@ Prepends dir to template search path. See https://help.ubuntu.com/community/JeOS
 Force overwrite of destination directory if it already exist. [default: False]
 .TP
 .B \-\-in-place            
-Install directly into the filesystem images. This is needed if your \$TMPDIR is nodev and/or nosuid, but will result in slightly larger file system images. Conf name: in_place.
+Install directly into the filesystem images. This is needed if your \$TMPDIR is nodev and/or nosuid, but will result in slightly larger file system images.
 .TP
 .B \-\-tmpfs OPTS          
 Use a tmpfs as the working directory, specifying its size or "-" to use tmpfs default (suid,dev,size=1G).
@@ -127,7 +127,7 @@ Read 'source dest' lines from FILE, copying source files from host to dest in th
 .B \-\-execscript SCRIPT, \-\-exec SCRIPT
 Run SCRIPT after distro installation finishes. Script will be called with the guest's chroot as first argument, so you can use
 .B chroot $1 <cmd>
-to run code in the virtual machine. Conf name: execscript.
+to run code in the virtual machine.
 
 .SS libvirt integration:
 .TP

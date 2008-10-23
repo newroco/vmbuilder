@@ -123,7 +123,7 @@ class VM(object):
         return optparse.OptionGroup(self.optparser, *args, **kwargs)
 
     def _register_base_settings(self):
-        self.register_setting('-d', '--dest', dest='destdir', help='Specify the destination directory. [default: <hypervisor>-<distro>]. Conf name: destdir')
+        self.register_setting('-d', '--dest', dest='destdir', help='Specify the destination directory. [default: <hypervisor>-<distro>]. Config option: destdir')
         self.register_setting('-c', '--config',  type='string', help='Specify a additional configuration file')
         self.register_setting('--debug', action='callback', callback=log.set_verbosity, help='Show debug information')
         self.register_setting('-v', '--verbose', action='callback', callback=log.set_verbosity, help='Show progress information')
@@ -131,7 +131,7 @@ class VM(object):
         self.register_setting('-t', '--tmp', default=os.environ.get('TMPDIR', '/tmp'), help='Use TMP as temporary working space for image generation. Defaults to $TMPDIR if it is defined or /tmp otherwise. [default: %default]')
         self.register_setting('--templates', metavar='DIR', help='Prepend DIR to template search path.')
         self.register_setting('-o', '--overwrite', action='store_true', default=False, help='Force overwrite of destination directory if it already exist. [default: %default]')
-        self.register_setting('--in-place', action='store_true', default=False, help='Install directly into the filesystem images. This is needed if your \$TMPDIR is nodev and/or nosuid, but will result in slightly larger file system images. Conf name: in_place')
+        self.register_setting('--in-place', action='store_true', default=False, help='Install directly into the filesystem images. This is needed if your \$TMPDIR is nodev and/or nosuid, but will result in slightly larger file system images.')
         self.register_setting('--tmpfs', metavar="OPTS", help='Use a tmpfs as the working directory, specifying its size or "-" to use tmpfs default (suid,dev,size=1G).')
         self.register_setting('-m', '--mem', type='int', default=128, help='Assign MEM megabytes of memory to the guest vm. [default: %default]')
 
@@ -390,6 +390,10 @@ class VM(object):
             self.distro.install_bootloader()
 
     def preflight_check(self):
+        for opt in sum([self.confparser.options(section) for section in self.confparser.sections()], []) + [k for (k,v) in self.confparser.defaults().iteritems()]:
+            if '-' in opt:
+                raise VMBuilderUserError('You specified a "%s" config option in a config file, but that is not valid. Perhaps you meant "%s"?' % (opt, opt.replace('-', '_')))
+
         self.ip_defaults()
         self.call_hooks('preflight_check')
 
@@ -449,7 +453,7 @@ class VM(object):
             raise e
         finally:
             if not finished:
-                logging.critical("Oh, dear, an exception occurred")
+                logging.debug("Oh, dear, an exception occurred")
             self.cleanup()
 
 class _MyOptParser(optparse.OptionParser):

@@ -68,8 +68,8 @@ class Ubuntu(Distro):
         self.vm.register_setting_group(group)
 
         group = self.vm.setting_group('Other options')
-        group.add_option('--ssh-key', metavar='PATH', help='Add PATH to root\'s ~/.ssh/authorized_keys (WARNING: this has strong security implications). Conf name: ssh_key')
-        group.add_option('--ssh-user-key', help='Add PATH to the user\'s ~/.ssh/authorized_keys. Conf name: ssh_user_key')
+        group.add_option('--ssh-key', metavar='PATH', help='Add PATH to root\'s ~/.ssh/authorized_keys (WARNING: this has strong security implications).')
+        group.add_option('--ssh-user-key', help='Add PATH to the user\'s ~/.ssh/authorized_keys.')
         self.vm.register_setting_group(group)
 
     def set_defaults(self):

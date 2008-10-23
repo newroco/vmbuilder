@@ -35,7 +35,7 @@ class postinst(Plugin):
     def register_options(self):
         group = self.vm.setting_group('Post install actions')
         group.add_option('--copy', metavar='FILE', help="Read 'source dest' lines from FILE, copying source files from host to dest in the guest's file system.")
-        group.add_option('--execscript', '--exec', metavar='SCRIPT', help="Run SCRIPT after distro installation finishes. Script will be called with the guest's chroot as first argument, so you can use 'chroot $1 <cmd>' to run code in the virtual machine. Conf name: execscript")
+        group.add_option('--execscript', '--exec', metavar='SCRIPT', help="Run SCRIPT after distro installation finishes. Script will be called with the guest's chroot as first argument, so you can use 'chroot $1 <cmd>' to run code in the virtual machine.")
         self.vm.register_setting_group(group)
 
     def preflight_check(self):
