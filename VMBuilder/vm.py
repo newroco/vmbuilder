@@ -123,7 +123,7 @@ class VM(object):
         return optparse.OptionGroup(self.optparser, *args, **kwargs)
 
     def _register_base_settings(self):
-        self.register_setting('-d', '--dest', dest='destdir', help='Specify the destination directory. [default: <hypervisor>-<distro>]. Config option: destdir')
+        self.register_setting('-d', '--dest', dest='destdir', help='Specify the destination directory. [default: <hypervisor>-<distro>].')
         self.register_setting('-c', '--config',  type='string', help='Specify a additional configuration file')
         self.register_setting('--debug', action='callback', callback=log.set_verbosity, help='Show debug information')
         self.register_setting('-v', '--verbose', action='callback', callback=log.set_verbosity, help='Show progress information')

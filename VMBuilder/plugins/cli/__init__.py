@@ -48,10 +48,16 @@ class CLI(VMBuilder.Frontend):
             vm.register_setting('--raw', metavar='PATH', type='string', help="Specify a file (or block device) to as first disk image.")
             vm.register_setting('--part', metavar='PATH', type='string', help="Allows to specify a partition table in PATH each line of partfile should specify (root first): \n    mountpoint size \none per line, separated by space, where size is in megabytes. You can have up to 4 virtual disks, a new disk starts on a line containing only '---'. ie: \n    root 2000 \n    /boot 512 \n    swap 1000 \n    --- \n    /var 8000 \n    /var/log 2000")
             self.set_usage(vm)
+
             vm.optparser.disable_interspersed_args()
             (foo, args) = vm.optparser.parse_args()
             self.handle_args(vm, args)
             vm.optparser.enable_interspersed_args()
+
+            for opt in vm.optparser.option_list + sum([grp.option_list for grp in vm.optparser.option_groups], []):
+                if len(opt._long_opts) > 1 or (opt.action == 'store' and opt._long_opts[0][2:] != opt.dest):
+                    opt.help += " Config option: %s" % opt.dest
+
             (settings, args) = vm.optparser.parse_args(values=optparse.Values())
             for (k,v) in settings.__dict__.iteritems():
                 setattr(vm, k, v)

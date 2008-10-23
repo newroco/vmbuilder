@@ -34,8 +34,8 @@ class EC2(Plugin):
         group.add_option('--ec2-bucket', metavar='BUCKET', help='S3 bucket to hold the AMI.')
         group.add_option('--ec2-access-key', metavar='ACCESS_ID', help='AWS access key ID.')
         group.add_option('--ec2-secret-key', metavar='SECRET_ID', help='AWS secret access key.')
-        group.add_option('--ec2-kernel','--ec2-aki', metavar='EC2_KERNEL', help='EC2 AKI (kernel) to use.')
-        group.add_option('--ec2-ramdisk','--ec2-ari', metavar='EC2_RAMDISK', help='EC2 ARI (ramdisk) to use.')
+        group.add_option('--ec2-kernel','--ec2-aki', metavar='AKI', help='EC2 AKI (kernel) to use.')
+        group.add_option('--ec2-ramdisk','--ec2-ari', metavar='ARI', help='EC2 ARI (ramdisk) to use.')
         self.vm.register_setting_group(group)
 
     def preflight_check(self):
