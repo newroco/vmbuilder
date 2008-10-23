@@ -49,16 +49,16 @@ class EC2(Plugin):
             raise VMBuilderUserError('When building for EC2 you must supply the name for the instance.')
 
         if not self.vm.ec2_cert:
-            raise VMBuilderUserError('When building for EC2 you must provide your PEM encoded public key certificate using the --ec2-cert option')
+            raise VMBuilderUserError('When building for EC2 you must provide your PEM encoded public key certificate')
 
         if not self.vm.ec2_key:
-            raise VMBuilderUserError('When building for EC2 you must provide your PEM encoded private key file the --ec2-key option')
+            raise VMBuilderUserError('When building for EC2 you must provide your PEM encoded private key file')
 
         if not self.vm.ec2_user:
             raise VMBuilderUserError('When building for EC2 you must provide your EC2 user ID (your AWS account number, not your AWS access key ID)')
 
         if not self.vm.ec2_kernel:
-            logging.info('No ec2-aki choosen setting to default. Use --ec2-kernel to change this')
+            logging.debug('No ec2-aki choosen setting to default. Use --ec2-kernel to change this')
             if self.vm.arch == 'amd64':
                 self.vm.ec2_kernel = 'aki-a53adfcc'
             else:
