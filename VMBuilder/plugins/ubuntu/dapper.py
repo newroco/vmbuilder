@@ -79,11 +79,14 @@ class Dapper(suite.Suite):
         logging.debug("Installing extra packages")
         self.install_extras()
 
-        
         logging.debug("Creating initial user")
         self.create_initial_user()
 
+        logging.debug("Installing ssh keys")
         self.install_authorized_keys()
+
+        logging.debug("Making sure system is up-to-date")
+        self.update()
 
         logging.debug("Unmounting volatile lrm filesystems")
         self.unmount_volatile()
@@ -91,6 +94,9 @@ class Dapper(suite.Suite):
         logging.debug("Unpreventing daemons from starting")
         self.unprevent_daemons_starting()
 
+    def update(self):
+        self.run_in_target('apt-get', '-y', '--force-yes', 'dist-upgrade')
+        
     def install_authorized_keys(self):
         if self.vm.ssh_key:
             os.mkdir('%s/root/.ssh' % self.destdir, 0700)
