@@ -1,4 +1,4 @@
-vm-builder (0.9-0ubuntu3) UNRELEASED; urgency=low
+vm-builder (0.9-0ubuntu3) intrepid; urgency=low
 
   [ Johan Euphrosine ]
   * Fix exception when suite provided does not exist (LP: #281801) 
@@ -42,7 +42,7 @@ vm-builder (0.9-0ubuntu3) UNRELEASED; urgency=low
     at it (LP: #286487)
   * Add 'config.version = "8"' to vmware.tmpl to fix LP: #286531
 
-  [Mathias Gug]
+  [ Mathias Gug ]
   * Fix --templates option.
 
   [ Soren Hansen ]
