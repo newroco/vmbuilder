@@ -1,17 +1,17 @@
 vm-builder (0.9-0ubuntu3) UNRELEASED; urgency=low
 
-  [Johan Euphrosine]
+  [ Johan Euphrosine ]
   * Fix exception when suite provided does not exist (LP: #281801) 
-    and provide unit test for it
+    and provide unit test for it.
 
-  [Chuck Short]
-  * Added parameters required for EC2 plugin
-  * use ec2_name instead of hostname when submitting an AMI
+  [ Chuck Short ]
+  * Added parameters required for EC2 plugin.
+  * Use ec2_name instead of hostname when submitting an AMI.
   * Update xen_kernel_path and xen_ramdisk_path for intrepid.
   * Default to amazon kernels/ramdisk pairs for now.
   * Split out ec2 module into its own package. (LP: #284762)
 
-  [Nicolas Barcet]
+  [ Nicolas Barcet ]
   * Error out if domain is undefined (LP: #280125)
   * Fix --dest so that it is actually used now (LP: #280091)
   * Fix -c handling, values are now used (LP: #279159)
@@ -45,7 +45,10 @@ vm-builder (0.9-0ubuntu3) UNRELEASED; urgency=low
   [Mathias Gug]
   * Fix --templates option.
 
- -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Thu, 17 Oct 2008 23:56:33 -0400
+  [ Soren Hansen ]
+  * Create /var/{run,lock} on the root filesystem, just like d-i.
+
+ -- Soren Hansen <soren@ubuntu.com>  Fri, 24 Oct 2008 13:15:23 +0200
 
 vm-builder (0.9-0ubuntu2) intrepid; urgency=low
 
