@@ -46,7 +46,7 @@ class KVM(Hypervisor):
     def deploy(self):
         script = '%s/run.sh' % self.vm.destdir
         fp = open(script, 'w')
-        fp.write("#!/bin/sh\n\n%s\n" % ' '.join(self.cmdline))
+        fp.write("#!/bin/sh\n\nexec %s\n" % ' '.join(self.cmdline))
         fp.close()
         os.chmod(script, stat.S_IRWXU | stat.S_IRWXU | stat.S_IROTH | stat.S_IXOTH)
         self.vm.result_files.append(script)
