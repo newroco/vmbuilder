@@ -41,7 +41,7 @@ class KVM(Hypervisor):
             self.cmdline += ['-drive', 'file=%s' % os.path.basename(img_path)]
 
     
-        self.cmdline += ['$@']
+        self.cmdline += ['"$@"']
 
     def deploy(self):
         script = '%s/run.sh' % self.vm.destdir
