@@ -21,6 +21,7 @@
 import ConfigParser
 from   gettext             import gettext
 import logging
+import re
 import os
 import optparse
 import shutil
@@ -264,6 +265,13 @@ class VM(object):
         """
 
         logging.debug("ip: %s" % self.ip)
+        
+        if self.mac:
+            valid_mac_address = re.compile("([0-9a-f]{2}:){5}([0-9a-f]{2})", re.IGNORECASE)
+            if not valid_mac_address.search(self.mac):
+                raise VMBuilderUserError("Malformed MAC address entered: %s" % self.mac)
+            else:
+                logging.debug("mac: %s" % self.mac)
 
         if self.ip != 'dhcp':
             if self.domain == '':
