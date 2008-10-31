@@ -16,6 +16,9 @@
   <devices>
     <emulator>/usr/bin/kvm</emulator>
     <interface type='network'>
+#if $mac
+      <mac address='$mac'/>
+#end if
       <source network='default'/>
     </interface>
     <input type='mouse' bus='ps2'/>
