@@ -1,8 +1,10 @@
 vm-builder (0.9.1-0ubuntu0) UNRELEASED; urgency=low
 
   * integrate ec2 postinstall script
+  * add --install-mirror to fix LP: #291639
+  * implement --iso to fix LP: #291590
 
- -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Fri, 31 Oct 2008 23:43:03 +0100
+ -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Sat, 01 Nov 2008 00:45:17 +0100
 
 vm-builder (0.9-0ubuntu3) intrepid; urgency=low
 
