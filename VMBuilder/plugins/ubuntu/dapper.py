@@ -183,11 +183,22 @@ class Dapper(suite.Suite):
 
     def debootstrap(self):
         cmd = ['/usr/sbin/debootstrap', '--arch=%s' % self.vm.arch, self.vm.suite, self.destdir ]
-        if self.vm.install_mirror:
+
+        if self.vm.iso:
+            isodir = '%s/isomnt' % self.destdir
+            run_cmd ('mkdir', isodir)
+            run_cmd ('mount', '-o loop', '-t iso9660', self.vm.iso, isodir)
+            cmd += ['file:///%s' % isodir]
+        elif self.vm.install_mirror:
             cmd += [self.vm.install_mirror]
         elif self.vm.mirror:
             cmd += [self.vm.mirror]
+
         run_cmd(*cmd)
+
+        if self.vm.iso:
+            run_cmd ('umount', isodir)
+            run_cmd ('rmdir', isodir)
 
     def install_kernel(self):
         self.install_from_template('/etc/kernel-img.conf', 'kernelimg', { 'updategrub' : self.updategrub }) 

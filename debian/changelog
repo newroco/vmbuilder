@@ -1,6 +1,7 @@
 vm-builder (0.9.1-0ubuntu0) UNRELEASED; urgency=low
 
   * add --install-mirror to fix LP: #291639
+  * implement --iso to fix LP: #291590
 
  -- Nicolas Barcet <nicolas.barcet@ubuntu.com> Fri, 31 Oct 2008 17:35:17 +0100
 
