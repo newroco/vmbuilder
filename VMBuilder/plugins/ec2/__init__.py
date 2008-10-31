@@ -86,6 +86,12 @@ class EC2(Plugin):
 
         self.vm.addpkg += ['ec2-init']
 
+    def postinstall(self):
+        logging.info("running ec2 postinstall script")
+        self.install_from_template('/root/postinstall.sh', 'postinstall', { 'user' : self.vm.user, 'arch' : self.vm.arch })
+        run_cmd('%s/root/postinstall.sh' % self.vm.installdir, self.vm.installdir)
+
+
     def deploy(self):
         if not self.vm.ec2:
             return False
