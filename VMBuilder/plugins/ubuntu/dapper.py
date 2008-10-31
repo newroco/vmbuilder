@@ -183,7 +183,9 @@ class Dapper(suite.Suite):
 
     def debootstrap(self):
         cmd = ['/usr/sbin/debootstrap', '--arch=%s' % self.vm.arch, self.vm.suite, self.destdir ]
-        if self.vm.mirror:
+        if self.vm.install_mirror:
+            cmd += [self.vm.install_mirror]
+        elif self.vm.mirror:
             cmd += [self.vm.mirror]
         run_cmd(*cmd)
 
