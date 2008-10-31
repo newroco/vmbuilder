@@ -6,6 +6,10 @@ memsize = "$mem"
 Ethernet0.virtualDev = "vlance"
 Ethernet0.present = "TRUE"
 Ethernet0.connectionType = "bridged"
+#if $mac
+Ethernet0.addressType = "static"
+Ethernet0.address = "$mac"
+#end if
 displayName = "$hostname $arch"
 guestOS = "$guestos"
 priority.grabbed = "normal"
