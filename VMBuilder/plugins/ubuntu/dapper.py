@@ -173,6 +173,8 @@ class Dapper(suite.Suite):
         run_cmd('sed', '-ie', '/^# kopt_2_6/ d', '%s/boot/grub/menu.lst' % self.destdir)
 
     def install_sources_list(self, final=False):
+        mirror = ''
+
         if final:
             # avoid running a second time if mirror does not change
             if self.mirror != self.vm.mirror:
