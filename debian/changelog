@@ -1,3 +1,11 @@
+vm-builder (0.9.1-0ubuntu0) UNRELEASED; urgency=low
+
+  [ Nicolas Barcet ]
+  * Check network accessibility in preflight check (LP: #289769)
+  * Add a small man page for ubuntu-vm-builder to redirect to vmbuilder.
+
+ -- Soren Hansen <soren@ubuntu.com>  Fri, 01 Nov 2008 21:15:23 +0100
+
 vm-builder (0.9-0ubuntu3) intrepid; urgency=low
 
   [ Johan Euphrosine ]

@@ -28,6 +28,7 @@ import tempfile
 import textwrap
 import socket
 import struct
+import urllib
 import VMBuilder
 import VMBuilder.util      as util
 import VMBuilder.log       as log
@@ -396,6 +397,14 @@ class VM(object):
 
         self.ip_defaults()
         self.call_hooks('preflight_check')
+
+        # Check network availability
+        try:
+            testnet = urllib.urlopen('http://archive.ubuntu.com/')
+        except IOError:
+            raise VMBuilderUserError('A working internet connexion is required to run this program. Please check your internet connectivity and try again')
+
+        testnet.close()
 
     def install_file(self, path, contents=None, source=None, mode=None):
         fullpath = '%s%s' % (self.installdir, path)
