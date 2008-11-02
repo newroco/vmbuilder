@@ -398,11 +398,16 @@ class VM(object):
         self.ip_defaults()
         self.call_hooks('preflight_check')
 
-        # Check network availability
+        # Check repository availability
+        if self.mirror:
+            testurl = self.mirror
+        else:
+            testurl = 'http://archive.ubuntu.com/'
+
         try:
-            testnet = urllib.urlopen('http://archive.ubuntu.com/')
+            testnet = urllib.urlopen(testurl)
         except IOError:
-            raise VMBuilderUserError('A working internet connexion is required to run this program. Please check your internet connectivity and try again')
+            raise VMBuilderUserError('A working network connexion to a package repository is required to run this program. Please check your connectivity and try again.')
 
         testnet.close()
 
