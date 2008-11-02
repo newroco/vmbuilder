@@ -100,6 +100,16 @@ def run_cmd(*argv, **kwargs):
     else:
         stdin_arg = file('/dev/null', 'w')
     proc_env = os.environ
+    # save environment state
+    try:
+        sLANG = proc_env['LANG']
+    except:
+        sLANG = ''
+    try:
+        sLC = proc_env['LC_ALL']
+    except:
+        sLC = ''
+
     proc_env['LANG'] = 'C'
     proc_env['LC_ALL'] = 'C'
     proc_env.update(env)
@@ -126,6 +136,10 @@ def run_cmd(*argv, **kwargs):
     status = proc.wait()
     if not ignore_fail and status != 0:
         raise VMBuilderException, "Process (%s) returned %d. stdout: %s, stderr: %s" % (args.__repr__(), status, stdout, stderr)
+
+    #restore environement state
+    proc_env['LANG'] = sLANG
+    proc_env['LC_ALL'] = sLC
     return stdout
 
 def give_to_caller(path):

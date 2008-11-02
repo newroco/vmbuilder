@@ -85,6 +85,9 @@ class Dapper(suite.Suite):
         logging.debug("Installing ssh keys")
         self.install_authorized_keys()
 
+        logging.debug("Copy host settings")
+        self.copy_settings()
+
         logging.debug("Making sure system is up-to-date")
         self.update()
 
@@ -218,3 +221,15 @@ class Dapper(suite.Suite):
             logging.debug("Creating /var/lock in root filesystem")
             os.makedirs('%s/var/lock' % fs.mntpath)
 
+    def copy_settings(self):
+        run_cmd('cp', '/etc/default/locale', '%s/etc/default/' % self.destdir)
+        run_cmd('cp', '-a', '/etc/console-setup', '%s/etc/' % self.destdir)
+        run_cmd('cp', '/etc/default/console-setup', '%s/etc/default/' % self.destdir)
+        run_cmd('cp', '/etc/timezone', '%s/etc/' % self.destdir)
+        self.run_in_target('dpkg-reconfigure', '-pcritical', 'tzdata')
+        self.run_in_target('locale-gen', 'en_US')
+        if self.vm.lang:
+            self.run_in_target('locale-gen', self.vm.lang)
+            self.install_from_template('/etc/default/locale', 'locale', { 'lang' : self.vm.lang })
+        self.run_in_target('dpkg-reconfigure', '-pcritical', 'locales')
+        self.run_in_target('dpkg-reconfigure', '-pcritical', 'console-setup')

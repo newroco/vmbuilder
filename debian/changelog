@@ -1,3 +1,10 @@
+vm-builder (0.9.1-0ubuntu0) UNRELEASED; urgency=low
+
+  [ Nicolas Barcet ]
+  * Fix regression on locale settings LP: #292573
+
+ -- Soren Hansen <soren@ubuntu.com>  Sun, 02 Nov 2008 14:35:43 +0100
+
 vm-builder (0.9-0ubuntu3) intrepid; urgency=low
 
   [ Johan Euphrosine ]

@@ -24,6 +24,7 @@ from   VMBuilder.exception import VMBuilderUserError
 import socket
 import logging
 import types
+import os
 
 class Ubuntu(Distro):
     name = 'Ubuntu'
@@ -59,6 +60,7 @@ class Ubuntu(Distro):
         group.add_option('--mirror', metavar='URL', help='Use Ubuntu mirror at URL instead of the default, which is http://archive.ubuntu.com/ubuntu for official arches and http://ports.ubuntu.com/ubuntu-ports otherwise')
         group.add_option('--components', metavar='COMPS', help='A comma seperated list of distro components to include (e.g. main,universe).')
         group.add_option('--ppa', metavar='PPA', action='append', help='Add ppa belonging to PPA to the vm\'s sources.list.')
+        group.add_option('--lang', metavar='LANG', default=self.get_locale(), help='Set the locale to LANG [default: %default]')
         self.vm.register_setting_group(group)
 
         group = self.vm.setting_group('Settings for the initial user')
@@ -83,7 +85,13 @@ class Ubuntu(Distro):
             self.vm.components = ['main', 'restricted', 'universe']
         else:
             self.vm.components = self.vm.components.split(',')
-        
+
+    def get_locale(self):
+        try:
+            return os.environ['LANG']
+        except:
+            return None
+
     def preflight_check(self):
         """While not all of these are strictly checks, their failure would inevitably
         lead to failure, and since we can check them before we start setting up disk
