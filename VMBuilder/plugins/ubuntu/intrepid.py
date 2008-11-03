@@ -24,21 +24,10 @@ from   VMBuilder.util import run_cmd
 from   VMBuilder.plugins.ubuntu.hardy import Hardy
 
 class Intrepid(Hardy):
-    version = ''
+    xen_kernel_flavour = 'server'
 
     def mangle_grub_menu_lst(self):
         bootdev = disk.bootpart(self.vm.disks)
         run_cmd('sed', '-ie', 's/^# kopt=root=\([^ ]*\)\(.*\)/# kopt=root=UUID=%s\\2/g' % bootdev.fs.uuid, '%s/boot/grub/menu.lst' % self.destdir)
         run_cmd('sed', '-ie', 's/^# groot.*/# groot=%s/g' % bootdev.fs.uuid, '%s/boot/grub/menu.lst' % self.destdir)
         run_cmd('sed', '-ie', '/^# kopt_2_6/ d', '%s/boot/grub/menu.lst' % self.destdir)
-
-    def xen_kernel_version(self):
-        if not self.version:
-            self.version = run_cmd('rmadison', 'linux-server', '|', 'grep', self.vm.suite, '|', 'sed', '"s/linux-server | //;s/|.*//"')
-        return self.version
-
-    def xen_kernel_path(self):
-        return 'vmlinuz-%s-server' % self.xen_kernel_version()
-
-    def xen_ramdisk_path(self):
-        return 'initrd.img-%s-server' % self.xen_kernel_version()

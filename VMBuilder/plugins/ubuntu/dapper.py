@@ -34,7 +34,7 @@ class Dapper(suite.Suite):
                        'amd64' : ['amd64-generic', 'amd64-k8', 'amd64-k8-smp', 'amd64-server', 'amd64-xeon']}
     default_flavour = { 'i386' : 'server', 'amd64' : 'amd64-server' }
     disk_prefix = 'hd'
-    version = ''
+    xen_kernel_flavour = ''
 
     def check_kernel_flavour(self, arch, flavour):
         return flavour in self.valid_flavours[arch]
@@ -209,13 +209,3 @@ class Dapper(suite.Suite):
     def run_in_target(self, *args, **kwargs):
         return run_cmd('chroot', self.destdir, *args, **kwargs)
 
-    def xen_kernel_version(self):
-        if not self.version:
-            self.version = run_cmd('rmadison', 'linux-xen', '|', 'grep', self.vm.suite, '|', 'sed', '"s/linux-xen | //;s/|.*//"')
-        return self.version
-
-    def xen_kernel_path(self):
-        return 'vmlinuz-%s-xen' % self.xen_kernel_version()
-
-    def xen_ramdisk_path(self):
-        return 'initrd.img-%s-xen' % self.xen_kernel_version()
