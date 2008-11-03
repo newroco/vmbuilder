@@ -85,6 +85,7 @@ class EC2(Plugin):
              self.vm.addpkg = []
 
         self.vm.addpkg += ['ec2-init']
+        self.vm.addpkg += ['openssh-server']
 
     def post_install(self):
         logging.info("running ec2 postinstall script")

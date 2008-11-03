@@ -4,6 +4,7 @@ vm-builder (0.9.1-0ubuntu0) UNRELEASED; urgency=low
   * Integrate ec2 postinstall script
   * Add --install-mirror to fix LP: #291639
   * Implement --iso to fix LP: #291590
+  * Install openssh-server cleanly LP: #293039
   
   [ Eric Hammond ]
   * Fix post_install bugs LP: #292888, LP: #292891 & LP: #292901
