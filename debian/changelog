@@ -2,7 +2,8 @@ vm-builder (0.9.1-0ubuntu0) UNRELEASED; urgency=low
 
   [ Nicolas Barcet ]
   * Xen kernel and ramdisk are now dynamically discovered rather than
-    computed
+    hard coded
+  * Add --xen-kernel and --xen-ramdisk to override automatic discovery
 
  -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Thu, 17 Oct 2008 23:56:33 -0400
 
