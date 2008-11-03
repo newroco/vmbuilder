@@ -1,6 +1,14 @@
-chroot $1 apt-get install -y wget
+#!/bin/bash
+#
+# "vmbuilder --ec2" plugin postinstall script
+# sets up the image so that it is usable on EC2
+#
+
+set -e
+
+chroot $1 apt-get install -y --force-yes wget
 chroot $1 rm -f /etc/udev/rules.d/70-persistent-net.rules
-chroot $1 apt-get install -y openssh-server
+chroot $1 apt-get install -y openssh-server || true
 chroot $1 wget http://people.ubuntu.com/~chucks/ec2/ec2-modules-2.6.27-7-${arch}.tar.gz -O /tmp/ec2-modules-2.6.27-7-${arch}.tar.gz
 chroot $1 tar -zxvf /tmp/ec2-modules-2.6.27-7-${arch}.tar.gz -C /
 chroot $1 depmod 2.6.27-7-xen

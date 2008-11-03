@@ -88,7 +88,7 @@ class EC2(Plugin):
 
     def post_install(self):
         logging.info("running ec2 postinstall script")
-        self.install_from_template('/root/postinstall.sh', 'postinstall', { 'user' : self.vm.user, 'arch' : self.vm.arch })
+        self.install_from_template('/root/postinstall.sh', 'postinstall', { 'user' : self.vm.user, 'arch' : self.vm.arch }, 0755)
         run_cmd('%s/root/postinstall.sh' % self.vm.installdir, self.vm.installdir)
 
 
