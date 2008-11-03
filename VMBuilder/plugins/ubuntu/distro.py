@@ -90,7 +90,7 @@ class Ubuntu(Distro):
         and whatnot, we might as well go ahead an do this now."""
 
         if not self.vm.suite in self.suites:
-            raise VMBuilderException('Invalid suite. Valid suites are: %s' % ' '.join(self.suites))
+            raise VMBuilderUserError('Invalid suite. Valid suites are: %s' % ' '.join(self.suites))
         
         modname = 'VMBuilder.plugins.ubuntu.%s' % (self.vm.suite, )
         mod = __import__(modname, fromlist=[self.vm.suite])
@@ -107,12 +107,13 @@ class Ubuntu(Distro):
             if isinstance(self.vm.components, types.StringType):
                 self.vm.components = self.vm.components.split(',')
 
+        if self.vm.hypervisor.name = 'Xen':
+            if self.vm.suite in ['dapper','feisty']:
+                VMBuilderUserError('Sorry, no valid Xen kernel for %s.' % self.vm.suite)
+
+
     def install(self, destdir):
         self.destdir = destdir
-
-        self.xen_kernel_path = getattr(self.suite, 'xen_kernel_path', lambda : None)
-        self.xen_ramdisk_path = getattr(self.suite, 'xen_ramdisk_path', lambda: None)
-
         self.suite.install(destdir)
 
     def install_bootloader(self):
