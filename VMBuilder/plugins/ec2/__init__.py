@@ -91,7 +91,7 @@ class EC2(Plugin):
         if not self.vm.ppa:
             self.vm.ppa = []
         
-        self.vm.ppa += ['zulcss']
+        self.vm.ppa += ['ubuntu-ec2']
 
     def post_install(self):
         logging.info("running ec2 postinstall")
