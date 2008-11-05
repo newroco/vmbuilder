@@ -35,6 +35,7 @@ class Dapper(suite.Suite):
     default_flavour = { 'i386' : 'server', 'amd64' : 'amd64-server' }
     disk_prefix = 'hd'
     mirror = ''
+    secmirror = ''
 
     def check_kernel_flavour(self, arch, flavour):
         return flavour in self.valid_flavours[arch]
@@ -174,16 +175,19 @@ class Dapper(suite.Suite):
 
     def install_sources_list(self, final=False):
         mirror = ''
+        secmirror = ''
 
         if final:
             # avoid running a second time if mirror does not change
             if self.mirror != self.vm.mirror:
                 mirror = self.vm.mirror
+                secmirror = self.vm.security_mirror
         else:
             mirror = self.mirror
+            secmirror = self.secmirror
         
         if mirror:
-            self.install_from_template('/etc/apt/sources.list', 'sources.list', { 'mirror' : mirror, 'rmirror' : self.vm.mirror })
+            self.install_from_template('/etc/apt/sources.list', 'sources.list', { 'mirror' : mirror, 'smirror' : secmirror, 'rmirror' : self.vm.mirror })
             self.run_in_target('apt-get', 'update')
 
     def install_fstab(self):
@@ -209,6 +213,11 @@ class Dapper(suite.Suite):
             self.mirror = self.vm.install_mirror
         else:
             self.mirror = self.vm.mirror
+
+        if self.vm.install_security_mirror:
+            self.secmirror = self.vm.install_security_mirror
+        else
+            self.secmirror = self.vm.security_mirror
 
         cmd += [self.mirror]
 

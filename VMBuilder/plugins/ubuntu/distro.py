@@ -58,6 +58,8 @@ class Ubuntu(Distro):
         group.add_option('--iso', metavar='PATH', help='Use an iso image as the source for installation of file. Full path to the iso must be provided. If --mirror is also provided, it will be used in the final sources.list of the vm.  This requires suite and kernel parameter to match what is available on the iso, obviously.')
         group.add_option('--mirror', metavar='URL', help='Use Ubuntu mirror at URL instead of the default, which is http://archive.ubuntu.com/ubuntu for official arches and http://ports.ubuntu.com/ubuntu-ports otherwise')
         group.add_option('--install-mirror', metavar='URL', help='Use Ubuntu mirror at URL for the installation only. Apt\'s sources.list will still use default or URL set by --mirror')
+        group.add_option('--security-mirror', metavar='URL', help='Use Ubuntu security mirror at URL instead of the default, which is http://security.ubuntu.com/ubuntu for official arches and http://ports.ubuntu.com/ubuntu-ports otherwise.')
+        group.add_option('--install-security-mirror', metavar='URL', help='Use the security mirror at URL for installation only. Apt\'s sources.list will still use default or URL set by --security-mirror')
         group.add_option('--components', metavar='COMPS', help='A comma seperated list of distro components to include (e.g. main,universe).')
         group.add_option('--ppa', metavar='PPA', action='append', help='Add ppa belonging to PPA to the vm\'s sources.list.')
         self.vm.register_setting_group(group)
@@ -79,6 +81,12 @@ class Ubuntu(Distro):
                 self.vm.mirror = 'http://ports.ubuntu.com/ubuntu-ports'
             else:
                 self.vm.mirror = 'http://archive.ubuntu.com/ubuntu'
+
+        if not self.vm.security_mirror:
+            if self.vm.arch == 'lpia':
+                self.vm.security_mirror = 'http://ports.ubuntu.com/ubuntu-ports'
+            else:
+                self.vm.security_mirror = 'http://security.ubuntu.com/ubuntu'
 
         if not self.vm.components:
             self.vm.components = ['main', 'restricted', 'universe']
