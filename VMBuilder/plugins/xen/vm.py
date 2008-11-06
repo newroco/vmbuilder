@@ -31,11 +31,7 @@ class Xen(Hypervisor):
     preferred_storage = VMBuilder.hypervisor.STORAGE_FS_IMAGE
     needs_bootloader = False
 
-    def __init__(self, vm):
-        self.vm = vm
-        self.register_settings()
-
-    def register_settings(self):
+    def register_options(self):
         group = self.vm.setting_group('Xen option')
         group.add_option('--xen-kernel', metavar='PATH', help='Path to the kernel to use (ie: /boot/vmlinux-2.6.27-7-server). Default depends on distribution and suite')
         group.add_option('--xen-ramdisk', metavar='PATH', help='Path to the ramdisk to use (ie: /boot/initrd.img-2.6.27-7-server). Default depends on distribution and suite.')
