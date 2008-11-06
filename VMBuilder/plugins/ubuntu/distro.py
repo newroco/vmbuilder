@@ -35,12 +35,9 @@ class Ubuntu(Distro):
                     'i386' : [ 'i386', 'lpia' ],
                     'lpia' : [ 'i386', 'lpia' ] }
 
+    xen_kernel = ''
 
-    def __init__(self, vm):
-        self.vm = vm
-        self.register_settings()
-
-    def register_settings(self):
+    def register_options(self):
         group = self.vm.setting_group('Package options')
         group.add_option('--addpkg', action='append', metavar='PKG', help='Install PKG into the guest (can be specfied multiple times).')
         group.add_option('--removepkg', action='append', metavar='PKG', help='Remove PKG from the guest (can be specfied multiple times)')
@@ -107,12 +104,11 @@ class Ubuntu(Distro):
             if type(self.vm.components) is str:
                 self.vm.components = self.vm.components.split(',')
 
+        if self.vm.hypervisor.name == 'Xen':
+            logging.info('Xen kernel default: linux-image-%s %s', self.suite.xen_kernel_flavour, self.xen_kernel_version())
+
     def install(self, destdir):
         self.destdir = destdir
-
-        self.xen_kernel_path = getattr(self.suite, 'xen_kernel_path', lambda : None)
-        self.xen_ramdisk_path = getattr(self.suite, 'xen_ramdisk_path', lambda: None)
-
         self.suite.install(destdir)
 
     def post_mount(self, fs):
@@ -127,5 +123,38 @@ class Ubuntu(Distro):
         run_cmd('grub', '--device-map=%s' % devmapfile, '--batch',  stdin='''root (hd0,0)
 setup (hd0)
 EOT''')
+
+    def xen_kernel_version(self):
+        if self.suite.xen_kernel_flavour:
+            if not self.xen_kernel:
+                rmad = run_cmd('rmadison', 'linux-image-%s' % self.suite.xen_kernel_flavour)
+                version = ['0', '0','0', '0']
+
+                for line in rmad.splitlines():
+                    sline = line.split('|')
+                    
+                    if sline[2].strip().startswith(self.vm.suite):
+                        vt = sline[1].strip().split('.')
+                        for i in range(4):
+                            if int(vt[i]) > int(version[i]):
+                                version = vt
+                                break
+
+                if version[0] == '0':
+                    raise VMBuilderException('Something is wrong, no valid xen kernel for the suite %s found by rmadison' % self.vm.suite)
+                
+                self.xen_kernel = '%s.%s.%s-%s' % (version[0],version[1],version[2],version[3])
+            return self.xen_kernel
+        else:
+            raise VMBuilderUserError('There is no valid xen kernel for the suite selected.')
+
+    def xen_kernel_path(self):
+        path = '/boot/vmlinuz-%s-%s' % (self.xen_kernel_version(), self.suite.xen_kernel_flavour)
+        return path
+
+    def xen_ramdisk_path(self):
+        path = '/boot/initrd.img-%s-%s' % (self.xen_kernel_version(), self.suite.xen_kernel_flavour)
+        return path
+
 
 register_distro(Ubuntu)

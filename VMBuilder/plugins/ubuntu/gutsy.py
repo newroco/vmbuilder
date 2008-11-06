@@ -28,3 +28,4 @@ class Gutsy(Feisty):
                        'amd64' : ['generic', 'rt', 'server'],
                        'lpia'  : ['lpia', 'lpiacompat'] }
     default_flavour = { 'i386' : 'virtual', 'amd64' : 'server', 'lpia' : 'lpia' }
+    xen_kernel_flavour = 'xen'
