@@ -4,6 +4,9 @@ vm-builder (0.9-0ubuntu4) UNRELEASED; urgency=low
   * Xen kernel and ramdisk are now dynamically discovered rather than
     hard coded
   * Add --xen-kernel and --xen-ramdisk to override automatic discovery
+  * Add --net-virtio and --net-bridge option to libvirt plugin
+  * The libvirt plugin now errors out if used with something else than KVM, as
+    nothing else is supported yet.
 
  -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Thu, 17 Oct 2008 23:56:33 -0400
 

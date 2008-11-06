@@ -107,12 +107,17 @@ class Ubuntu(Distro):
         if self.vm.hypervisor.name == 'Xen':
             logging.info('Xen kernel default: linux-image-%s %s', self.suite.xen_kernel_flavour, self.xen_kernel_version())
 
+        self.vm.virtio_net = self.use_virtio_net()
+
     def install(self, destdir):
         self.destdir = destdir
         self.suite.install(destdir)
 
     def post_mount(self, fs):
         self.suite.post_mount(fs)
+
+    def use_virtio_net(self):
+        return self.suite.virtio_net
 
     def install_bootloader(self):
         devmapfile = '%s/device.map' % self.vm.workdir

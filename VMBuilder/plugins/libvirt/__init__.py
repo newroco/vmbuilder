@@ -26,6 +26,7 @@ class Libvirt(Plugin):
     def register_options(self):
         group = self.vm.setting_group('libvirt integration')
         group.add_option('--libvirt', metavar='URI', help='Add VM to given URI')
+        group.add_option('--bridge', metavar="BRIDGE", help='Set up bridged network connected to BRIDGE.')
         self.vm.register_setting_group(group)
 
     def all_domains(self):
@@ -41,6 +42,9 @@ class Libvirt(Plugin):
         self.conn = libvirt.open(self.vm.libvirt)
         if self.vm.hostname in self.all_domains() and not self.vm.overwrite:
             raise VMBuilderUserError('Domain %s already exists at %s' % (self.vm.hostname, self.vm.libvirt))
+        
+        if not self.vm.hypervisor.name == 'KVM':
+            raise VMBuilderUserError('The libvirt plugin is only equiped to work with KVM at the moment.')
 
         if not self.vm.hypervisor.name == 'KVM':
             raise VMBuilderUserError('The libvirt plugin is only equiped to work with KVM at the moment.')
