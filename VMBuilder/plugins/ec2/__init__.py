@@ -96,10 +96,8 @@ class EC2(Plugin):
     def post_install(self):
         logging.info("running ec2 postinstall")
         self.install_from_template('/etc/fstab', 'fstab')
-        # Next 2 lines not needed anymore, thanks for zul whom has fixed
-        # the kernel :)
-        # run_cmd('echo', '"xvc0"', '>>', '%s/etc/securetty' % self.vm.installdir)
-        # run_cmd('sed', '-i', '"s/tty1/xvc0/"', '%s/etc/event.d/tty1')
+        run_cmd('echo', '"xvc0"', '>>', '%s/etc/securetty' % self.vm.installdir)
+        run_cmd('sed', '-i', '"s/tty1/xvc0/"', '%s/etc/event.d/tty1')
         run_cmd('chroot', self.vm.installdir, 'passwd', '-l', self.vm.user)
 
 
