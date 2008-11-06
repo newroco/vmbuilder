@@ -21,6 +21,8 @@ import suite
 from VMBuilder.plugins.ubuntu.gutsy import Gutsy
 
 class Hardy(Gutsy):
+    virtio_net = True
+
     def xen_kernel_path(self):
         return '/boot/vmlinuz-2.6.24-19-xen'
 

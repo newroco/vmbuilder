@@ -107,6 +107,8 @@ class Ubuntu(Distro):
             if isinstance(self.vm.components, types.StringType):
                 self.vm.components = self.vm.components.split(',')
 
+        self.vm.virtio_net = self.use_virtio_net()
+
     def install(self, destdir):
         self.destdir = destdir
 
@@ -114,6 +116,9 @@ class Ubuntu(Distro):
         self.xen_ramdisk_path = getattr(self.suite, 'xen_ramdisk_path', lambda: None)
 
         self.suite.install(destdir)
+
+    def use_virtio_net(self):
+        return self.suite.virtio_net
 
     def install_bootloader(self):
         devmapfile = '%s/device.map' % self.vm.workdir

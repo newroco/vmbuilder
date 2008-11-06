@@ -15,14 +15,14 @@
   <on_crash>destroy</on_crash>
   <devices>
     <emulator>/usr/bin/kvm</emulator>
-#if $net_bridged
+#if $bridge
     <interface type='bridge'>
-      <source bridge='br0'/>
+      <source bridge='$bridge'/>
 #else
     <interface type='network'>
       <source network='default'/>
 #end if
-#if $net_virtio
+#if $virtio_net
       <model type='virtio'/>
 #end if
     </interface>
