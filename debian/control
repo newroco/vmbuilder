@@ -46,10 +46,10 @@ Depends: python-vm-builder, ec2-ami-tools, python-boto
 XB-Python-Version: ${python:Versions}
 Description: EC2 Ubuntu VM builder
  Ubuntu vmbuilder module that automates the process of create a ready to use
- EC2 instance based on Ubuntu. You can pass command line options to add extra
- packages, remove packages, choose which version of Ubuntu, which mirror to use
- etc.
+ EC2 image (AMI) based on Ubuntu. You can pass command line options to add
+ extra packages, remove packages, choose which version of Ubuntu, which
+ mirror to use etc.
  .
- VMBuilder module to build, upload and register EC2 instances. You will 
+ VMBuilder module to build, upload and register EC2 images. You will
  need to have an Amazon EC2 account in order to use this package.
 
