@@ -22,7 +22,7 @@ Description: VM builder
  .
  The currently supported distros are:
  .
-  * Ubuntu Dapper, Feisty, Gutsy, Hardy, and Intrepid.
+  * Ubuntu Dapper, Feisty, Gutsy, Hardy, Intrepid, and Jaunty.
  .
  You can pass command line options to add extra packages, remove packages,
  choose which version of Ubuntu, which mirror etc. On recent hardware
