@@ -237,9 +237,9 @@ class Dapper(suite.Suite):
 
     def install_from_template(self, *args, **kwargs):
         return self.vm.distro.install_from_template(*args, **kwargs)
-        
+
     def run_in_target(self, *args, **kwargs):
-        return run_cmd('chroot', self.destdir, *args, **kwargs)
+        self.vm.distro.run_in_target(*args, **kwargs)
 
     def post_mount(self, fs):
         if fs.mntpnt == '/':

@@ -68,3 +68,6 @@ class Plugin(object):
 
     def install_from_template(self, path, tmplname, context=None, mode=None):
         return self.vm.install_file(path, VMBuilder.util.render_template(self.__module__.split('.')[2], self.vm, tmplname, context), mode=mode)
+
+    def run_in_target(self, *args, **kwargs):
+        return run_cmd('chroot', self.destdir, *args, **kwargs)
