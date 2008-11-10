@@ -19,6 +19,7 @@
 #
 import os
 import VMBuilder
+from VMBuilder.util import run_cmd
 
 def load_plugins():
     for plugin in find_plugins():
