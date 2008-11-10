@@ -109,7 +109,7 @@ class EC2(Plugin):
 
         run_cmd(*bundle_cmdline)
 
-        upload_cmdline = ['ec2-upload-bundle', '--manifest', '%s/%s.manifest.xml' % (self.vm.workdir, self.vm.ec2_name), '--bucket', self.vm.ec2_bucket, '--access-key', self.vm.ec2_access_key, '--secret-key', self.vm.ec2_secret_key]
+        upload_cmdline = ['ec2-upload-bundle', '--retry', '--manifest', '%s/%s.manifest.xml' % (self.vm.workdir, self.vm.ec2_name), '--bucket', self.vm.ec2_bucket, '--access-key', self.vm.ec2_access_key, '--secret-key', self.vm.ec2_secret_key]
         run_cmd(*upload_cmdline)
 
         from boto.ec2.connection import EC2Connection
