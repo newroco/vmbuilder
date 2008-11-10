@@ -72,6 +72,8 @@ class VM(object):
         #: directory where we build up the guest filesystem
         self.tmproot = None
 
+        self.fsmounted = False
+
         self.optparser = _MyOptParser(epilog="ubuntu-vm-builder is Copyright (C) 2007-2008 Canonical Ltd. and written by Soren Hansen <soren@canonical.com>.", usage='%prog hypervisor distro [options]')
         self.optparser.arg_help = (('hypervisor', self.hypervisor_help), ('distro', self.distro_help))
 
@@ -360,6 +362,8 @@ class VM(object):
             fs.mount()
             self.distro.post_mount(fs)
 
+        self.fsmounted = True
+
     def umount_partitions(self):
         """Unmounts all the vm's partitions and filesystems"""
         logging.info('Unmounting target filesystem')
@@ -369,6 +373,8 @@ class VM(object):
             fs.umount()
         for disk in self.disks:
             disk.unmap()
+
+        self.fsmounted = False
 
     def install(self):
         if self.in_place:
