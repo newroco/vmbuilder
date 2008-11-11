@@ -90,6 +90,11 @@ class EC2(Plugin):
 	self.vm.addpkg += ['server^']
 	self.vm.addpkg += ['standard^']
 
+	if not self.vm.add.ppa:
+	     self.vm.ppa = []
+
+	self.vm.ppa += ['ubuntu-ec2']
+
     def deploy(self):
         if not self.vm.ec2:
             return False
