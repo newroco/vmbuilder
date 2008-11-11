@@ -60,16 +60,16 @@ class EC2(Plugin):
         if not self.vm.ec2_kernel:
             logging.debug('No ec2-aki choosen setting to default. Use --ec2-kernel to change this')
             if self.vm.arch == 'amd64':
-                self.vm.ec2_kernel = 'aki-a53adfcc'
+                self.vm.ec2_kernel = 'aki-d314f0ba'
             else:
-                self.vm.ec2_kernel = 'aki-a71cf9ce'
+                self.vm.ec2_kernel = 'aki-af14f0c6'
 
         if not self.vm.ec2_ramdisk:
             logging.debug('No ec2-ari choosen setting to default. Use --ec2-ramdisk to change this.')
             if self.vm.arch == 'amd64':
-                self.vm.ec2_ramdisk = 'ari-b31cf9da'
+                self.vm.ec2_ramdisk = 'ari-d014f0b9'
             else:
-                self.vm.ec2_ramdisk = 'ari-a51cf9cc'
+                self.vm.ec2_ramdisk = 'ari-ac14f0c5'
 
         if not self.vm.ec2_bucket:
             raise VMBuilderUserError('When building for EC2 you must provide an S3 bucket to hold the AMI')
