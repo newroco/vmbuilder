@@ -84,7 +84,11 @@ class EC2(Plugin):
         if not self.vm.addpkg:
              self.vm.addpkg = []
 
+	self.vm.addpkg += ['openssh-server']
         self.vm.addpkg += ['ec2-init']
+	self.vm.addpkg += ['ec2-modules']
+	self.vm.addpkg += ['server^']
+	self.vm.addpkg += ['standard^']
 
     def deploy(self):
         if not self.vm.ec2:
