@@ -95,7 +95,6 @@ class EC2(Plugin):
 
     def post_install(self):
         logging.info("running ec2 postinstall")
-        self.install_from_template('/etc/fstab', 'fstab')
         run_cmd('sed', '-i', 's/tty1/xvc0/', '%s/etc/event.d/tty1' % self.vm.installdir)
         self.run_in_target('passwd', '-l', self.vm.user)
 
