@@ -70,6 +70,7 @@ disk = [
 name = '%s'
 
 dhcp    = 'dhcp'
+vif = ['']
 
 on_poweroff = 'destroy'
 on_reboot   = 'restart'
