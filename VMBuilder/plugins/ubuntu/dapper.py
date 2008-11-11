@@ -35,6 +35,8 @@ class Dapper(suite.Suite):
     default_flavour = { 'i386' : 'server', 'amd64' : 'amd64-server' }
     disk_prefix = 'hd'
     mirror = ''
+    xen_kernel_flavour = None
+    virtio_net = False
 
     def check_kernel_flavour(self, arch, flavour):
         return flavour in self.valid_flavours[arch]

@@ -5,11 +5,23 @@ vm-builder (0.9.1-0ubuntu0) UNRELEASED; urgency=low
   * Add --install-mirror to fix LP: #291639
   * Implement --iso to fix LP: #291590
   * Install openssh-server cleanly LP: #293039
+  * Xen kernel and ramdisk are now dynamically discovered rather than
+    hard coded
+  * Add --xen-kernel and --xen-ramdisk to override automatic discovery
+  * Add --net-virtio and --net-bridge option to libvirt plugin
+  * The libvirt plugin now errors out if used with something else than KVM, as
+    nothing else is supported yet.
+  
+  [ Chuck Short ]
+  * Add retry option when uploading to Amazon
+  * Install server and standard seed by default
+  * Add ec2 examples for first login and first boot
+
   
   [ Eric Hammond ]
   * Fix post_install bugs LP: #292888, LP: #292891 & LP: #292901
 
- -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Sat, 01 Nov 2008 00:45:17 +0100
+ -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Thu, 17 Oct 2008 23:56:33 -0400
 
 vm-builder (0.9-0ubuntu3) intrepid; urgency=low
 
