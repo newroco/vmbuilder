@@ -95,6 +95,12 @@ class EC2(Plugin):
 
 	self.vm.ppa += ['ubuntu-ec2']
 
+    def post_install(self):
+	logging.info("Running EC2 postinstall.")
+	self.install_from_template('/etc/fstab', 'fstab')
+	self.install_from_template('/etc/event.d/xvc0', 'upstart')
+	run_cmd('chroot', self.vm.installdir, 'passwd', '-l', self.vm.user)
+
     def deploy(self):
         if not self.vm.ec2:
             return False
