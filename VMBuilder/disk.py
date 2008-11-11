@@ -242,8 +242,7 @@ class Filesystem(object):
         self.preallocated = preallocated
         self.devletter = devletter
         self.device = device
-        if self.preallocated and (self.size == 0):
-            self.dummy = True
+        self.dummy = (self.preallocated and (self.size == 0))
            
         try:
             if int(type) == type:
@@ -256,7 +255,7 @@ class Filesystem(object):
         self.mntpnt = mntpnt
 
     def create(self):
-        logging.info('Creating filesystem')
+        logging.info('Creating filesystem %s %d %s' % (self.mntpnt, self.size, self.dummy))
         if not self.preallocated:
             logging.info('Not preallocated, so we create it.')
             if not self.filename:
@@ -318,7 +317,7 @@ class Filesystem(object):
            This allows other parts of VMBuilder to set the prefix to something suitable."""
         if self.device:
             return self.device
-        else
+        else:
             return '%s%d' % (self.devletters(), self.get_index() + 1)
 
     def devletters(self):

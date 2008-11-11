@@ -112,7 +112,7 @@ class CLI(VMBuilder.Frontend):
                             # We just ignore the user's attempt to specify multiple disks
                             pass
                         elif len(elements) == 3:
-                            vm.add_filesystem(elements[1], type='ext3', mntpnt=elements[0], devletter='', device=pair[2], preallocated=(int(elements[1] == 0)))
+                            vm.add_filesystem(elements[1], type='ext3', mntpnt=elements[0], devletter='', device=elements[2], preallocated=(int(elements[1]) == 0))
                         else:
                             vm.add_filesystem(elements[1], type='ext3', mntpnt=elements[0])
 

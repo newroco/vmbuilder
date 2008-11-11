@@ -11,6 +11,10 @@ vm-builder (0.9.1-0ubuntu0) UNRELEASED; urgency=low
   * Add --net-virtio and --net-bridge option to libvirt plugin
   * The libvirt plugin now errors out if used with something else than KVM, as
     nothing else is supported yet.
+  * For FSIMAGE type file system, --part now accepts a third argument which
+    allows to specify the device the partition should be mapped to. If the
+    size is set to 0, it is considered a "dummy" partition that should not be
+    created.
   
   [ Chuck Short ]
   * Add retry option when uploading to Amazon
