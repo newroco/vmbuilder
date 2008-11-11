@@ -60,16 +60,16 @@ class EC2(Plugin):
         if not self.vm.ec2_kernel:
             logging.debug('No ec2-aki choosen setting to default. Use --ec2-kernel to change this')
             if self.vm.arch == 'amd64':
-                self.vm.ec2_kernel = 'aki-a53adfcc'
+                self.vm.ec2_kernel = 'aki-d314f0ba'
             else:
-                self.vm.ec2_kernel = 'aki-a71cf9ce'
+                self.vm.ec2_kernel = 'aki-af14f0c6'
 
         if not self.vm.ec2_ramdisk:
             logging.debug('No ec2-ari choosen setting to default. Use --ec2-ramdisk to change this.')
             if self.vm.arch == 'amd64':
-                self.vm.ec2_ramdisk = 'ari-b31cf9da'
+                self.vm.ec2_ramdisk = 'ari-d014f0b9'
             else:
-                self.vm.ec2_ramdisk = 'ari-a51cf9cc'
+                self.vm.ec2_ramdisk = 'ari-ac14f0c5'
 
         if not self.vm.ec2_bucket:
             raise VMBuilderUserError('When building for EC2 you must provide an S3 bucket to hold the AMI')
@@ -84,21 +84,23 @@ class EC2(Plugin):
         if not self.vm.addpkg:
              self.vm.addpkg = []
 
+        self.vm.addpkg += ['openssh-server']
         self.vm.addpkg += ['ec2-init']
         self.vm.addpkg += ['openssh-server']
         self.vm.addpkg += ['ec2-modules']
+        self.vm.addpkg += ['server^']
+        self.vm.addpkg += ['standard^']
 
         if not self.vm.ppa:
             self.vm.ppa = []
-        
+
         self.vm.ppa += ['ubuntu-ec2']
 
     def post_install(self):
-        logging.info("running ec2 postinstall")
+        logging.info("Running ec2 postinstall")
         self.install_from_template('/etc/fstab', 'fstab')
-        run_cmd('sed', '-i', 's/tty1/xvc0/', '%s/etc/event.d/tty1' % self.vm.installdir)
+        self.install_from_template('/etc/event.d/xvc0', 'upstart')
         self.run_in_target('passwd', '-l', self.vm.user)
-
 
     def deploy(self):
         if not self.vm.ec2:

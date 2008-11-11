@@ -31,6 +31,12 @@ class Xen(Hypervisor):
     preferred_storage = VMBuilder.hypervisor.STORAGE_FS_IMAGE
     needs_bootloader = False
 
+    def register_options(self):
+        group = self.vm.setting_group('Xen option')
+        group.add_option('--xen-kernel', metavar='PATH', help='Path to the kernel to use (e.g.: /boot/vmlinux-2.6.27-7-server). Default depends on distribution and suite')
+        group.add_option('--xen-ramdisk', metavar='PATH', help='Path to the ramdisk to use (e.g.: /boot/initrd.img-2.6.27-7-server). Default depends on distribution and suite.')
+        self.vm.register_setting_group(group)
+
     def finalize(self):
         destimages = []
         for filesystem in self.vm.filesystems:
@@ -42,6 +48,11 @@ class Xen(Hypervisor):
             filesystem.filename = os.path.abspath(destfile)
             destimages.append(destfile)
     
+        if not self.vm.xen_kernel:
+            self.vm.xen_kernel = self.vm.distro.xen_kernel_path()
+        if not self.vm.xen_ramdisk:
+            self.vm.xen_ramdisk = self.vm.distro.xen_ramdisk_path()
+
         xenconf = '%s/xen.conf' % self.vm.destdir
         fp = open(xenconf, 'w')
         fp.write("""
@@ -59,6 +70,7 @@ disk = [
 name = '%s'
 
 dhcp    = 'dhcp'
+vif = ['']
 
 on_poweroff = 'destroy'
 on_reboot   = 'restart'
@@ -67,8 +79,8 @@ on_crash    = 'restart'
 extra = 'xencons=tty console=tty1 console=hvc0'
 
 """  %   (self.vm.name,
-          self.vm.distro.xen_kernel_path(),
-          self.vm.distro.xen_ramdisk_path(),
+          self.vm.xen_kernel,
+          self.vm.xen_ramdisk,
           self.vm.mem,
           ',\n'.join(["'tap:aio:%s,xvda%d,w'" % (os.path.abspath(img), id+1) for (img, id) in zip(destimages, range(len(destimages)))]),
           self.vm.name))
