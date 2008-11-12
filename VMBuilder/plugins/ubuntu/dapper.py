@@ -108,6 +108,8 @@ class Dapper(suite.Suite):
             os.mkdir('%s/home/%s/.ssh' % (self.destdir, self.vm.user), 0700)
             shutil.copy(self.vm.ssh_user_key, '%s/home/%s/.ssh/authorized_keys' % (self.destdir, self.vm.user))
             os.chmod('%s/home/%s/.ssh/authorized_keys' % (self.destdir, self.vm.user), 0644)
+        if self.vm.ssh_user_key or self.vm.ssh_key:
+            self.run_in_target('apt-get','-y','--no-install-recommends','install','openssh-server')
 
     def create_initial_user(self):
         self.run_in_target('adduser', '--disabled-password', '--gecos', self.vm.name, self.vm.user)
