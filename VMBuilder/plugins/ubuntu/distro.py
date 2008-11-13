@@ -44,7 +44,7 @@ class Ubuntu(Distro):
         self.vm.register_setting_group(group)
 
         group = self.vm.setting_group('General OS options')
-        self.host_arch = run_cmd('dpkg-architecture', '-qDEB_HOST_ARCH').rstrip()
+        self.host_arch = run_cmd('dpkg', '--print-architecture').rstrip()
         group.add_option('-a', '--arch', default=self.host_arch, help='Specify the target architecture.  Valid options: amd64 i386 lpia (defaults to host arch)')
         group.add_option('--hostname', default='ubuntu', help='Set NAME as the hostname of the guest. Default: ubuntu. Also uses this name as the VM name.')
         self.vm.register_setting_group(group)
