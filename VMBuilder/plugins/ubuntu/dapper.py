@@ -120,7 +120,7 @@ class Dapper(suite.Suite):
             self.run_in_target('adduser', self.vm.user, group, ignore_fail=True)
 
         # Lock root account
-        self.run_in_target('chpasswd', stdin='root:!\n')
+        self.run_in_target('chpasswd', '-e', stdin='root:!\n')
 
     def kernel_name(self):
         return 'linux-image-%s' % (self.vm.flavour or self.default_flavour[self.vm.arch],)

@@ -1,5 +1,11 @@
 vm-builder (0.9-0ubuntu4) UNRELEASED; urgency=low
 
+  [ Jamie Strandboge ]
+  * SECURITY UPDATE: vm-builder creates predictable root password when
+    creating virtual machines (LP: #296841)
+    - VMBuilder/plugins/ubuntu/dapper.py: invoke chpasswd with '-e'
+    - CVE-2008-XXXX (to be filled in)
+
   [ Nicolas Barcet ]
   * Xen kernel and ramdisk are now dynamically discovered rather than
     hard coded
