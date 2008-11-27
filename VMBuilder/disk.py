@@ -235,14 +235,14 @@ class Disk(object):
             return self.disk.partitions.index(self)
 
 class Filesystem(object):
-    def __init__(self, vm, size=0, preallocated=False, type=None, mntpnt=None, filename=None, devletter='a', device=''):
+    def __init__(self, vm, size=0, preallocated=False, type=None, mntpnt=None, filename=None, devletter='a', device='', dummy=False):
         self.vm = vm
         self.filename = filename
         self.size = parse_size(size)
         self.preallocated = preallocated
         self.devletter = devletter
         self.device = device
-        self.dummy = (self.preallocated and (self.size == 0))
+        self.dummy = dummy
            
         try:
             if int(type) == type:
@@ -255,7 +255,7 @@ class Filesystem(object):
         self.mntpnt = mntpnt
 
     def create(self):
-        logging.info('Creating filesystem %s %d %s' % (self.mntpnt, self.size, self.dummy))
+        logging.info('Creating filesystem: %s, size: %d, dummy: %s' % (self.mntpnt, self.size, repr(self.dummy)))
         if not self.preallocated:
             logging.info('Not preallocated, so we create it.')
             if not self.filename:
