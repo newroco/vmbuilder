@@ -20,6 +20,9 @@
       <source bridge='$bridge'/>
 #else
     <interface type='network'>
+#if $mac
+      <mac address='$mac'/>
+#end if
       <source network='default'/>
 #end if
 #if $virtio_net

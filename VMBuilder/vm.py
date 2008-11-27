@@ -21,6 +21,7 @@
 import ConfigParser
 from   gettext             import gettext
 import logging
+import re
 import os
 import optparse
 import shutil
@@ -139,8 +140,9 @@ class VM(object):
 
         group = self.setting_group('Network related options')
         domainname = '.'.join(socket.gethostbyname_ex(socket.gethostname())[0].split('.')[1:])
-        group.add_option('--domain', metavar='DOMAIN', default=domainname, help='Set DOMAIN as the domain name of the guest. Default: The domain of the machine running this script: %default.')
-        group.add_option('--ip', metavar='ADDRESS', default='dhcp', help='IP address in dotted form [default: %default]')
+        group.add_option('--domain', metavar='DOMAIN', default=domainname, help='Set DOMAIN as the domain name of the guest [default: The domain of the machine running this script: %default].')
+        group.add_option('--ip', metavar='ADDRESS', default='dhcp', help='IP address in dotted form [default: %default].')
+        group.add_option('--mac', metavar='VALUE', help='MAC address of the guest [default: one will be automatically generated on first run].')
         group.add_option('--mask', metavar='VALUE', help='IP mask in dotted form [default: based on ip setting]. Ignored if --ip is not specified.')
         group.add_option('--net', metavar='ADDRESS', help='IP net address in dotted form [default: based on ip setting]. Ignored if --ip is not specified.')
         group.add_option('--bcast', metavar='VALUE', help='IP broadcast in dotted form [default: based on ip setting]. Ignored if --ip is not specified.')
@@ -265,6 +267,13 @@ class VM(object):
         """
 
         logging.debug("ip: %s" % self.ip)
+        
+        if self.mac:
+            valid_mac_address = re.compile("([0-9a-f]{2}:){5}([0-9a-f]{2})", re.IGNORECASE)
+            if not valid_mac_address.search(self.mac):
+                raise VMBuilderUserError("Malformed MAC address entered: %s" % self.mac)
+            else:
+                logging.debug("Valid mac given: %s" % self.mac)
 
         if self.ip != 'dhcp':
             if self.domain == '':
