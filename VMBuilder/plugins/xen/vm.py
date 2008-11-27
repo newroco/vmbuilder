@@ -40,13 +40,14 @@ class Xen(Hypervisor):
     def finalize(self):
         destimages = []
         for filesystem in self.vm.filesystems:
-            destfile = '%s/%s' % (self.vm.destdir, os.path.basename(filesystem.filename))
-            logging.info('Moving %s to %s' % (filesystem.filename, destfile))
-            self.vm.result_files.append(destfile)
-            run_cmd('cp', '--sparse=always', filesystem.filename, destfile)
-            os.unlink(filesystem.filename)
-            filesystem.filename = os.path.abspath(destfile)
-            destimages.append(destfile)
+            if not filesystem.preallocated:
+                destfile = '%s/%s' % (self.vm.destdir, os.path.basename(filesystem.filename))
+                logging.info('Moving %s to %s' % (filesystem.filename, destfile))
+                self.vm.result_files.append(destfile)
+                run_cmd('cp', '--sparse=always', filesystem.filename, destfile)
+                os.unlink(filesystem.filename)
+                filesystem.filename = os.path.abspath(destfile)
+                destimages.append(destfile)
     
         if not self.vm.xen_kernel:
             self.vm.xen_kernel = self.vm.distro.xen_kernel_path()
@@ -70,6 +71,7 @@ disk = [
 name = '%s'
 
 dhcp    = 'dhcp'
+vif = ['']
 
 on_poweroff = 'destroy'
 on_reboot   = 'restart'

@@ -103,16 +103,18 @@ class CLI(VMBuilder.Frontend):
             if vm.hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
                 try:
                     for line in file(vm.part):
-                        pair = line.strip().split(' ',1)
-                        if pair[0] == 'root':
-                            vm.add_filesystem(pair[1], type='ext3', mntpnt='/')
-                        elif pair[0] == 'swap':
-                            vm.add_filesystem(pair[1], type='swap', mntpnt=None)
-                        elif pair[0] == '---':
+                        elements = line.strip().split(' ')
+                        if elements[0] == 'root':
+                            vm.add_filesystem(elements[1], type='ext3', mntpnt='/')
+                        elif elements[0] == 'swap':
+                            vm.add_filesystem(elements[1], type='swap', mntpnt=None)
+                        elif elements[0] == '---':
                             # We just ignore the user's attempt to specify multiple disks
                             pass
+                        elif len(elements) == 3:
+                            vm.add_filesystem(elements[1], type='ext3', mntpnt=elements[0], devletter='', device=elements[2], preallocated=(int(elements[1]) == 0))
                         else:
-                            vm.add_filesystem(pair[1], type='ext3', mntpnt=pair[0])
+                            vm.add_filesystem(elements[1], type='ext3', mntpnt=elements[0])
 
                 except IOError, (errno, strerror):
                     vm.optparser.error("%s parsing --part option: %s" % (errno, strerror))

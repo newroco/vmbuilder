@@ -60,16 +60,16 @@ class EC2(Plugin):
         if not self.vm.ec2_kernel:
             logging.debug('No ec2-aki choosen setting to default. Use --ec2-kernel to change this')
             if self.vm.arch == 'amd64':
-                self.vm.ec2_kernel = 'aki-a53adfcc'
+                self.vm.ec2_kernel = 'aki-d314f0ba'
             else:
-                self.vm.ec2_kernel = 'aki-a71cf9ce'
+                self.vm.ec2_kernel = 'aki-af14f0c6'
 
         if not self.vm.ec2_ramdisk:
             logging.debug('No ec2-ari choosen setting to default. Use --ec2-ramdisk to change this.')
             if self.vm.arch == 'amd64':
-                self.vm.ec2_ramdisk = 'ari-b31cf9da'
+                self.vm.ec2_ramdisk = 'ari-d014f0b9'
             else:
-                self.vm.ec2_ramdisk = 'ari-a51cf9cc'
+                self.vm.ec2_ramdisk = 'ari-ac14f0c5'
 
         if not self.vm.ec2_bucket:
             raise VMBuilderUserError('When building for EC2 you must provide an S3 bucket to hold the AMI')
@@ -84,7 +84,22 @@ class EC2(Plugin):
         if not self.vm.addpkg:
              self.vm.addpkg = []
 
+        self.vm.addpkg += ['openssh-server']
         self.vm.addpkg += ['ec2-init']
+        self.vm.addpkg += ['openssh-server']
+        self.vm.addpkg += ['ec2-modules']
+        self.vm.addpkg += ['server^']
+        self.vm.addpkg += ['standard^']
+
+        if not self.vm.ppa:
+            self.vm.ppa = []
+
+        self.vm.ppa += ['ubuntu-ec2']
+
+    def post_install(self):
+        logging.info("Running ec2 postinstall")
+        self.install_from_template('/etc/event.d/xvc0', 'upstart')
+        self.run_in_target('passwd', '-l', self.vm.user)
 
     def deploy(self):
         if not self.vm.ec2:
@@ -94,7 +109,7 @@ class EC2(Plugin):
 
         run_cmd(*bundle_cmdline)
 
-        upload_cmdline = ['ec2-upload-bundle', '--manifest', '%s/%s.manifest.xml' % (self.vm.workdir, self.vm.ec2_name), '--bucket', self.vm.ec2_bucket, '--access-key', self.vm.ec2_access_key, '--secret-key', self.vm.ec2_secret_key]
+        upload_cmdline = ['ec2-upload-bundle', '--retry', '--manifest', '%s/%s.manifest.xml' % (self.vm.workdir, self.vm.ec2_name), '--bucket', self.vm.ec2_bucket, '--access-key', self.vm.ec2_access_key, '--secret-key', self.vm.ec2_secret_key]
         run_cmd(*upload_cmdline)
 
         from boto.ec2.connection import EC2Connection

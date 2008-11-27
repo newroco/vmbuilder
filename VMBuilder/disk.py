@@ -235,12 +235,14 @@ class Disk(object):
             return self.disk.partitions.index(self)
 
 class Filesystem(object):
-    def __init__(self, vm, size=0, preallocated=False, type=None, mntpnt=None, filename=None, devletter='a'):
+    def __init__(self, vm, size=0, preallocated=False, type=None, mntpnt=None, filename=None, devletter='a', device=''):
         self.vm = vm
         self.filename = filename
         self.size = parse_size(size)
         self.preallocated = preallocated
         self.devletter = devletter
+        self.device = device
+        self.dummy = (self.preallocated and (self.size == 0))
            
         try:
             if int(type) == type:
@@ -253,7 +255,7 @@ class Filesystem(object):
         self.mntpnt = mntpnt
 
     def create(self):
-        logging.info('Creating filesystem')
+        logging.info('Creating filesystem %s %d %s' % (self.mntpnt, self.size, self.dummy))
         if not self.preallocated:
             logging.info('Not preallocated, so we create it.')
             if not self.filename:
@@ -276,9 +278,10 @@ class Filesystem(object):
         self.mkfs()
 
     def mkfs(self):
-        cmd = self.mkfs_fstype() + [self.filename]
-        run_cmd(*cmd)
-        self.uuid = run_cmd('vol_id', '--uuid', self.filename).rstrip()
+        if not self.dummy:
+            cmd = self.mkfs_fstype() + [self.filename]
+            run_cmd(*cmd)
+            self.uuid = run_cmd('vol_id', '--uuid', self.filename).rstrip()
 
     def mkfs_fstype(self):
         if self.vm.suite in ['dapper', 'edgy', 'feisty', 'gutsy']:
@@ -295,7 +298,7 @@ class Filesystem(object):
         return 'defaults'
 
     def mount(self):
-        if self.type != TYPE_SWAP: 
+        if (self.type != TYPE_SWAP) and not self.dummy:
             logging.debug('Mounting %s', self.mntpnt) 
             self.mntpath = '%s%s' % (self.vm.rootmnt, self.mntpnt)
             if not os.path.exists(self.mntpath):
@@ -305,15 +308,18 @@ class Filesystem(object):
 
     def umount(self):
         self.vm.cancel_cleanup(self.umount)
-        if self.type != TYPE_SWAP: 
+        if (self.type != TYPE_SWAP) and not self.dummy:
             logging.debug('Unmounting %s', self.mntpath) 
             run_cmd('umount', self.mntpath)
 
     def get_suffix(self):
         """Returns 'a4' for a device that would be called /dev/sda4 in the guest..
            This allows other parts of VMBuilder to set the prefix to something suitable."""
-        return '%s%d' % (self.devletters(), self.get_index() + 1)
-        
+        if self.device:
+            return self.device
+        else:
+            return '%s%d' % (self.devletters(), self.get_index() + 1)
+
     def devletters(self):
         """
         @rtype: string

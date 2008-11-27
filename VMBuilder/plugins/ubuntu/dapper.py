@@ -34,6 +34,7 @@ class Dapper(suite.Suite):
                        'amd64' : ['amd64-generic', 'amd64-k8', 'amd64-k8-smp', 'amd64-server', 'amd64-xeon']}
     default_flavour = { 'i386' : 'server', 'amd64' : 'amd64-server' }
     disk_prefix = 'hd'
+    mirror = ''
     xen_kernel_flavour = None
     virtio_net = False
 
@@ -86,6 +87,9 @@ class Dapper(suite.Suite):
 
         logging.debug("Installing ssh keys")
         self.install_authorized_keys()
+
+        logging.debug("Setting up final sources.list")
+        self.install_sources_list("final")
 
         logging.debug("Making sure system is up-to-date")
         self.update()
@@ -170,9 +174,19 @@ class Dapper(suite.Suite):
         run_cmd('sed', '-ie', 's/^# groot.*/# groot %s/g' % bootdev.get_grub_id(), '%s/boot/grub/menu.lst' % self.destdir)
         run_cmd('sed', '-ie', '/^# kopt_2_6/ d', '%s/boot/grub/menu.lst' % self.destdir)
 
-    def install_sources_list(self):
-        self.install_from_template('/etc/apt/sources.list', 'sources.list')
-        self.run_in_target('apt-get', 'update')
+    def install_sources_list(self, final=False):
+        mirror = ''
+
+        if final:
+            # avoid running a second time if mirror does not change
+            if self.mirror != self.vm.mirror:
+                mirror = self.vm.mirror
+        else:
+            mirror = self.mirror
+        
+        if mirror:
+            self.install_from_template('/etc/apt/sources.list', 'sources.list', { 'mirror' : mirror, 'rmirror' : self.vm.mirror })
+            self.run_in_target('apt-get', 'update')
 
     def install_fstab(self):
         if self.vm.hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
@@ -185,9 +199,25 @@ class Dapper(suite.Suite):
 
     def debootstrap(self):
         cmd = ['/usr/sbin/debootstrap', '--arch=%s' % self.vm.arch, self.vm.suite, self.destdir ]
-        if self.vm.mirror:
-            cmd += [self.vm.mirror]
+
+        if self.vm.iso:
+            isodir = '%s/isomnt' % self.destdir
+            run_cmd ('mkdir', isodir)
+            self.vm.add_clean_cmd('rmdir', isodir)
+            run_cmd ('mount', '-o', 'loop', '-t', 'iso9660', self.vm.iso, isodir)
+            self.vm.add_clean_cmd('umount', isodir)
+            self.mirror = 'file://%s' % isodir
+        elif self.vm.install_mirror:
+            self.mirror = self.vm.install_mirror
+        else:
+            self.mirror = self.vm.mirror
+
+        cmd += [self.mirror]
+
         run_cmd(*cmd)
+
+        if self.vm.iso:
+            self.mirror = "file:///isomnt"
 
     def install_kernel(self):
         self.install_from_template('/etc/kernel-img.conf', 'kernelimg', { 'updategrub' : self.updategrub }) 
@@ -209,9 +239,9 @@ class Dapper(suite.Suite):
 
     def install_from_template(self, *args, **kwargs):
         return self.vm.distro.install_from_template(*args, **kwargs)
-        
+
     def run_in_target(self, *args, **kwargs):
-        return run_cmd('chroot', self.destdir, *args, **kwargs)
+        self.vm.distro.run_in_target(*args, **kwargs)
 
     def post_mount(self, fs):
         if fs.mntpnt == '/':
