@@ -99,7 +99,7 @@ def run_cmd(*argv, **kwargs):
         stdin_arg = subprocess.PIPE
     else:
         stdin_arg = file('/dev/null', 'w')
-    proc_env = os.environ
+    proc_env = dict(os.environ)
     proc_env['LANG'] = 'C'
     proc_env['LC_ALL'] = 'C'
     proc_env.update(env)

@@ -1,4 +1,4 @@
-vm-builder (0.9.1-0ubuntu0) UNRELEASED; urgency=low
+vm-builder (0.9.1-0ubuntu4) UNRELEASED; urgency=low
 
   [ Jamie Strandboge ]
   * SECURITY UPDATE: vm-builder creates predictable root password when
@@ -30,8 +30,9 @@ vm-builder (0.9.1-0ubuntu0) UNRELEASED; urgency=low
   
   [ Eric Hammond ]
   * Fix post_install bugs LP: #292888, LP: #292891 & LP: #292901
+  * Fix regression on locale settings LP: #292573
 
- -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Thu, 17 Oct 2008 23:56:33 -0400
+ -- Soren Hansen <soren@ubuntu.com>  Sun, 02 Nov 2008 14:35:43 +0100
 
 vm-builder (0.9-0ubuntu3) intrepid; urgency=low
 
