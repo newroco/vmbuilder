@@ -97,6 +97,9 @@ class EC2(Plugin):
         self.vm.ppa += ['ubuntu-ec2']
 
     def post_install(self):
+        if not self.vm.ec2:
+            return
+
         logging.info("Running ec2 postinstall")
         self.install_from_template('/etc/event.d/xvc0', 'upstart')
         self.run_in_target('passwd', '-l', self.vm.user)
