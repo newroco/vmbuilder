@@ -1,21 +1,10 @@
 deb $mirror $suite #slurp
 #echo ' '.join($components)
 
-#if $iso
-deb $rmirror $suite-updates #slurp
+deb $updates_mirror $suite-updates #slurp
 #echo ' '.join($components)
 
-deb $rmirror $suite-updates #slurp
-#echo ' '.join($components)
-#else
-deb $mirror $suite-updates #slurp
-#echo ' '.join($components)
-
-deb $mirror $suite-updates #slurp
-#echo ' '.join($components)
-#end if
-
-deb http://security.ubuntu.com/ubuntu $suite-security #slurp
+deb $security_mirror $suite-security #slurp
 #echo ' '.join($components)
 
 #if $ppa
