@@ -1,3 +1,12 @@
+vm-builder (0.9-0ubuntu3.1) intrepid-proposed; urgency=low
+
+  * Add --install-mirror to fix LP: #291639
+  * Implement --iso to fix LP: #291590
+  * Implement --security-mirror and --install-security-mirror to fix
+    LP: #293898
+
+ -- Nicolas Barcet <nicolas.barcet@ubuntu.com>  Fri, 31 Oct 2008 17:35:17 +0100
+
 vm-builder (0.9-0ubuntu3) intrepid; urgency=low
 
   [ Johan Euphrosine ]

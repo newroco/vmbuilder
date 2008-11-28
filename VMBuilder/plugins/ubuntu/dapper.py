@@ -88,6 +88,9 @@ class Dapper(suite.Suite):
         logging.debug("Making sure system is up-to-date")
         self.update()
 
+        logging.debug("Setting up final sources.list")
+        self.install_sources_list(final=True)
+
         logging.debug("Unmounting volatile lrm filesystems")
         self.unmount_volatile()
 
@@ -168,9 +171,18 @@ class Dapper(suite.Suite):
         run_cmd('sed', '-ie', 's/^# groot.*/# groot %s/g' % bootdev.get_grub_id(), '%s/boot/grub/menu.lst' % self.destdir)
         run_cmd('sed', '-ie', '/^# kopt_2_6/ d', '%s/boot/grub/menu.lst' % self.destdir)
 
-    def install_sources_list(self):
-        self.install_from_template('/etc/apt/sources.list', 'sources.list')
-        self.run_in_target('apt-get', 'update')
+    def install_sources_list(self, final=False):
+        if final:
+            mirror, updates_mirror, security_mirror = self.vm.mirror, self.vm.mirror, self.vm.security_mirror
+        else:
+            mirror, updates_mirror, security_mirror = self.install_mirrors()
+
+        self.install_from_template('/etc/apt/sources.list', 'sources.list', { 'mirror' : mirror, 'security_mirror' : security_mirror, 'updates_mirror' : updates_mirror })
+
+        # If setting up the final mirror, allow apt-get update to fail
+        # (since we might be on a complete different network than the
+        # final vm is going to be on).
+        self.run_in_target('apt-get', 'update', ignore_fail=final)
 
     def install_fstab(self):
         if self.vm.hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
@@ -182,10 +194,41 @@ class Dapper(suite.Suite):
         self.install_from_template('/boot/grub/device.map', 'devicemap', { 'prefix' : self.disk_prefix })
 
     def debootstrap(self):
-        cmd = ['/usr/sbin/debootstrap', '--arch=%s' % self.vm.arch, self.vm.suite, self.destdir ]
-        if self.vm.mirror:
-            cmd += [self.vm.mirror]
+        cmd = ['/usr/sbin/debootstrap', '--arch=%s' % self.vm.arch, self.vm.suite, self.destdir, self.debootstrap_mirror()]
         run_cmd(*cmd)
+    
+    def debootstrap_mirror(self):
+        if self.vm.iso:
+            os.mkdir(isodir)
+            self.vm.add_clean_cb(lambda:os.rmdir(isodir))
+            run_cmd('mount', '-o', 'loop', '-t', 'iso9660', self.vm.iso, isodir)
+            self.vm.add_clean_cmd('umount', isodir)
+            self.iso_mounted = True
+
+            return 'file://%s' % isodir
+        else:
+            return self.install_mirrors()[0]
+
+
+    def install_mirrors(self):
+        if self.vm.iso:
+            mirror = "file:///isomnt"
+        elif self.vm.install_mirror:
+            mirror = self.vm.install_mirror
+        else:
+            mirror = self.vm.mirror
+
+        if self.vm.install_mirror:
+            updates_mirror = self.vm.install_mirror
+        else:
+            updates_mirror = self.vm.mirror
+
+        if self.vm.install_security_mirror:
+            security_mirror = self.vm.install_security_mirror
+        else:
+            security_mirror = self.vm.security_mirror
+
+        return (mirror, updates_mirror, security_mirror)
 
     def install_kernel(self):
         self.install_from_template('/etc/kernel-img.conf', 'kernelimg', { 'updategrub' : self.updategrub }) 
