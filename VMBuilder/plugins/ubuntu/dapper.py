@@ -260,7 +260,9 @@ class Dapper(suite.Suite):
         self.vm.distro.run_in_target(*args, **kwargs)
 
     def copy_to_target(self, infile, destpath):
-        os.makedirs('%s/%s' % (self.destdir, os.path.dirname(infile)))
+        dir = '%s/%s' % (self.destdir, os.path.dirname(destpath))
+        if not os.path.isdir(dir):
+            os.makedirs(dir)
         if os.path.isdir(infile):
             shutil.copytree(infile, '%s/%s' % (self.destdir, destpath))
         else:
@@ -275,6 +277,7 @@ class Dapper(suite.Suite):
 
     def copy_settings(self):
         self.copy_to_target('/etc/default/locale', '/etc/default/locale')
+        shutil.rmtree('%s/etc/console-setup' % self.destdir)
         self.copy_to_target('/etc/console-setup', '/etc/console-setup')
         self.copy_to_target('/etc/default/console-setup', '/etc/default/console-setup')
         self.copy_to_target('/etc/timezone', '/etc/timezone')
