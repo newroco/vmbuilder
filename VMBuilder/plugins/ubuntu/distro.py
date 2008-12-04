@@ -29,7 +29,7 @@ import os
 class Ubuntu(Distro):
     name = 'Ubuntu'
     arg = 'ubuntu'
-    suites = ['dapper', 'feisty', 'gutsy', 'hardy', 'intrepid']
+    suites = ['dapper', 'feisty', 'gutsy', 'hardy', 'intrepid', 'jaunty']
     
     # Maps host arch to valid guest archs
     valid_archs = { 'amd64' : ['amd64', 'i386', 'lpia' ],
