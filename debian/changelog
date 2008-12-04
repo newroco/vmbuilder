@@ -1,3 +1,12 @@
+vm-builder (0.9-0ubuntu6) UNRELEASED; urgency=low
+
+  * fix creation of Dapper VMs (LP: #305186) by moving existing
+    copy_settings() from plugins/ubuntu/dapper.py to plugins/ubuntu/edgy.py
+    and creating a Dapper specific copy_settings(). This was introduced in
+    fix for (LP: #292573).
+
+ -- Jamie Strandboge <jamie@ubuntu.com>  Thu, 04 Dec 2008 08:48:39 -0600
+
 vm-builder (0.9-0ubuntu5) jaunty; urgency=low
 
   * add Jaunty support 
