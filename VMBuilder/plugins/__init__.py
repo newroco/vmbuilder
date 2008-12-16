@@ -75,4 +75,4 @@ class Plugin(object):
     def run_in_target(self, *args, **kwargs):
         if not self.vm.fsmounted:
             raise VMBuilderException('install_from_template called while file system is not mounted')
-        return run_cmd('chroot', self.destdir, *args, **kwargs)
+        return run_cmd('chroot', self.vm.installdir, *args, **kwargs)
