@@ -1,9 +1,13 @@
 vm-builder (0.9-0ubuntu6) UNRELEASED; urgency=low
 
+  [ Jamie Strandboge ]
   * fix creation of Dapper VMs (LP: #305186) by moving existing
     copy_settings() from plugins/ubuntu/dapper.py to plugins/ubuntu/edgy.py
     and creating a Dapper specific copy_settings(). This was introduced in
     fix for (LP: #292573).
+
+  [ Michael Vogt ]
+  * when --ssh-key is given, install openssh-server
 
  -- Jamie Strandboge <jamie@ubuntu.com>  Thu, 04 Dec 2008 08:48:39 -0600
 
