@@ -29,7 +29,7 @@ import os
 class Ubuntu(Distro):
     name = 'Ubuntu'
     arg = 'ubuntu'
-    suites = ['dapper', 'feisty', 'gutsy', 'hardy', 'intrepid', 'jaunty']
+    suites = ['dapper', 'gutsy', 'hardy', 'intrepid', 'jaunty']
     
     # Maps host arch to valid guest archs
     valid_archs = { 'amd64' : ['amd64', 'i386', 'lpia' ],
@@ -51,7 +51,7 @@ class Ubuntu(Distro):
         self.vm.register_setting_group(group)
 
         group = self.vm.setting_group('Installation options')
-        group.add_option('--suite', default='intrepid', help='Suite to install. Valid options: %s [default: %%default]' % ' '.join(self.suites))
+        group.add_option('--suite', default='jaunty', help='Suite to install. Valid options: %s [default: %%default]' % ' '.join(self.suites))
         group.add_option('--flavour', '--kernel-flavour', help='Kernel flavour to use. Default and valid options depend on architecture and suite')
         group.add_option('--iso', metavar='PATH', help='Use an iso image as the source for installation of file. Full path to the iso must be provided. If --mirror is also provided, it will be used in the final sources.list of the vm.  This requires suite and kernel parameter to match what is available on the iso, obviously.')
         group.add_option('--mirror', metavar='URL', help='Use Ubuntu mirror at URL instead of the default, which is http://archive.ubuntu.com/ubuntu for official arches and http://ports.ubuntu.com/ubuntu-ports otherwise')
