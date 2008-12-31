@@ -39,7 +39,7 @@ class VMWare(Hypervisor):
             self.vm.result_files.append(img_path)
 
     def deploy(self):
-        vmdesc = VMBuilder.util.render_template('vmware', self.vm, 'vmware',  { 'vmhwversion' : self.vmhwversion, 'mem' : self.vm.mem, 'hostname' : self.vm.hostname, 'arch' : self.vm.arch, 'guestos' : (self.vm.arch == 'amd64' and 'ubuntu-64' or 'ubuntu') })
+        vmdesc = VMBuilder.util.render_template('vmware', self.vm, 'vmware',  { 'vmhwversion' : self.vmhwversion, 'cpu' : self.vm.cpu, 'mem' : self.vm.mem, 'hostname' : self.vm.hostname, 'arch' : self.vm.arch, 'guestos' : (self.vm.arch == 'amd64' and 'ubuntu-64' or 'ubuntu') })
 
         vmx = '%s/%s.vmx' % (self.vm.destdir, self.vm.hostname)
         fp = open(vmx, 'w')
@@ -102,7 +102,7 @@ class VMWareEsxi(Hypervisor):
     def deploy(self):
       
         # Create the machine definition file      
-        vmdesc = VMBuilder.util.render_template('vmware', self.vm, 'esxi.vmx',  { 'disks' : self.vmdks, 'vmhwversion' : self.vmhwversion, 'mem' : self.vm.mem, 'hostname' : self.vm.hostname, 'arch' : self.vm.arch, 'guestos' : (self.vm.arch == 'amd64' and 'ubuntu-64' or 'ubuntu') })  
+        vmdesc = VMBuilder.util.render_template('vmware', self.vm, 'esxi.vmx',  { 'disks' : self.vmdks, 'vmhwversion' : self.vmhwversion, 'cpu' : self.vm.cpu, 'mem' : self.vm.mem, 'hostname' : self.vm.hostname, 'arch' : self.vm.arch, 'guestos' : (self.vm.arch == 'amd64' and 'ubuntu-64' or 'ubuntu') })  
         vmx = '%s/%s.vmx' % (self.vm.destdir, self.vm.hostname)
         fp = open(vmx, 'w')
         fp.write(vmdesc)
