@@ -137,7 +137,7 @@ class VM(object):
         self.register_setting('--in-place', action='store_true', default=False, help='Install directly into the filesystem images. This is needed if your $TMPDIR is nodev and/or nosuid, but will result in slightly larger file system images.')
         self.register_setting('--tmpfs', metavar="OPTS", help='Use a tmpfs as the working directory, specifying its size or "-" to use tmpfs default (suid,dev,size=1G).')
         self.register_setting('-m', '--mem', type='int', default=128, help='Assign MEM megabytes of memory to the guest vm. [default: %default]')
-	self.register_setting('-p', '--cpu', type='int', default=1, help='Assign X cpu's to the guest vm. [default: %default]')
+	self.register_setting('-p', '--cpu', type='int', default=1, help='Assign X amount of cpu's to the guest vm. [default: %default]')
 
         group = self.setting_group('Network related options')
         domainname = '.'.join(socket.gethostbyname_ex(socket.gethostname())[0].split('.')[1:])
