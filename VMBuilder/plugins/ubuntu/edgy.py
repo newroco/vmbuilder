@@ -53,10 +53,10 @@ proc                                            /proc           proc    defaults
         self.copy_to_target('/etc/console-setup', '/etc/console-setup')
         self.copy_to_target('/etc/default/console-setup', '/etc/default/console-setup')
         self.copy_to_target('/etc/timezone', '/etc/timezone')
-        self.run_in_target('dpkg-reconfigure', '-pcritical', 'tzdata')
+        self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'tzdata')
         self.run_in_target('locale-gen', 'en_US')
         if self.vm.lang:
             self.run_in_target('locale-gen', self.vm.lang)
             self.install_from_template('/etc/default/locale', 'locale', { 'lang' : self.vm.lang })
-        self.run_in_target('dpkg-reconfigure', '-pcritical', 'locales')
-        self.run_in_target('dpkg-reconfigure', '-pcritical', 'console-setup')
+        self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'locales')
+        self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'console-setup')
