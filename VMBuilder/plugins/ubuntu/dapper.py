@@ -205,7 +205,8 @@ class Dapper(suite.Suite):
 
     def debootstrap(self):
         cmd = ['/usr/sbin/debootstrap', '--arch=%s' % self.vm.arch, self.vm.suite, self.destdir, self.debootstrap_mirror()]
-        run_cmd(*cmd)
+        kwargs = { 'env' : { 'DEBIAN_FRONTEND' : 'noninteractive' } }
+        run_cmd(*cmd, **kwargs)
     
     def debootstrap_mirror(self):
         if self.vm.iso:
