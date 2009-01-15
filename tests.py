@@ -57,6 +57,16 @@ class TestUbuntuPlugin(unittest.TestCase):
         ubuntu = Ubuntu(vm)
         self.assertRaises(VMBuilderUserError, ubuntu.preflight_check)
 
+
+class TestUtils(unittest.TestCase):
+    def test_run_cmd(self):
+        import VMBuilder
+        from VMBuilder.util import run_cmd
+        self.assertTrue("foobarbaztest" in 
+                        run_cmd("env", env={'foobarbaztest' : 'bar' }))
+
+
+
 if __name__ == '__main__':
     unittest.main()
 
