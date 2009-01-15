@@ -20,6 +20,7 @@
 from VMBuilder import register_plugin, Plugin, VMBuilderUserError
 from VMBuilder.util import run_cmd
 import logging
+import os
 
 class EC2(Plugin):
     name = 'EC2 integration'
@@ -49,10 +50,16 @@ class EC2(Plugin):
             raise VMBuilderUserError('When building for EC2 you must supply the name for the image.')
 
         if not self.vm.ec2_cert:
-            raise VMBuilderUserError('When building for EC2 you must provide your PEM encoded public key certificate')
+            if "EC2_CERT" in os.environ:
+                self.vm.ec2_cert = os.environ["EC2_CERT"]
+            else:
+                raise VMBuilderUserError('When building for EC2 you must provide your PEM encoded public key certificate')
 
         if not self.vm.ec2_key:
-            raise VMBuilderUserError('When building for EC2 you must provide your PEM encoded private key file')
+            if "EC2_PRIVATE_KEY" in os.environ:
+                self.vm.ec2_key = os.environ["EC2_PRIVATE_KEY"]
+            else:
+                raise VMBuilderUserError('When building for EC2 you must provide your PEM encoded private key file')
 
         if not self.vm.ec2_user:
             raise VMBuilderUserError('When building for EC2 you must provide your EC2 user ID (your AWS account number, not your AWS access key ID)')
