@@ -103,7 +103,8 @@ class Dapper(suite.Suite):
         self.unprevent_daemons_starting()
 
     def update(self):
-        self.run_in_target('apt-get', '-y', '--force-yes', 'dist-upgrade')
+        self.run_in_target('apt-get', '-y', '--force-yes', 'dist-upgrade',
+                           env={ 'DEBIAN_FRONTEND' : 'noninteractive' })
         
     def install_authorized_keys(self):
         if self.vm.ssh_key:
