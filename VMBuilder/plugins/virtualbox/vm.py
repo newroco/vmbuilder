@@ -18,7 +18,8 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from   VMBuilder import register_hypervisor, Hypervisor, VMBuilderUserError
+from   VMBuilder      import register_hypervisor, Hypervisor, VMBuilderUserError
+from   VMBuilder.disk import vbox_manager_path
 import VMBuilder
 import VMBuilder.hypervisor
 import os
@@ -28,12 +29,6 @@ import stat
 class VirtualBox(Hypervisor):
     preferred_storage = VMBuilder.hypervisor.STORAGE_DISK_IMAGE
     needs_bootloader = True
-    pass
-
-class VirtualBox_vmdk(VirtualBox):
-    name = 'VirtualBox with vmdk'
-    arg = 'vbox-vmdk'
-    filetype = 'vmdk'
 
     def finalize(self):
         self.imgs = []
@@ -42,18 +37,20 @@ class VirtualBox_vmdk(VirtualBox):
             self.imgs.append(img_path)
             self.vm.result_files.append(img_path)
 
+
+class VirtualBox_vmdk(VirtualBox):
+    name = 'VirtualBox with vmdk'
+    arg = 'vbox-vmdk'
+    filetype = 'vmdk'
+
 class VirtualBox_vdi(VirtualBox):
     name = 'VirtualBox with vdi'
     arg = 'vbox-vdi'
+    filetype = 'vdi'
 
     def preflight_check(self):
-        raise VMBuilderUserError('Sorry, support for vdi container isn\'t yet implemented.')
-
-    def finalize(self):
-        pass
-
-    def deploy(self):
-        pass
+        if not vbox_manager_path():
+            raise VMBuilderUserError('Sorry, can\'t find \'VBManage\' in $PATH. Please install it right or use the vmdk container format.')
 
 register_hypervisor(VirtualBox_vmdk)
 register_hypervisor(VirtualBox_vdi)

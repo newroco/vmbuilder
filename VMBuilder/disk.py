@@ -180,7 +180,7 @@ class Disk(object):
         @type  destdir: string
         @param destdir: Target location of converted disk image
         @type  format: string
-        @param format: The target format (as understood by qemu-img)
+        @param format: The target format (as understood by qemu-img or vdi)
         @rtype:  string
         @return: the name of the converted image
         """
@@ -194,7 +194,10 @@ class Disk(object):
         destfile = '%s/%s.%s' % (destdir, filename, format)
 
         logging.info('Converting %s to %s, format %s' % (self.filename, format, destfile))
-        run_cmd(qemu_img_path(), 'convert', '-O', format, self.filename, destfile)
+        if format == 'vdi':
+            run_cmd(vbox_manager_path(), 'convertfromraw', '-format', 'VDI', self.filename, destfile)
+        else:
+            run_cmd(qemu_img_path(), 'convert', '-O', format, self.filename, destfile)
         os.unlink(self.filename)
         self.filename = os.path.abspath(destfile)
         return destfile
@@ -426,3 +429,10 @@ def qemu_img_path():
             path = '%s%s%s' % (dir, os.path.sep, exe)
             if os.access(path, os.X_OK):
                 return path
+
+def vbox_manager_path():
+    exe = 'VBoxManage'
+    for dir in os.environ['PATH'].split(os.path.pathsep):
+        path = '%s%s%s' % (dir, os.path.sep, exe)
+        if os.access(path, os.X_OK):
+            return path
