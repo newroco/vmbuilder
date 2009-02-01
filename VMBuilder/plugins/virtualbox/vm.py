@@ -18,7 +18,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from   VMBuilder import register_hypervisor, Hypervisor
+from   VMBuilder import register_hypervisor, Hypervisor, VMBuilderUserError
 import VMBuilder
 import VMBuilder.hypervisor
 import os
@@ -52,5 +52,19 @@ class VirtualBox_vmdk(VirtualBox):
         fp.close()
         self.vm.result_files.append(vmx)
 
+class VirtualBox_vdi(VirtualBox):
+    name = 'VirtualBox with vdi'
+    arg = 'virtualbox-vdi'
+
+    def preflight_check(self):
+        raise VMBuilderUserError('Sorry, support for vdi container isn\'t yet implemented.')
+
+    def finalize(self):
+        pass
+
+    def deploy(self):
+        pass
+
 register_hypervisor(VirtualBox_vmdk)
+register_hypervisor(VirtualBox_vdi)
 
