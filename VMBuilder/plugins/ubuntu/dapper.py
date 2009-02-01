@@ -220,9 +220,7 @@ class Dapper(suite.Suite):
 
 
     def install_mirrors(self):
-        if self.vm.iso:
-            mirror = self.isodir
-        elif self.vm.install_mirror:
+        if self.vm.install_mirror:
             mirror = self.vm.install_mirror
         else:
             mirror = self.vm.mirror
