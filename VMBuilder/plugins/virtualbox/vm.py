@@ -43,15 +43,6 @@ class VirtualBox_vmdk(VirtualBox):
             self.imgs.append(img_path)
             self.vm.result_files.append(img_path)
 
-    def deploy(self):
-        vmdesc = VMBuilder.util.render_template('vmware', self.vm, 'vmware',  { 'vmhwversion' : self.vmhwversion, 'mem' : self.vm.mem, 'hostname' : self.vm.hostname, 'arch' : self.vm.arch, 'guestos' : (self.vm.arch == 'amd64' and 'ubuntu-64' or 'ubuntu') })
-
-        vmx = '%s/%s.vmx' % (self.vm.destdir, self.vm.hostname)
-        fp = open(vmx, 'w')
-        fp.write(vmdesc)
-        fp.close()
-        self.vm.result_files.append(vmx)
-
 class VirtualBox_vdi(VirtualBox):
     name = 'VirtualBox with vdi'
     arg = 'vbox-vdi'
