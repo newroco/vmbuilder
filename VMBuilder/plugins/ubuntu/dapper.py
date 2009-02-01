@@ -208,20 +208,20 @@ class Dapper(suite.Suite):
     
     def debootstrap_mirror(self):
         if self.vm.iso:
-            os.mkdir(isodir)
-            self.vm.add_clean_cb(lambda:os.rmdir(isodir))
-            run_cmd('mount', '-o', 'loop', '-t', 'iso9660', self.vm.iso, isodir)
-            self.vm.add_clean_cmd('umount', isodir)
+            os.mkdir(self.isodir)
+            self.vm.add_clean_cb(lambda:os.rmdir(self.isodir))
+            run_cmd('mount', '-o', 'loop', '-t', 'iso9660', self.vm.iso, self.isodir)
+            self.vm.add_clean_cmd('umount', self.isodir)
             self.iso_mounted = True
 
-            return 'file://%s' % isodir
+            return 'file://%s' % self.isodir
         else:
             return self.install_mirrors()[0]
 
 
     def install_mirrors(self):
         if self.vm.iso:
-            mirror = "file:///isomnt"
+            mirror = self.isodir
         elif self.vm.install_mirror:
             mirror = self.vm.install_mirror
         else:

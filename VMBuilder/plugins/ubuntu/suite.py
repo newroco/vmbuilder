@@ -27,6 +27,7 @@ import sys
 class Suite(object):
     def __init__(self, vm):
         self.vm = vm
+        self.isodir = '/media/vmbuilder_inst_image'
         self.iso_mounted = False
 
     def check_arch_validity(self, arch):
