@@ -26,6 +26,8 @@ import os.path
 import stat
 
 class VirtualBox(Hypervisor):
+    preferred_storage = VMBuilder.hypervisor.STORAGE_DISK_IMAGE
+    needs_bootloader = True
     pass
 
 class VirtualBox_vmdk(VirtualBox):
@@ -33,8 +35,6 @@ class VirtualBox_vmdk(VirtualBox):
     arg = 'virtualbox-vmdk'
     vmhwversion = 4
     filetype = 'vmdk'
-    preferred_storage = VMBuilder.hypervisor.STORAGE_DISK_IMAGE
-    needs_bootloader = True
 
     def finalize(self):
         self.imgs = []
