@@ -33,7 +33,6 @@ class VirtualBox(Hypervisor):
 class VirtualBox_vmdk(VirtualBox):
     name = 'VirtualBox with vmdk'
     arg = 'vbox-vmdk'
-    vmhwversion = 4
     filetype = 'vmdk'
 
     def finalize(self):
