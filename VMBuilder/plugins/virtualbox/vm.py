@@ -32,7 +32,7 @@ class VirtualBox(Hypervisor):
 
 class VirtualBox_vmdk(VirtualBox):
     name = 'VirtualBox with vmdk'
-    arg = 'virtualbox-vmdk'
+    arg = 'vbox-vmdk'
     vmhwversion = 4
     filetype = 'vmdk'
 
@@ -54,7 +54,7 @@ class VirtualBox_vmdk(VirtualBox):
 
 class VirtualBox_vdi(VirtualBox):
     name = 'VirtualBox with vdi'
-    arg = 'virtualbox-vdi'
+    arg = 'vbox-vdi'
 
     def preflight_check(self):
         raise VMBuilderUserError('Sorry, support for vdi container isn\'t yet implemented.')
