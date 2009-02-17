@@ -24,7 +24,11 @@ from   VMBuilder.util import run_cmd
 from   VMBuilder.plugins.ubuntu.hardy import Hardy
 
 class Intrepid(Hardy):
-    xen_kernel_flavour = 'server'
+    valid_flavours = { 'i386' :  ['386', 'generic', 'server', 'virtual'],
+                       'amd64' : ['generic', 'server', 'virtual'],
+                       'lpia'  : ['lpia', 'lpiacompat'] }
+    default_flavour = { 'i386' : 'virtual', 'amd64' : 'virtual', 'lpia' : 'lpia' }
+    xen_kernel_flavour = 'virtual'
 
     def mangle_grub_menu_lst(self):
         bootdev = disk.bootpart(self.vm.disks)
