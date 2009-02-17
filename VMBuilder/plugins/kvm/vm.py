@@ -33,7 +33,7 @@ class KVM(Hypervisor):
 
     def finalize(self):
         self.imgs = []
-        self.cmdline = ['kvm', '-m', str(self.vm.mem) ]
+        self.cmdline = ['kvm', '-m', str(self.vm.mem), '-smp', str(self.vm.cpus) ]
         for disk in self.vm.disks:
             img_path = disk.convert(self.vm.destdir, self.filetype)
             self.imgs.append(img_path)

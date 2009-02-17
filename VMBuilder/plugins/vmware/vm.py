@@ -23,11 +23,14 @@ import VMBuilder.hypervisor
 import os
 import os.path
 import stat
+from shutil import move
+from math import floor
 
 class VMWare(Hypervisor):
     filetype = 'vmdk'
     preferred_storage = VMBuilder.hypervisor.STORAGE_DISK_IMAGE
     needs_bootloader = True
+    vmxtemplate = 'vmware'
 
     def finalize(self):
         self.imgs = []
@@ -36,8 +39,11 @@ class VMWare(Hypervisor):
             self.imgs.append(img_path)
             self.vm.result_files.append(img_path)
 
+    def disks(self):
+        return self.vm.disks
+
     def deploy(self):
-        vmdesc = VMBuilder.util.render_template('vmware', self.vm, 'vmware',  { 'vmhwversion' : self.vmhwversion, 'mem' : self.vm.mem, 'hostname' : self.vm.hostname, 'arch' : self.vm.arch, 'guestos' : (self.vm.arch == 'amd64' and 'ubuntu-64' or 'ubuntu') })
+        vmdesc = VMBuilder.util.render_template('vmware', self.vm, vmxtemplate, { 'disks' : self.disks(), 'vmhwversion' : self.vmhwversion, 'cpu' : self.vm.cpu, 'mem' : self.vm.mem, 'hostname' : self.vm.hostname, 'arch' : self.vm.arch, 'guestos' : (self.vm.arch == 'amd64' and 'ubuntu-64' or 'ubuntu') })
 
         vmx = '%s/%s.vmx' % (self.vm.destdir, self.vm.hostname)
         fp = open(vmx, 'w')
@@ -56,5 +62,48 @@ class VMWareServer(VMWare):
     arg = 'vmserver'
     vmhwversion = 4
 
+class VMWareEsxi(VMWare):
+    name = 'VMWare ESXi'
+    arg = 'esxi'
+    vmhwversion = 4
+    adaptertype = 'lsilogic' # lsilogic | buslogic, ide is not supported by ESXi
+    vmxtemplate = 'esxi.vmx'
+
+    vmdks = [] # vmdk filenames used when deploying vmx file
+
+    def finalize(self):
+        self.imgs = []
+        for disk in self.vm.disks:
+
+            # Move raw image to <imagename>-flat.vmdk
+            diskfilename = os.path.basename(disk.filename)
+            if '.' in diskfilename:
+                diskfilename = diskfilename[:diskfilename.rindex('.')]
+
+            flat = '%s/%s-flat.vmdk' % (self.vm.destdir, diskfilename)
+            self.vmdks.append(diskfilename)
+            
+            move(disk.filename, flat)
+            
+            self.vm.result_files.append(flat)
+            
+            # Create disk descriptor file            
+            sectorTotal = disk.size * 2048
+            sector = int(floor(sectorTotal / 16065)) # pseudo geometry
+            
+            diskdescriptor = VMBuilder.util.render_template('vmware', self.vm, 'flat.vmdk',  { 'adaptertype' : self.adaptertype, 'sectors' : sector, 'diskname' : os.path.basename(flat), 'disksize' : sectorTotal })
+            vmdk = '%s/%s.vmdk' % (self.vm.destdir, diskfilename)
+            
+            fp = open(vmdk, 'w')
+            fp.write(diskdescriptor)
+            fp.close()
+            os.chmod(vmdk, stat.S_IRWXU | stat.S_IRWXU | stat.S_IROTH | stat.S_IXOTH)
+            
+            self.vm.result_files.append(vmdk)            
+
+    def disks(self):
+        return self.vmdks
+
 register_hypervisor(VMWareServer)
 register_hypervisor(VMWareWorkstation6)
+register_hypervisor(VMWareEsxi)
