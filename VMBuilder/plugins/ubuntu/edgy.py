@@ -20,6 +20,7 @@
 import logging
 import suite
 import shutil
+import os
 import VMBuilder.disk as disk
 from   VMBuilder.util import run_cmd
 from   VMBuilder.plugins.ubuntu.dapper import Dapper
@@ -49,9 +50,12 @@ proc                                            /proc           proc    defaults
 
     def copy_settings(self):
         self.copy_to_target('/etc/default/locale', '/etc/default/locale')
-        shutil.rmtree('%s/etc/console-setup' % self.destdir)
-        self.copy_to_target('/etc/console-setup', '/etc/console-setup')
-        self.copy_to_target('/etc/default/console-setup', '/etc/default/console-setup')
+        csdir = '%s/etc/console-setup' % self.destdir
+        have_cs = os.path.isdir(csdir)
+        if have_cs:
+            shutil.rmtree(csdir)
+            self.copy_to_target('/etc/console-setup', '/etc/console-setup')
+            self.copy_to_target('/etc/default/console-setup', '/etc/default/console-setup')
         self.copy_to_target('/etc/timezone', '/etc/timezone')
         self.run_in_target('dpkg-reconfigure', '-pcritical', 'tzdata')
         self.run_in_target('locale-gen', 'en_US')
@@ -59,4 +63,5 @@ proc                                            /proc           proc    defaults
             self.run_in_target('locale-gen', self.vm.lang)
             self.install_from_template('/etc/default/locale', 'locale', { 'lang' : self.vm.lang })
         self.run_in_target('dpkg-reconfigure', '-pcritical', 'locales')
-        self.run_in_target('dpkg-reconfigure', '-pcritical', 'console-setup')
+        if have_cs:
+            self.run_in_target('dpkg-reconfigure', '-pcritical', 'console-setup')
