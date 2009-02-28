@@ -80,6 +80,9 @@ class CLI(VMBuilder.Frontend):
 
     def set_disk_layout(self, vm):
         if not vm.part:
+            vm.rootsize = int(vm.rootsize)
+            vm.swapsize = int(vm.swapsize)
+            vm.optsize = int(vm.optsize)
             if vm.hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
                 vm.add_filesystem(size='%dM' % vm.rootsize, type='ext3', mntpnt='/')
                 vm.add_filesystem(size='%dM' % vm.swapsize, type='swap', mntpnt=None)
