@@ -102,6 +102,9 @@ class Dapper(suite.Suite):
         logging.debug("Unpreventing daemons from starting")
         self.unprevent_daemons_starting()
 
+        logging.debug("Execute post install script")
+        self.post_install_script()
+
     def update(self):
         self.run_in_target('apt-get', '-y', '--force-yes', 'dist-upgrade')
         
@@ -291,3 +294,9 @@ class Dapper(suite.Suite):
             self.run_in_target('locale-gen', self.vm.lang)
             self.install_from_template('/etc/default/locale', 'locale', { 'lang' : self.vm.lang })
         self.run_in_target('dpkg-reconfigure', '-pcritical', 'locales')
+
+    def post_install_script(self):
+        if self.vm.post_install_script: 
+            run_cmd(self.vm.post_install_script, self.destdir) 
+
+                    
