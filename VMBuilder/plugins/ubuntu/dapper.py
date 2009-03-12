@@ -127,7 +127,7 @@ class Dapper(suite.Suite):
         rootpass = getattr(self.vm, 'rootpass', None)
         if rootpass:
             self.run_in_target('chpasswd',
-                               stdin=('%s:%s\n' % ('root', rootpass)
+                               stdin=('%s:%s\n' % ('root', rootpass)))
         self.install_from_template('/etc/sudoers', 'sudoers')
         for group in ['adm', 'audio', 'cdrom', 'dialout', 'floppy', 'video', 'plugdev', 'dip', 'netdev', 'powerdev', 'lpadmin', 'scanner']:
             self.run_in_target('adduser', self.vm.user, group, ignore_fail=True)
