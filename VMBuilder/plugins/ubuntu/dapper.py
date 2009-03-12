@@ -124,13 +124,16 @@ class Dapper(suite.Suite):
         self.run_in_target('chpasswd', stdin=('%s:%s\n' % (self.vm.user, getattr(self.vm, 'pass'))))
         self.run_in_target('addgroup', '--system', 'admin')
         self.run_in_target('adduser', self.vm.user, 'admin')
-
+        rootpass = getattr(self.vm, 'rootpass', None)
+        if rootpass:
+            self.run_in_target('chpasswd',
+                               stdin=('%s:%s\n' % ('root', rootpass)
         self.install_from_template('/etc/sudoers', 'sudoers')
         for group in ['adm', 'audio', 'cdrom', 'dialout', 'floppy', 'video', 'plugdev', 'dip', 'netdev', 'powerdev', 'lpadmin', 'scanner']:
             self.run_in_target('adduser', self.vm.user, group, ignore_fail=True)
-
-        # Lock root account
-        self.run_in_target('chpasswd', '-e', stdin='root:!\n')
+        # Lock root account only if we didn't set the root password
+        if not rootpass:
+            self.run_in_target('chpasswd', '-e', stdin='root:!\n')
 
     def kernel_name(self):
         return 'linux-image-%s' % (self.vm.flavour or self.default_flavour[self.vm.arch],)
