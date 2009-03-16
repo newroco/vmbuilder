@@ -237,7 +237,7 @@ class VM(object):
         is called to give all the plugins and the distro and hypervisor plugin a chance to set
         some reasonable defaults, which the frontend then can inspect and present
         """
-
+        multiline_split = re.compile("\s*,\s*")
         if self.distro and self.hypervisor:
             for plugin in VMBuilder._plugins:
                 self.plugins.append(plugin(self))
@@ -250,7 +250,8 @@ class VM(object):
                 if confvalue:
                     if self.optparser.get_option('--%s' % k):
                         if self.optparser.get_option('--%s' % k).action == 'append':
-                            setattr(self, k, confvalue.split(', '))
+                            values = multiline_split.split(confvalue)
+                            setattr(self, k, values)
                         else:
                             setattr(self, k, confvalue)
                     else:
