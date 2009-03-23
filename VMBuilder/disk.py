@@ -59,7 +59,7 @@ class Disk(object):
             self.filename = filename
         else:
             if self.preallocated:
-                raise VMBuilderException('Preallocated was set, but no filename given')
+                raise VMBuilderUserError('Preallocated was set, but no filename given')
             self.filename = 'disk%d.img' % len(self.vm.disks)
 
         self.partitions = []
