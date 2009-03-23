@@ -42,6 +42,7 @@ class CLI(VMBuilder.Frontend):
                     break
 
             vm = VMBuilder.VM(conf)
+            vm.register_setting('--version', action='callback', callback=self.versioninfo, callback_kwargs={ 'vm' : vm }, help='Show version information')
             vm.register_setting('--rootsize', metavar='SIZE', type='int', default=4096, help='Size (in MB) of the root filesystem [default: %default]')
             vm.register_setting('--optsize', metavar='SIZE', type='int', default=0, help='Size (in MB) of the /opt filesystem. If not set, no /opt filesystem will be added.')
             vm.register_setting('--swapsize', metavar='SIZE', type='int', default=1024, help='Size (in MB) of the swap partition [default: %default]')
@@ -67,6 +68,10 @@ class CLI(VMBuilder.Frontend):
             vm.create()
         except VMBuilder.VMBuilderUserError, e:
             print >> sys.stderr, e
+
+    def versioninfo(self, option, opt, value, parser, vm=None):
+        print '%(major)d.%(minor)d.r%(revno)d' % vm.get_version_info()
+        sys.exit(0)
 
     def set_usage(self, vm):
         vm.optparser.set_usage('%prog hypervisor distro [options]')

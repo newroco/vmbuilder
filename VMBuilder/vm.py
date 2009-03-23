@@ -90,6 +90,13 @@ class VM(object):
 
         self._register_base_settings()
 
+    def get_version_info(self):
+        import vcsversion
+        info = vcsversion.version_info
+        info['major'] = 0
+        info['minor'] = 10
+        return info
+       
     def cleanup(self):
         logging.info("Cleaning up")
         while len(self._cleanup_cbs) > 0:
