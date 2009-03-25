@@ -23,6 +23,8 @@ import os
 import suite
 import shutil
 import socket
+import tempfile
+
 import VMBuilder
 import VMBuilder.disk as disk
 from   VMBuilder.util import run_cmd
@@ -211,13 +213,13 @@ class Dapper(suite.Suite):
     
     def debootstrap_mirror(self):
         if self.vm.iso:
-            os.mkdir(isodir)
+            isodir = tempfile.mkdtemp()
             self.vm.add_clean_cb(lambda:os.rmdir(isodir))
             run_cmd('mount', '-o', 'loop', '-t', 'iso9660', self.vm.iso, isodir)
             self.vm.add_clean_cmd('umount', isodir)
             self.iso_mounted = True
 
-            return 'file://%s' % isodir
+            return 'file:////%s' % isodir
         else:
             return self.install_mirrors()[0]
 
