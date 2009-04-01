@@ -93,10 +93,7 @@ class Ubuntu(Distro):
             self.vm.components = self.vm.components.split(',')
 
     def get_locale(self):
-        try:
-            return os.environ['LANG']
-        except:
-            return None
+        return os.getenv('LANG')
 
     def preflight_check(self):
         """While not all of these are strictly checks, their failure would inevitably
