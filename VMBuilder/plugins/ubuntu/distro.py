@@ -20,7 +20,8 @@
 import VMBuilder
 from   VMBuilder           import register_distro, Distro
 from   VMBuilder.util      import run_cmd
-from   VMBuilder.exception import VMBuilderUserError
+from   VMBuilder.exception import VMBuilderUserError, VMBuilderException
+import commands
 import socket
 import logging
 import types
@@ -92,8 +93,19 @@ class Ubuntu(Distro):
         else:
             self.vm.components = self.vm.components.split(',')
 
-    def get_locale(self):
-        return os.getenv('LANG')
+    @staticmethod
+    def get_locale():
+        lang = os.getenv('LANG')
+        # This next bit saves users a great deal of time if their LANG is set
+        # to something that causes locale-gen to exit with non-zero status.
+        # Without it, users can get through an entire build process, only to
+        # have it fail at the end.
+        if lang:
+            status, output = commands.getstatusoutput("locale-gen %s" % lang)
+            if status != 0:
+                msg = "locale-gen cannot recognize your locale '%s'" % lang
+                raise VMBuilderException(msg)
+        return lang
 
     def preflight_check(self):
         """While not all of these are strictly checks, their failure would inevitably
