@@ -1,0 +1,43 @@
+#raw
+#! /usr/bin/env sh
+###############################################################################
+#
+# This script is used to create und register a new VM
+# in VirtualBox
+#
+###############################################################################
+#end raw
+#import os
+#import os.path
+
+disk_path="#echo os.path.abspath(os.path.dirname($vm_disks[0]))#/"
+
+VBoxManage createvm -name $vm_name -ostype Linux -register
+
+VBoxManage openmedium #slurp
+#set $i = 0
+#for $disk in $vm_disks
+    #set $i = $i + 1
+    #set $disk = os.path.basename(disk)
+disk \${disk_path}/$disk -type normal #slurp
+#end for
+
+VBoxManage modifyvm $vm_name -memory $memory -sata on #slurp
+#set $i = 0
+#for $disk in $vm_disks
+    #set $i = $i + 1
+    #set $disk = os.path.basename(disk)
+    #if $i >= 31
+    	#break
+    #end if
+    #if $i == 1
+    	-hda \${disk_path}/$disk #slurp
+    #else if $i == 2
+    	-hdb \${disk_path}/$disk #slurp
+    #else if $i == 3
+    	-hdd \${disk_path}/$disk #slurp
+    #else
+        -sataport${i} \${disk_path}/$disk #slurp
+    #end if
+#end for
+

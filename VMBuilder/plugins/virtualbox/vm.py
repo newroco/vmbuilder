@@ -37,6 +37,16 @@ class VirtualBox(Hypervisor):
             self.imgs.append(img_path)
             self.vm.result_files.append(img_path)
 
+    def deploy(self):
+        vm_deploy_script = VMBuilder.util.render_template('virtualbox', self.vm, 'vm_deploy_script', { 'vm_name' : self.vm.hostname, 'vm_disks' : self.imgs, 'memory' : self.vm.mem })
+
+        script_file = '%s/create_%s.sh' % (self.vm.destdir, self.vm.hostname)
+        fp = open(script_file, 'w')
+        fp.write(vm_deploy_script)
+        fp.close()
+        os.chmod(script_file, stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH)
+        self.vm.result_files.append(script_file)
+
 
 class VirtualBox_vmdk(VirtualBox):
     name = 'VirtualBox with vmdk'
