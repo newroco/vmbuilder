@@ -52,6 +52,9 @@ class Dapper(suite.Suite):
         logging.debug("Setting up sources.list")
         self.install_sources_list()
 
+        logging.debug("Setting up apt proxy")
+        self.install_apt_proxy()
+
         logging.debug("Installing fstab")
         self.install_fstab()
 
@@ -193,6 +196,10 @@ class Dapper(suite.Suite):
         # final vm is going to be on).
         self.run_in_target('apt-get', 'update', ignore_fail=final)
 
+    def install_apt_proxy(self):
+        if self.vm.proxy is not None:
+            self.vm.install_file('/etc/apt/apt.conf', '// Proxy added by vmbuilder\nAcquire::http { Proxy "%s"; };' % self.vm.proxy)
+
     def install_fstab(self):
         if self.vm.hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
             self.install_from_template('/etc/fstab', 'dapper_fstab_fsimage', { 'fss' : disk.get_ordered_filesystems(self.vm), 'prefix' : self.disk_prefix })
@@ -204,7 +211,10 @@ class Dapper(suite.Suite):
 
     def debootstrap(self):
         cmd = ['/usr/sbin/debootstrap', '--arch=%s' % self.vm.arch, self.vm.suite, self.destdir, self.debootstrap_mirror()]
-        run_cmd(*cmd)
+        kwargs = {}
+        if self.vm.proxy is not None:
+            kwargs['env'] = {'http_proxy':self.vm.proxy}
+        run_cmd(*cmd, **kwargs)
     
     def debootstrap_mirror(self):
         if self.vm.iso:
