@@ -10,9 +10,17 @@
 #import os
 #import os.path
 
-disk_path="#echo os.path.abspath(os.path.dirname($vm_disks[0]))#/"
 
-VBoxManage createvm -name $vm_name -ostype Linux -register
+#if $os_type == "ubuntu"
+os_type = "Ubuntu"
+#else
+os_type = "Other"
+#end if
+
+disk_path = "#echo os.path.abspath(os.path.dirname($vm_disks[0]))/"#
+
+
+VBoxManage createvm -name $vm_name -ostype \$os_type -register
 
 VBoxManage openmedium #slurp
 #set $i = 0
