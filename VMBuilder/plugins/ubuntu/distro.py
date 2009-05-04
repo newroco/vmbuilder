@@ -17,14 +17,14 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import logging
+import os
+import socket
+import types
 import VMBuilder
 from   VMBuilder           import register_distro, Distro
 from   VMBuilder.util      import run_cmd
-from   VMBuilder.exception import VMBuilderUserError
-import socket
-import logging
-import types
-import os
+from   VMBuilder.exception import VMBuilderUserError, VMBuilderException
 
 class Ubuntu(Distro):
     name = 'Ubuntu'
@@ -95,10 +95,7 @@ class Ubuntu(Distro):
             self.vm.components = self.vm.components.split(',')
 
     def get_locale(self):
-        try:
-            return os.environ['LANG']
-        except:
-            return None
+        return os.getenv('LANG')
 
     def preflight_check(self):
         """While not all of these are strictly checks, their failure would inevitably
@@ -127,6 +124,13 @@ class Ubuntu(Distro):
             logging.info('Xen kernel default: linux-image-%s %s', self.suite.xen_kernel_flavour, self.xen_kernel_version())
 
         self.vm.virtio_net = self.use_virtio_net()
+
+        if self.vm.lang:
+            try:
+                run_cmd('locale-gen', '%s' % self.vm.lang)
+            except VMBuilderException, e:
+                msg = "locale-gen does not recognize your locale '%s'" % self.vm.lang
+                raise VMBuilderUserError(msg)
 
     def install(self, destdir):
         self.destdir = destdir
