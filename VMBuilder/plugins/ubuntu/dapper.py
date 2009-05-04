@@ -23,6 +23,7 @@ import os
 import suite
 import shutil
 import socket
+import tempfile
 import VMBuilder
 import VMBuilder.disk as disk
 from   VMBuilder.util import run_cmd
@@ -129,9 +130,11 @@ class Dapper(suite.Suite):
         self.install_from_template('/etc/sudoers', 'sudoers')
         for group in ['adm', 'audio', 'cdrom', 'dialout', 'floppy', 'video', 'plugdev', 'dip', 'netdev', 'powerdev', 'lpadmin', 'scanner']:
             self.run_in_target('adduser', self.vm.user, group, ignore_fail=True)
-
-        # Lock root account
-        self.run_in_target('chpasswd', '-e', stdin='root:!\n')
+        # Lock root account only if we didn't set the root password
+        if self.vm.rootpass:
+            self.run_in_target('chpasswd', stdin=('%s:%s\n' % ('root', self.vm.rootpass)))
+        else:
+            self.run_in_target('chpasswd', '-e', stdin='root:!\n')
 
     def kernel_name(self):
         return 'linux-image-%s' % (self.vm.flavour or self.default_flavour[self.vm.arch],)
@@ -213,7 +216,7 @@ class Dapper(suite.Suite):
     
     def debootstrap_mirror(self):
         if self.vm.iso:
-            os.mkdir(isodir)
+            isodir = tempfile.mkdtemp()
             self.vm.add_clean_cb(lambda:os.rmdir(isodir))
             run_cmd('mount', '-o', 'loop', '-t', 'iso9660', self.vm.iso, isodir)
             self.vm.add_clean_cmd('umount', isodir)

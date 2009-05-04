@@ -169,8 +169,8 @@ def render_template(plugin, vm, tmplname, context=None):
         searchList.append(context)
     searchList.append(vm)
 
-    tmpldirs = ['VMBuilder/plugins/%s/templates',
-                os.path.expanduser('~/.vmbuilder/%s'),
+    tmpldirs = [os.path.expanduser('~/.vmbuilder/%s'),
+                os.path.dirname(__file__) + '/plugins/%s/templates',
                 '/etc/vmbuilder/%s']
 
     if vm.templates:
