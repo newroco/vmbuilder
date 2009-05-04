@@ -103,7 +103,8 @@ class Dapper(suite.Suite):
         self.unprevent_daemons_starting()
 
     def update(self):
-        self.run_in_target('apt-get', '-y', '--force-yes', 'dist-upgrade')
+        self.run_in_target('apt-get', '-y', '--force-yes', 'dist-upgrade',
+                           env={ 'DEBIAN_FRONTEND' : 'noninteractive' })
         
     def install_authorized_keys(self):
         if self.vm.ssh_key:
@@ -204,7 +205,8 @@ class Dapper(suite.Suite):
 
     def debootstrap(self):
         cmd = ['/usr/sbin/debootstrap', '--arch=%s' % self.vm.arch, self.vm.suite, self.destdir, self.debootstrap_mirror()]
-        run_cmd(*cmd)
+        kwargs = { 'env' : { 'DEBIAN_FRONTEND' : 'noninteractive' } }
+        run_cmd(*cmd, **kwargs)
     
     def debootstrap_mirror(self):
         if self.vm.iso:
@@ -282,9 +284,9 @@ class Dapper(suite.Suite):
     def copy_settings(self):
         self.copy_to_target('/etc/default/locale', '/etc/default/locale')
         self.copy_to_target('/etc/timezone', '/etc/timezone')
-        self.run_in_target('dpkg-reconfigure', '-pcritical', 'libc6')
+        self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'libc6')
         self.run_in_target('locale-gen', 'en_US')
         if self.vm.lang:
             self.run_in_target('locale-gen', self.vm.lang)
             self.install_from_template('/etc/default/locale', 'locale', { 'lang' : self.vm.lang })
-        self.run_in_target('dpkg-reconfigure', '-pcritical', 'locales')
+        self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'locales')

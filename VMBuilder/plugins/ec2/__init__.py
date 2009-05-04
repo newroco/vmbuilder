@@ -20,6 +20,7 @@
 from VMBuilder import register_plugin, Plugin, VMBuilderUserError
 from VMBuilder.util import run_cmd
 import logging
+import os
 
 class EC2(Plugin):
     name = 'EC2 integration'
@@ -49,10 +50,16 @@ class EC2(Plugin):
             raise VMBuilderUserError('When building for EC2 you must supply the name for the image.')
 
         if not self.vm.ec2_cert:
-            raise VMBuilderUserError('When building for EC2 you must provide your PEM encoded public key certificate')
+            if "EC2_CERT" in os.environ:
+                self.vm.ec2_cert = os.environ["EC2_CERT"]
+            else:
+                raise VMBuilderUserError('When building for EC2 you must provide your PEM encoded public key certificate')
 
         if not self.vm.ec2_key:
-            raise VMBuilderUserError('When building for EC2 you must provide your PEM encoded private key file')
+            if "EC2_PRIVATE_KEY" in os.environ:
+                self.vm.ec2_key = os.environ["EC2_PRIVATE_KEY"]
+            else:
+                raise VMBuilderUserError('When building for EC2 you must provide your PEM encoded private key file')
 
         if not self.vm.ec2_user:
             raise VMBuilderUserError('When building for EC2 you must provide your EC2 user ID (your AWS account number, not your AWS access key ID)')
@@ -108,10 +115,12 @@ class EC2(Plugin):
         if not self.vm.ec2:
             return False
 
+        logging.info("Building EC2 bundle")
         bundle_cmdline = ['ec2-bundle-image', '--image', self.vm.filesystems[0].filename, '--cert', self.vm.ec2_cert, '--privatekey', self.vm.ec2_key, '--user', self.vm.ec2_user, '--prefix', self.vm.ec2_name, '-r', ['i386', 'x86_64'][self.vm.arch == 'amd64'], '-d', self.vm.workdir, '--kernel', self.vm.ec2_kernel, '--ramdisk', self.vm.ec2_ramdisk]
 
         run_cmd(*bundle_cmdline)
 
+        logging.info("Uploading EC2 bundle")
         upload_cmdline = ['ec2-upload-bundle', '--retry', '--manifest', '%s/%s.manifest.xml' % (self.vm.workdir, self.vm.ec2_name), '--bucket', self.vm.ec2_bucket, '--access-key', self.vm.ec2_access_key, '--secret-key', self.vm.ec2_secret_key]
         run_cmd(*upload_cmdline)
 
