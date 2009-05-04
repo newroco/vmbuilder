@@ -53,6 +53,7 @@ class Ubuntu(Distro):
         group = self.vm.setting_group('Installation options')
         group.add_option('--suite', default='jaunty', help='Suite to install. Valid options: %s [default: %%default]' % ' '.join(self.suites))
         group.add_option('--flavour', '--kernel-flavour', help='Kernel flavour to use. Default and valid options depend on architecture and suite')
+        group.add_option('--variant', metavar='VARIANT', help='Passed to debootstrap --variant flag; use minbase, buildd, or fakechroot.')
         group.add_option('--iso', metavar='PATH', help='Use an iso image as the source for installation of file. Full path to the iso must be provided. If --mirror is also provided, it will be used in the final sources.list of the vm.  This requires suite and kernel parameter to match what is available on the iso, obviously.')
         group.add_option('--mirror', metavar='URL', help='Use Ubuntu mirror at URL instead of the default, which is http://archive.ubuntu.com/ubuntu for official arches and http://ports.ubuntu.com/ubuntu-ports otherwise')
         group.add_option('--install-mirror', metavar='URL', help='Use Ubuntu mirror at URL for the installation only. Apt\'s sources.list will still use default or URL set by --mirror')

@@ -204,7 +204,10 @@ class Dapper(suite.Suite):
         self.install_from_template('/boot/grub/device.map', 'devicemap', { 'prefix' : self.disk_prefix })
 
     def debootstrap(self):
-        cmd = ['/usr/sbin/debootstrap', '--arch=%s' % self.vm.arch, self.vm.suite, self.destdir, self.debootstrap_mirror()]
+        cmd = ['/usr/sbin/debootstrap', '--arch=%s' % self.vm.arch]
+        if self.vm.variant:
+            cmd += ['--variant=%s' % self.vm.variant]
+        cmd += [self.vm.suite, self.destdir, self.debootstrap_mirror()]
         kwargs = { 'env' : { 'DEBIAN_FRONTEND' : 'noninteractive' } }
         run_cmd(*cmd, **kwargs)
     
@@ -290,3 +293,4 @@ class Dapper(suite.Suite):
             self.run_in_target('locale-gen', self.vm.lang)
             self.install_from_template('/etc/default/locale', 'locale', { 'lang' : self.vm.lang })
         self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'locales')
+        self.run_in_target('dpkg-reconfigure', '-pcritical', 'locales')
