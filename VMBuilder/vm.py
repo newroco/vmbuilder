@@ -29,6 +29,7 @@ import tempfile
 import textwrap
 import socket
 import struct
+import urllib
 import VMBuilder
 import VMBuilder.util      as util
 import VMBuilder.log       as log
@@ -419,6 +420,19 @@ class VM(object):
 
         self.ip_defaults()
         self.call_hooks('preflight_check')
+
+        # Check repository availability
+        if self.mirror:
+            testurl = self.mirror
+        else:
+            testurl = 'http://archive.ubuntu.com/'
+
+        try:
+            testnet = urllib.urlopen(testurl)
+        except IOError:
+            raise VMBuilderUserError('A working network connection to a package repository is required to run this program. Please check your connectivity and try again.')
+
+        testnet.close()
 
     def install_file(self, path, contents=None, source=None, mode=None):
         fullpath = '%s%s' % (self.installdir, path)
