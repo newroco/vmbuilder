@@ -79,14 +79,14 @@ class Dapper(suite.Suite):
             logging.debug("Creating device.map")
             self.install_device_map()
 
-        logging.debug("Installing ssh keys")
-        self.install_authorized_keys()
-
         logging.debug("Installing extra packages")
         self.install_extras()
 
         logging.debug("Creating initial user")
         self.create_initial_user()
+
+        logging.debug("Installing ssh keys")
+        self.install_authorized_keys()
 
         logging.debug("Copy host settings")
         self.copy_settings()
@@ -116,6 +116,8 @@ class Dapper(suite.Suite):
             os.mkdir('%s/home/%s/.ssh' % (self.destdir, self.vm.user), 0700)
             shutil.copy(self.vm.ssh_user_key, '%s/home/%s/.ssh/authorized_keys' % (self.destdir, self.vm.user))
             os.chmod('%s/home/%s/.ssh/authorized_keys' % (self.destdir, self.vm.user), 0644)
+            self.run_in_target('chown', '-R', '%s:%s' % (self.vm.user,)*2, '/home/%s/.ssh/' % (self.vm.user)) 
+
         if self.vm.ssh_user_key or self.vm.ssh_key:
             if not self.vm.addpkg:
                 self.vm.addpkg = []
