@@ -37,7 +37,7 @@ class VirtualBox(Hypervisor):
         group.add_option('--vbox-disk-format', metavar='FORMAT', default='vdi', help='Desired disk format. Valid options are: vdi vmdk. [default: %default]')
         self.vm.register_setting_group(group)
 
-     def finalize(self):
+    def finalize(self):
         self.imgs = []
         for disk in self.vm.disks:
             img_path = disk.convert(self.vm.destdir, self.vm.vbox_disk_format)
