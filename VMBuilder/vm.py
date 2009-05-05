@@ -429,9 +429,10 @@ class VM(object):
             testurl = 'http://archive.ubuntu.com/'
 
         try:
+            logging.debug('Testing access to %s' % testurl)
             testnet = urllib.urlopen(testurl)
         except IOError:
-            raise VMBuilderUserError('A working network connection to a package repository is required to run this program. Please check your connectivity and try again.')
+            raise VMBuilderUserError('Could not connect to %s. Please check your connectivity and try again.' % testurl)
 
         testnet.close()
 
