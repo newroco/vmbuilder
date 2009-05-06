@@ -283,6 +283,7 @@ class Dapper(suite.Suite):
         self.vm.distro.run_in_target(*args, **kwargs)
 
     def copy_to_target(self, infile, destpath):
+        logging.debug("Copying %s on host to %s in guest" % (infile, destpath))
         dir = '%s/%s' % (self.destdir, os.path.dirname(destpath))
         if not os.path.isdir(dir):
             os.makedirs(dir)
@@ -308,3 +309,6 @@ class Dapper(suite.Suite):
             self.install_from_template('/etc/default/locale', 'locale', { 'lang' : self.vm.lang })
         self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'locales')
         self.run_in_target('dpkg-reconfigure', '-pcritical', 'locales')
+
+    def install_vmbuilder_log(self, logfile, rootdir):
+        shutil.copy(logfile, '%s/var/log/vmbuilder-install.log' % (rootdir,))

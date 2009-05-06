@@ -20,14 +20,25 @@
 #    Logging
 
 import logging
+import os
+import tempfile
 
-FORMAT='%(asctime)s %(levelname)-8s %(message)s'
-logging.basicConfig(format=FORMAT, level=logging.INFO)
+format = '%(asctime)s %(levelname)-8s: %(message)s'
+
+fd, logfile = tempfile.mkstemp()
+
+# Log everything to the logfile
+logging.basicConfig(format=format, level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M', stream=os.fdopen(fd, 'a+'), filemode='w')
+
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+console.setFormatter(logging.Formatter(format))
+logging.getLogger('').addHandler(console)
 
 def set_verbosity(option, opt_str, value, parser):
     if opt_str == '--debug':
-        logging.getLogger().setLevel(logging.DEBUG)
+        console.setLevel(logging.DEBUG)
     elif opt_str == '--verbose':
-        logging.getLogger().setLevel(logging.INFO)
+        console.setLevel(logging.INFO)
     elif opt_str == '--quiet':
-        logging.getLogger().setLevel(logging.CRITICAL)
+        console.setLevel(logging.CRITICAL)

@@ -91,6 +91,8 @@ class VM(object):
 
         self._register_base_settings()
 
+        self.add_clean_cmd('rm', logging.logfile)
+
     def get_version_info(self):
         import vcsversion
         info = vcsversion.version_info
@@ -413,6 +415,8 @@ class VM(object):
         if self.hypervisor.needs_bootloader:
             logging.info("Installing bootloader")
             self.distro.install_bootloader()
+
+        self.distro.install_vmbuilder_log(log.logfile, self.rootmnt)
 
     def preflight_check(self):
         for opt in sum([self.confparser.options(section) for section in self.confparser.sections()], []) + [k for (k,v) in self.confparser.defaults().iteritems()]:

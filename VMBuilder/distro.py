@@ -32,3 +32,6 @@ class Distro(VMBuilder.plugins.Plugin):
 
     def post_mount(self, fs):
         """Called each time a filesystem is mounted to let the distro add things to the filesystem"""
+
+    def install_vmbuilder_log(self, logfile):
+        """Let the distro copy the install logfile to the guest"""

@@ -137,6 +137,9 @@ class Ubuntu(Distro):
         self.destdir = destdir
         self.suite.install(destdir)
 
+    def install_vmbuilder_log(self, logfile, rootdir):
+        self.suite.install_vmbuilder_log(logfile, rootdir)
+
     def post_mount(self, fs):
         self.suite.post_mount(fs)
 
