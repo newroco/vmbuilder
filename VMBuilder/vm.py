@@ -91,7 +91,7 @@ class VM(object):
 
         self._register_base_settings()
 
-        self.add_clean_cmd('rm', logging.logfile)
+        self.add_clean_cmd('rm', log.logfile)
 
     def get_version_info(self):
         import vcsversion
