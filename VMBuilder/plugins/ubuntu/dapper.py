@@ -126,20 +126,26 @@ class Dapper(suite.Suite):
                 self.vm.addpkg = []
             self.vm.addpkg += ['openssh-server']
 
+    def update_passwords(self):
+        # Set the user password, using md5
+        self.run_in_target('chpasswd', '-m', stdin=('%s:%s\n' % (self.vm.user, getattr(self.vm, 'pass'))))
+
+        # Lock root account only if we didn't set the root password
+        if self.vm.rootpass:
+            self.run_in_target('chpasswd', '-m', stdin=('%s:%s\n' % ('root', self.vm.rootpass)))
+        else:
+            self.run_in_target('chpasswd', '-e', stdin='root:!\n')
+
     def create_initial_user(self):
         self.run_in_target('adduser', '--disabled-password', '--gecos', self.vm.name, self.vm.user)
-        self.run_in_target('chpasswd', stdin=('%s:%s\n' % (self.vm.user, getattr(self.vm, 'pass'))))
         self.run_in_target('addgroup', '--system', 'admin')
         self.run_in_target('adduser', self.vm.user, 'admin')
 
         self.install_from_template('/etc/sudoers', 'sudoers')
         for group in ['adm', 'audio', 'cdrom', 'dialout', 'floppy', 'video', 'plugdev', 'dip', 'netdev', 'powerdev', 'lpadmin', 'scanner']:
             self.run_in_target('adduser', self.vm.user, group, ignore_fail=True)
-        # Lock root account only if we didn't set the root password
-        if self.vm.rootpass:
-            self.run_in_target('chpasswd', stdin=('%s:%s\n' % ('root', self.vm.rootpass)))
-        else:
-            self.run_in_target('chpasswd', '-e', stdin='root:!\n')
+
+        self.update_passwords()
 
     def kernel_name(self):
         return 'linux-image-%s' % (self.vm.flavour or self.default_flavour[self.vm.arch],)
