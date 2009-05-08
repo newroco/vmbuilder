@@ -1,5 +1,5 @@
 #raw
-#! /usr/bin/env sh
+#! /usr/bin/env bash
 ###############################################################################
 #
 # This script is used to create und register a new VM
@@ -12,12 +12,12 @@
 
 
 #if $os_type == "ubuntu"
-os_type = "Ubuntu"
+os_type="Ubuntu"
 #else
-os_type = "Other"
+os_type="Other"
 #end if
 
-disk_path = "#echo os.path.abspath(os.path.dirname($vm_disks[0]))/"#
+disk_path="#echo os.path.abspath(os.path.dirname($vm_disks[0]))#"
 
 
 VBoxManage createvm -name $vm_name -ostype \$os_type -register
@@ -54,7 +54,7 @@ VBoxManage modifyvm $vm_name -macaddress1 $mac
 #end if
 
 #if $ip
-#if $ip == dhcp
+#if $ip == "dhcp"
 VBoxManage modifyvm $vm_name -nic1 nat
 #else
 VBoxManage modifyvm $vm_name -nic1 intnet 
