@@ -45,7 +45,7 @@ class VirtualBox(Hypervisor):
             self.vm.result_files.append(img_path)
 
     def deploy(self):
-        vm_deploy_script = VMBuilder.util.render_template('virtualbox', self.vm, 'vm_deploy_script', { 'os_type' : self.vm.distro ,'vm_name' : self.vm.hostname, 'vm_disks' : self.imgs, 'memory' : self.vm.mem })
+        vm_deploy_script = VMBuilder.util.render_template('virtualbox', self.vm, 'vm_deploy_script', { 'os_type' : self.vm.distro.__class__.__name__, 'vm_name' : self.vm.hostname, 'vm_disks' : self.imgs, 'memory' : self.vm.mem })
 
         script_file = '%s/deploy_%s.sh' % (self.vm.destdir, self.vm.hostname)
         fp = open(script_file, 'w')
