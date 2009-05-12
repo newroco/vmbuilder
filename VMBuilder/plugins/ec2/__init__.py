@@ -100,11 +100,10 @@ class EC2(Plugin):
         if not self.vm.addpkg:
              self.vm.addpkg = []
 
-        self.vm.addpkg += ['ec2-init']
-        self.vm.addpkg += ['openssh-server']
-        self.vm.addpkg += ['ec2-modules']
-        self.vm.addpkg += ['server^']
-        self.vm.addpkg += ['standard^']
+        self.vm.addpkg += ['ec2-init',
+                          'openssh-server',
+                          'ec2-modules',
+                          'standard^']
 
         if not self.vm.ppa:
             self.vm.ppa = []
@@ -116,8 +115,6 @@ class EC2(Plugin):
             return
 
         logging.info("Running ec2 postinstall")
-        self.install_from_template('/etc/event.d/xvc0', 'upstart')
-        self.run_in_target('passwd', '-l', self.vm.user)
         self.install_from_template('/etc/ec2_version', 'ec2_version', { 'version' : self.vm.ec2_version } )
 
     def deploy(self):
