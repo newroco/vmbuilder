@@ -38,6 +38,7 @@ class EC2(Plugin):
         group.add_option('--ec2-secret-key', metavar='SECRET_ID', help='AWS secret access key.')
         group.add_option('--ec2-kernel','--ec2-aki', metavar='AKI', help='EC2 AKI (kernel) to use.')
         group.add_option('--ec2-ramdisk','--ec2-ari', metavar='ARI', help='EC2 ARI (ramdisk) to use.')
+        group.add_option('--ec2-version',metavar='EC2_VER',help='Specifity the EC2 image version.')
         self.vm.register_setting_group(group)
 
     def preflight_check(self):
@@ -92,6 +93,8 @@ class EC2(Plugin):
 
         if not self.vm.ec2_secret_key:
             raise VMBuilderUserError('When building for EC2 you must provide your AWS secret access key.')
+        if not self.vm.ec2_version:
+            raise VMBuilderUserError('When building for EC2 you must provide version info.')
 
 
         if not self.vm.addpkg:
@@ -115,6 +118,7 @@ class EC2(Plugin):
         logging.info("Running ec2 postinstall")
         self.install_from_template('/etc/event.d/xvc0', 'upstart')
         self.run_in_target('passwd', '-l', self.vm.user)
+        self.install_from_template('/etc/ec2_version', 'ec2_version', { 'version' : self.vm.ec2_version } )
 
     def deploy(self):
         if not self.vm.ec2:
