@@ -25,6 +25,8 @@ from   VMBuilder.plugins.ubuntu.intrepid import Intrepid
 
 class Jaunty(Intrepid):
     xen_kernel_flavour = 'server'
+    ec2_kernel_info = { 'i386' : 'aki-c553b4ac', 'amd64' : 'aki-d653b4bf' }
+    ec2_ramdisk_info = { 'i386' : 'ari-c253b4ab', 'amd64' : 'ari-d753b4be' }
 
     def mangle_grub_menu_lst(self):
         bootdev = disk.bootpart(self.vm.disks)

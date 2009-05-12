@@ -22,6 +22,8 @@ from VMBuilder.plugins.ubuntu.gutsy import Gutsy
 
 class Hardy(Gutsy):
     virtio_net = True
+    ec2_kernel_info = { 'i386' : 'aki-6e709707', 'amd64' : 'aki-6f709706' }
+    ec2_ramdisk_info = { 'i386' : 'ari-6c709705', 'amd64' : 'ari-61709708' }
 
     def xen_kernel_path(self):
         return '/boot/vmlinuz-2.6.24-19-xen'

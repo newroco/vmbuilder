@@ -29,6 +29,8 @@ class Intrepid(Hardy):
                        'lpia'  : ['lpia', 'lpiacompat'] }
     default_flavour = { 'i386' : 'virtual', 'amd64' : 'virtual', 'lpia' : 'lpia' }
     xen_kernel_flavour = 'virtual'
+    ec2_kernel_info = { 'i386' : 'aki-714daa18', 'amd64' : 'aki-4f4daa26' }
+    ec2_ramdisk_info = { 'i386': 'ari-7e4daa17', 'amd64' : 'ari-4c4daa25' }
 
     def mangle_grub_menu_lst(self):
         bootdev = disk.bootpart(self.vm.disks)
