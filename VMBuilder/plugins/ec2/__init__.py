@@ -120,6 +120,14 @@ class EC2(Plugin):
 
         logging.info("Running ec2 postinstall")
         self.install_from_template('/etc/ec2_version', 'ec2_version', { 'version' : self.vm.ec2_version } )
+        self.install_from_template('/etc/ssh/sshd_config', 'sshd_config')
+        self.install_from_template('/etc/sudoers', 'sudoers')
+
+        if self.vm.suite == 'hardy':
+            self.install_from_template('/etc/update-motd.d/51_update-motd', '51_update-motd-hardy')
+        else:
+             self.install_from_template('/etc/update-motd.d/51_update-motd', '51_update-motd')
+        self.run_in_target('chmod', '755', '/etc/update-motd.d/51_update-motd')
 
     def deploy(self):
         if not self.vm.ec2:
