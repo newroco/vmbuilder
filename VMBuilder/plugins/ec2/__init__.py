@@ -91,7 +91,6 @@ class EC2(Plugin):
         if not self.vm.addpkg:
              self.vm.addpkg = []
 
-        self.vm.addpkg += ['openssh-server']
         self.vm.addpkg += ['ec2-init']
         self.vm.addpkg += ['openssh-server']
         self.vm.addpkg += ['ec2-modules']
@@ -101,7 +100,7 @@ class EC2(Plugin):
         if not self.vm.ppa:
             self.vm.ppa = []
 
-        self.vm.ppa += ['ubuntu-ec2']
+        self.vm.ppa += ['ubuntu--on-ec2']
 
     def post_install(self):
         if not self.vm.ec2:
