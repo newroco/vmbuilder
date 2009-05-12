@@ -17,7 +17,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from VMBuilder import register_plugin, Plugin, VMBuilderUserError
+from VMBuilder import register_plugin, Plugin, VMBuilderUserError VMBuilderException
 from VMBuilder.util import run_cmd
 import logging
 import os
@@ -42,6 +42,11 @@ class EC2(Plugin):
     def preflight_check(self):
         if not self.vm.ec2:
             return True
+
+        try:
+            run_cmd('ec2-ami-tools-version')
+        except VMBuilderException, e:
+            raise VMBuilderUserError('You need to have the Amazon EC2 AMI tools installed')
 
         if not self.vm.hypervisor.name == 'Xen':
             raise VMBuilderUserError('When building for EC2 you must use the xen hypervisor.')
