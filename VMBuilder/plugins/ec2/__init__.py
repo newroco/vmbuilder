@@ -19,6 +19,7 @@
 #
 from VMBuilder import register_plugin, Plugin, VMBuilderUserError VMBuilderException
 from VMBuilder.util import run_cmd
+import VMBuilder
 import logging
 import os
 
@@ -47,6 +48,10 @@ class EC2(Plugin):
             run_cmd('ec2-ami-tools-version')
         except VMBuilderException, e:
             raise VMBuilderUserError('You need to have the Amazon EC2 AMI tools installed')
+
+        modname = 'VMBuilder.plugins.ubuntu.%s' % (self.vm.suite, )
+        mod = __import__(modname, fromlist=[self.vm.suite])
+        self.suite = getattr(mod, self.vm.suite.capitalize())(self.vm)
 
         if not self.vm.hypervisor.name == 'Xen':
             raise VMBuilderUserError('When building for EC2 you must use the xen hypervisor.')
