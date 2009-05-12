@@ -103,7 +103,11 @@ class EC2(Plugin):
         self.vm.addpkg += ['ec2-init',
                           'openssh-server',
                           'ec2-modules',
-                          'standard^']
+                          'standard^',
+                          'ec2-ami-tools',
+                          'update-motd',
+                          'screen',
+                          'screen-profiles']
 
         if not self.vm.ppa:
             self.vm.ppa = []
