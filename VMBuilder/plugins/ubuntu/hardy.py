@@ -26,7 +26,7 @@ class Hardy(Gutsy):
     ec2_ramdisk_info = { 'i386' : 'ari-6c709705', 'amd64' : 'ari-61709708' }
 
     def install_ec2(self):
-        if not self.vm.ec:
+        if not self.vm.ec2:
             return False
 
         if self.vm.addpkg:
