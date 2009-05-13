@@ -139,7 +139,7 @@ class EC2(Plugin):
 
         self.suite.install_ec2()
         self.run_in_target('update-rc.d', '-f', 'hwclock.sh', 'remove')
-        self.run_in_target('chpasswd', '-e', stdin='ubuntu:!\n')
+        self.run_in_target('chpasswd', '-e', stdin='%s!\n' $(self.vm.user))
 
     def deploy(self):
         if not self.vm.ec2:
