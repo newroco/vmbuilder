@@ -140,7 +140,10 @@ class Dapper(suite.Suite):
             self.run_in_target('chpasswd', '-e', stdin='root:!\n')
 
     def create_initial_user(self):
-        self.run_in_target('adduser', '--disabled-password', '--gecos', self.vm.name, self.vm.user)
+        if self.vm.id:
+            self.run_in_target('adduser', '--disabled-password', '--uid', self.vm.id, '--gecos', self.vm.name, self.vm.user)
+        else:
+            self.run_in_target('adduser', '--disabled-password', '--gecos', self.vm.name, self.vm.user)
         self.run_in_target('addgroup', '--system', 'admin')
         self.run_in_target('adduser', self.vm.user, 'admin')
 
