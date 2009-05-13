@@ -137,6 +137,8 @@ class EC2(Plugin):
         if self.vm.ec2_landscape:
             self.install_from_template('/etc/default/landscape-client', 'landscape_client')
 
+        self.suite.install_ec2()
+
     def deploy(self):
         if not self.vm.ec2:
             return False

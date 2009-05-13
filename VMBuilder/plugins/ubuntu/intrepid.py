@@ -32,6 +32,15 @@ class Intrepid(Hardy):
     ec2_kernel_info = { 'i386' : 'aki-714daa18', 'amd64' : 'aki-4f4daa26' }
     ec2_ramdisk_info = { 'i386': 'ari-7e4daa17', 'amd64' : 'ari-4c4daa25' }
 
+    def install_ec2(self):
+        if not self.vm.ec2:
+            return False
+
+        if not self.vm.addpkg:
+            self.vm.addpkg = []
+
+        self.vm.addpkg += ['policykit', '^server']
+
     def mangle_grub_menu_lst(self):
         bootdev = disk.bootpart(self.vm.disks)
         run_cmd('sed', '-ie', 's/^# kopt=root=\([^ ]*\)\(.*\)/# kopt=root=UUID=%s\\2/g' % bootdev.fs.uuid, '%s/boot/grub/menu.lst' % self.destdir)

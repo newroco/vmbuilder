@@ -25,6 +25,18 @@ class Hardy(Gutsy):
     ec2_kernel_info = { 'i386' : 'aki-6e709707', 'amd64' : 'aki-6f709706' }
     ec2_ramdisk_info = { 'i386' : 'ari-6c709705', 'amd64' : 'ari-61709708' }
 
+    def install_ec2(self):
+        if not self.vm.ec:
+            return False
+
+        if self.vm.addpkg:
+            self.vm.addpkg = []
+
+        self.vm.addpkg += ['libc6-xen', 'ibc6-i686-']
+        self.install_from_template('/etc/event.d/xvc0', 'upstart', { 'console' : 'xvc0' })
+        self.install_from_template('/etc/ld.so.conf.d/libc6-xen.conf', 'xen-ld-so-conf')
+        self.run_in_target('update-rc.d', '-f', 'hwclockfirst.sh', 'remove')
+
     def xen_kernel_path(self):
         return '/boot/vmlinuz-2.6.24-19-xen'
 
