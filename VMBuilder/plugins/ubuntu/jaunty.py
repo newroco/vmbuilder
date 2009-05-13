@@ -28,6 +28,15 @@ class Jaunty(Intrepid):
     ec2_kernel_info = { 'i386' : 'aki-c553b4ac', 'amd64' : 'aki-d653b4bf' }
     ec2_ramdisk_info = { 'i386' : 'ari-c253b4ab', 'amd64' : 'ari-d753b4be' }
 
+    def install_ec2(self):
+        if not self.vm.ec2:
+            return False
+
+        if self.vm.addpkg:
+            self.vm.addpkg = []
+
+        self.vm.addpkg = ['^server']
+
     def mangle_grub_menu_lst(self):
         bootdev = disk.bootpart(self.vm.disks)
         run_cmd('sed', '-ie', 's/^# kopt=root=\([^ ]*\)\(.*\)/# kopt=root=UUID=%s\\2/g' % bootdev.fs.uuid, '%s/boot/grub/menu.lst' % self.destdir)
