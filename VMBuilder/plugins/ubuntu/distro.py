@@ -63,6 +63,7 @@ class Ubuntu(Distro):
         group.add_option('--components', metavar='COMPS', help='A comma seperated list of distro components to include (e.g. main,universe).')
         group.add_option('--ppa', metavar='PPA', action='append', help='Add ppa belonging to PPA to the vm\'s sources.list.')
         group.add_option('--lang', metavar='LANG', default=self.get_locale(), help='Set the locale to LANG [default: %default]')
+        group.add_option('--set-utc', action='store_true', help='Set the clock to UTC')
         self.vm.register_setting_group(group)
 
         group = self.vm.setting_group('Settings for the initial user')
