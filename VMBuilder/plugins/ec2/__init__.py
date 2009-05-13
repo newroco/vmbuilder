@@ -138,6 +138,8 @@ class EC2(Plugin):
             self.install_from_template('/etc/default/landscape-client', 'landscape_client')
 
         self.suite.install_ec2()
+        self.run_in_target('update-rc.d', '-f', 'hwclock.sh', 'remove')
+        self.run_in_target('chpasswd', '-e', stdin='ubuntu:!\n')
 
     def deploy(self):
         if not self.vm.ec2:
