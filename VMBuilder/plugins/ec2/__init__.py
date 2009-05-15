@@ -117,7 +117,7 @@ class EC2(Plugin):
         if not self.vm.ppa:
             self.vm.ppa = []
 
-        self.vm.ppa += ['ubuntu--on-ec2']
+        self.vm.ppa += ['ubuntu-on-ec2']
 
     def post_install(self):
         if not self.vm.ec2:
@@ -139,7 +139,6 @@ class EC2(Plugin):
 
         self.suite.install_ec2()
         self.run_in_target('update-rc.d', '-f', 'hwclock.sh', 'remove')
-        self.run_in_target('chpasswd', '-e', stdin='%s!\n' (self.vm.user))
 
     def deploy(self):
         if not self.vm.ec2:
