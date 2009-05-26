@@ -33,9 +33,6 @@ class Intrepid(Hardy):
     ec2_ramdisk_info = { 'i386': 'ari-7e4daa17', 'amd64' : 'ari-4c4daa25' }
 
     def install_ec2(self):
-        if not self.vm.ec2:
-            return False
-
         if not self.vm.addpkg:
             self.vm.addpkg = []
 

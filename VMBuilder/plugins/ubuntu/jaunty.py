@@ -29,9 +29,6 @@ class Jaunty(Intrepid):
     ec2_ramdisk_info = { 'i386' : 'ari-c253b4ab', 'amd64' : 'ari-d753b4be' }
 
     def install_ec2(self):
-        if not self.vm.ec2:
-            return False
-
         if self.vm.addpkg:
             self.vm.addpkg = []
 
