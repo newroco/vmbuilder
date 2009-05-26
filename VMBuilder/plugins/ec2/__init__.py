@@ -74,13 +74,9 @@ class EC2(Plugin):
 
         if not self.vm.ec2_kernel:
             logging.debug('No ec2-aki choosen setting to default. Use --ec2-kernel to change this')
-            self.vm.ec2_kernel = self.suite.ec2_kernel_info[self.vm.arch]
-        logging.debug('%s - to be used for AKI.' %(self.vm.ec2_kernel))
 
         if not self.vm.ec2_ramdisk:
             logging.debug('No ec2-ari choosen setting to default. Use --ec2-ramdisk to change this.')
-            self.vm.ec2_ramdisk = self.suite.ec2_ramdisk_info[self.vm.arch]
-        logging.debug('%s - to be used for ARI.' %(self.vm.ec2_ramdisk))
 
         if not self.vm.ec2_bucket:
             raise VMBuilderUserError('When building for EC2 you must provide an S3 bucket to hold the AMI')
@@ -133,6 +129,15 @@ class EC2(Plugin):
     def deploy(self):
         if not self.vm.ec2:
             return False
+
+        if not self.vm.ec2_kernel:
+            self.vm.ec2_kernel = self.vm.distro.ec2_kernel_id()
+
+        if not self.vm.ec2_ramdisk:
+            self.vm.ec2_ramdisk = self.vm.distro.ec2_ramdisk_id()
+
+        logging.debug('%s - to be used for AKI.' %(self.vm.ec2_kernel))
+        logging.debug('%s - to be use for the ARI.' %(self.vm.ec2_ramdisk))
 
         logging.info("Building EC2 bundle")
         bundle_cmdline = ['ec2-bundle-image', '--image', self.vm.filesystems[0].filename, '--cert', self.vm.ec2_cert, '--privatekey', self.vm.ec2_key, '--user', self.vm.ec2_user, '--prefix', self.vm.ec2_name, '-r', ['i386', 'x86_64'][self.vm.arch == 'amd64'], '-d', self.vm.workdir, '--kernel', self.vm.ec2_kernel, '--ramdisk', self.vm.ec2_ramdisk]

@@ -37,6 +37,8 @@ class Ubuntu(Distro):
                     'lpia' : [ 'i386', 'lpia' ] }
 
     xen_kernel = ''
+    ec2_kernel = ''
+    ec2_ramdisk = ''
 
     def register_options(self):
         group = self.vm.setting_group('Package options')
@@ -136,6 +138,10 @@ class Ubuntu(Distro):
                 msg = "locale-gen does not recognize your locale '%s'" % self.vm.lang
                 raise VMBuilderUserError(msg)
 
+        if self.vm.ec2:
+            self.get_ec2_kernel()
+            self.get_ec2_ramdisk()
+
     def install(self, destdir):
         self.destdir = destdir
         self.suite.install(destdir)
@@ -190,6 +196,30 @@ EOT''')
     def xen_ramdisk_path(self):
         path = '/boot/initrd.img-%s-%s' % (self.xen_kernel_version(), self.suite.xen_kernel_flavour)
         return path
+
+    def get_ec2_kernel(self):
+        if self.suite.ec2_kernel_info:
+            if not self.ec2_kernel:
+                self.ec2_kernel = self.suite.ec2_kernel_info[self.vm.arch]
+                return self.ec2_kernel
+        else:
+            raise VMBuilderUserError('EC2 is not supported for the suite selected')
+
+    def ec2_kernel_id(self):
+        id = '%s' %(self.ec2_kernel)
+        return id
+
+    def get_ec2_ramdisk(self):
+        if self.suite.ec2_ramdisk_info:
+            if not self.ec2_ramdisk:
+                self.ec2_ramdisk = self.suite.ec2_ramdisk_info[self.vm.arch]
+                return self.ec2_ramdisk
+        else:
+            raise VMBuilderUserError('EC2 is not supported for the suite selected')
+
+    def ec2_ramdisk_id(self):
+        id = '%s' %(self.ec2_ramdisk)
+        return id
 
 
 register_distro(Ubuntu)
