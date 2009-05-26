@@ -36,6 +36,8 @@ class Jaunty(Intrepid):
             self.vm.addpkg = []
 
         self.vm.addpkg = ['^server']
+        self.install_from_template('/etc/update-motd.d/51_update-motd', '51_update-motd')
+        self.run_in_target('chmod', '755', '/etc/update-motd.d/51_update-motd')
 
     def mangle_grub_menu_lst(self):
         bootdev = disk.bootpart(self.vm.disks)
