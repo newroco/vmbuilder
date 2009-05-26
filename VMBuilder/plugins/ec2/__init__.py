@@ -128,12 +128,6 @@ class EC2(Plugin):
         self.install_from_template('/etc/ssh/sshd_config', 'sshd_config')
         self.install_from_template('/etc/sudoers', 'sudoers')
 
-        if self.vm.suite == 'hardy':
-            self.install_from_template('/etc/update-motd.d/51_update-motd', '51_update-motd-hardy')
-        else:
-             self.install_from_template('/etc/update-motd.d/51_update-motd', '51_update-motd')
-        self.run_in_target('chmod', '755', '/etc/update-motd.d/51_update-motd')
-
         if self.vm.ec2_landscape:
             self.install_from_template('/etc/default/landscape-client', 'landscape_client')
 
