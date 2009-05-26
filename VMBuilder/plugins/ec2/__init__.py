@@ -51,10 +51,6 @@ class EC2(Plugin):
         except VMBuilderException, e:
             raise VMBuilderUserError('You need to have the Amazon EC2 AMI tools installed')
 
-        modname = 'VMBuilder.plugins.ubuntu.%s' % (self.vm.suite, )
-        mod = __import__(modname, fromlist=[self.vm.suite])
-        self.suite = getattr(mod, self.vm.suite.capitalize())(self.vm)
-
         if not self.vm.hypervisor.name == 'Xen':
             raise VMBuilderUserError('When building for EC2 you must use the xen hypervisor.')
 
@@ -131,7 +127,7 @@ class EC2(Plugin):
         if self.vm.ec2_landscape:
             self.install_from_template('/etc/default/landscape-client', 'landscape_client')
 
-        self.suite.install_ec2()
+        self.vm.distro.install_ec2()
         self.run_in_target('update-rc.d', '-f', 'hwclock.sh', 'remove')
 
     def deploy(self):
