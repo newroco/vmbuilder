@@ -38,8 +38,8 @@ class EC2(Plugin):
         group.add_option('--ec2-secret-key', metavar='SECRET_ID', help='AWS secret access key.')
         group.add_option('--ec2-kernel','--ec2-aki', metavar='AKI', help='EC2 AKI (kernel) to use.')
         group.add_option('--ec2-ramdisk','--ec2-ari', metavar='ARI', help='EC2 ARI (ramdisk) to use.')
-        group.add_option('--ec2-version',metavar='EC2_VER', help='Specifity the EC2 image version.')
-        group.add_option('--ec2-landscape',action='store_true', help='Install landscape client support')
+        group.add_option('--ec2-version', metavar='EC2_VER', help='Specify the EC2 image version.')
+        group.add_option('--ec2-landscape', action='store_true', help='Install landscape client support')
         self.vm.register_setting_group(group)
 
     def preflight_check(self):
