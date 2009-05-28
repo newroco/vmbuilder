@@ -139,13 +139,13 @@ class Dapper(suite.Suite):
         else:
             self.run_in_target('chpasswd', '-e', stdin='root:!\n')
 
-        if self.vm.lock:
+        if self.vm.lock_user:
             logging.info('Locking %s' %(self.vm.user))
             self.run_in_target('chpasswd', '-e', stdin=('%s:!\n' %(self.vm.user)))
 
     def create_initial_user(self):
-        if self.vm.id:
-            self.run_in_target('adduser', '--disabled-password', '--uid', self.vm.id, '--gecos', self.vm.name, self.vm.user)
+        if self.vm.uid:
+            self.run_in_target('adduser', '--disabled-password', '--uid', self.vm.uid, '--gid', self.vm.gid, '--gecos', self.vm.name, self.vm.user)
         else:
             self.run_in_target('adduser', '--disabled-password', '--gecos', self.vm.name, self.vm.user)
         self.run_in_target('addgroup', '--system', 'admin')
