@@ -98,9 +98,7 @@ class EC2(Plugin):
                           'ec2-modules',
                           'standard^',
                           'ec2-ami-tools',
-                          'update-motd',
-                          'screen',
-                          'screen-profiles']
+                          'update-motd']
 
         if self.vm.ec2_landscape:
             logging.info('Installing landscape support')
