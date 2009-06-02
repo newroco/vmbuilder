@@ -75,7 +75,7 @@ class Ubuntu(Distro):
         group.add_option('--rootpass', help='Initial root password (WARNING: this has strong security implications).')
         group.add_option('--uid', help='Initial UID value.')
         group.add_option('--gid', help='Initial GID value.')
-        group.add_option('--lock-user' action='store_true', help='Lock the initial user [default %default]')
+        group.add_option('--lock-user', action='store_true', help='Lock the initial user [default %default]')
         self.vm.register_setting_group(group)
 
         group = self.vm.setting_group('Other options')
