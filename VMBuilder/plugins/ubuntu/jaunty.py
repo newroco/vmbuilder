@@ -29,10 +29,7 @@ class Jaunty(Intrepid):
     ec2_ramdisk_info = { 'i386' : 'ari-c253b4ab', 'amd64' : 'ari-d753b4be' }
 
     def install_ec2(self):
-        if self.vm.addpkg:
-            self.vm.addpkg = []
-
-        self.vm.addpkg = ['^server']
+        self.run_in_target('apt-get', '--force-yes', '-y', 'install', 'server^')
         self.install_from_template('/etc/update-motd.d/51_update-motd', '51_update-motd')
         self.run_in_target('chmod', '755', '/etc/update-motd.d/51_update-motd')
 

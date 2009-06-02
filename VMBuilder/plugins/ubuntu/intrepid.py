@@ -33,10 +33,9 @@ class Intrepid(Hardy):
     ec2_ramdisk_info = { 'i386': 'ari-7e4daa17', 'amd64' : 'ari-4c4daa25' }
 
     def install_ec2(self):
-        if not self.vm.addpkg:
-            self.vm.addpkg = []
-
-        self.vm.addpkg += ['policykit', '^server']
+# workaround for policy bug on ubuntu-server. (see bug #275432)
+        self.run_in_target('apt-get', '--force-yes', '-y', 'install', 'policykit')
+        self.run_in_target('apt-get', '--force-yes', '-y', 'install', 'server^')
         self.install_from_template('/etc/update-motd.d/51_update-motd', '51_update-motd')
         self.run_in_target('chmod', '755', '/etc/update-motd.d/51_update-motd')
 

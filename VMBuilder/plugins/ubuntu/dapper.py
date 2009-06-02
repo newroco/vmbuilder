@@ -109,6 +109,9 @@ class Dapper(suite.Suite):
         logging.debug("Unpreventing daemons from starting")
         self.unprevent_daemons_starting()
 
+        logging.debug("Configuring for ec2")
+        self.install_ec2()
+
     def update(self):
         self.run_in_target('apt-get', '-y', '--force-yes', 'dist-upgrade',
                            env={ 'DEBIAN_FRONTEND' : 'noninteractive' })
@@ -333,3 +336,7 @@ class Dapper(suite.Suite):
         if self.vm.set_utc:
             self.run_in_target('rm', '-f', '/etc/localtime')
             self.run_in_target('cp', '-a', '/usr/share/zoneinfo/UTC', '/etc/localtime')
+
+    def install_ec2(self):
+        if self.vm.ec2:
+            logging.debug('This suite does not support ec2')

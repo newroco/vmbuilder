@@ -26,10 +26,8 @@ class Hardy(Gutsy):
     ec2_ramdisk_info = { 'i386' : 'ari-6c709705', 'amd64' : 'ari-61709708' }
 
     def install_ec2(self):
-        if self.vm.addpkg:
-            self.vm.addpkg = []
-
-        self.vm.addpkg += ['libc6-xen', 'libc6-i686-']
+        self.run_in_target('apt-get' ,'--force-yes', '-y', 'install', 'libc6-xen')
+        self.run_in_target('apt-get','--purge','--force-yes', '-y', 'remove', 'libc6-i686')
         self.install_from_template('/etc/event.d/xvc0', 'upstart', { 'console' : 'xvc0' })
         self.install_from_template('/etc/ld.so.conf.d/libc6-xen.conf', 'xen-ld-so-conf')
         self.run_in_target('update-rc.d', '-f', 'hwclockfirst.sh', 'remove')
