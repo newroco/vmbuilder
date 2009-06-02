@@ -148,7 +148,7 @@ class Dapper(suite.Suite):
 
     def create_initial_user(self):
         if self.vm.uid:
-            self.run_in_target('adduser', '--disabled-password', '--uid', self.vm.uid, '--gid', self.vm.gid, '--gecos', self.vm.name, self.vm.user)
+            self.run_in_target('adduser', '--disabled-password', '--uid', self.vm.uid, '--gecos', self.vm.name, self.vm.user)
         else:
             self.run_in_target('adduser', '--disabled-password', '--gecos', self.vm.name, self.vm.user)
         self.run_in_target('addgroup', '--system', 'admin')
