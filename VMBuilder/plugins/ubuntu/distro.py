@@ -37,8 +37,6 @@ class Ubuntu(Distro):
                     'lpia' : [ 'i386', 'lpia' ] }
 
     xen_kernel = ''
-    ec2_kernel = ''
-    ec2_ramdisk = ''
 
     def register_options(self):
         group = self.vm.setting_group('Package options')
@@ -207,8 +205,8 @@ EOT''')
             raise VMBuilderUserError('EC2 is not supported for the suite selected')
 
     def ec2_kernel_id(self):
-        id = '%s' %(self.ec2_kernel)
-        return id
+        aki_id = '%s' %(self.ec2_kernel)
+        return aki_id
 
     def get_ec2_ramdisk(self):
         if self.suite.ec2_ramdisk_info:
@@ -219,8 +217,8 @@ EOT''')
             raise VMBuilderUserError('EC2 is not supported for the suite selected')
 
     def ec2_ramdisk_id(self):
-        id = '%s' %(self.ec2_ramdisk)
-        return id
+        ari_id = '%s' %(self.ec2_ramdisk)
+        return ari_id
 
 
 register_distro(Ubuntu)
