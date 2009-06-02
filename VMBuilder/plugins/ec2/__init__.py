@@ -121,7 +121,6 @@ class EC2(Plugin):
         if self.vm.ec2_landscape:
             self.install_from_template('/etc/default/landscape-client', 'landscape_client')
 
-        self.vm.distro.install_ec2()
         self.run_in_target('update-rc.d', '-f', 'hwclock.sh', 'remove')
 
     def deploy(self):
