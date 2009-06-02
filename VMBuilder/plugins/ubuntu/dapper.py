@@ -95,7 +95,7 @@ class Dapper(suite.Suite):
         self.copy_settings()
 
         logging.debug("Setting timezone to UTC")
-        self.set_utc_timezone()
+        self.set_timezone()
 
         logging.debug("Making sure system is up-to-date")
         self.update()
@@ -332,10 +332,10 @@ class Dapper(suite.Suite):
     def install_vmbuilder_log(self, logfile, rootdir):
         shutil.copy(logfile, '%s/var/log/vmbuilder-install.log' % (rootdir,))
 
-    def set_utc_timezone(self):
-        if self.vm.set_utc:
+    def set_timezone(self):
+        if self.vm.timezone
             self.run_in_target('rm', '-f', '/etc/localtime')
-            self.run_in_target('cp', '-a', '/usr/share/zoneinfo/UTC', '/etc/localtime')
+            run_cmd('chroot', self.destdir, 'cp', '/usr/share/zoneinfo/%s' %self.vm.timezone, '/etc/localtime')
 
     def install_ec2(self):
         if self.vm.ec2:
