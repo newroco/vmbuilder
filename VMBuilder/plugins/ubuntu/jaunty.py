@@ -25,6 +25,13 @@ from   VMBuilder.plugins.ubuntu.intrepid import Intrepid
 
 class Jaunty(Intrepid):
     xen_kernel_flavour = 'server'
+    ec2_kernel_info = { 'i386' : 'aki-c553b4ac', 'amd64' : 'aki-d653b4bf' }
+    ec2_ramdisk_info = { 'i386' : 'ari-c253b4ab', 'amd64' : 'ari-d753b4be' }
+
+    def install_ec2(self):
+        self.run_in_target('apt-get', '--force-yes', '-y', 'install', 'server^')
+        self.install_from_template('/etc/update-motd.d/51_update-motd', '51_update-motd')
+        self.run_in_target('chmod', '755', '/etc/update-motd.d/51_update-motd')
 
     def mangle_grub_menu_lst(self):
         bootdev = disk.bootpart(self.vm.disks)

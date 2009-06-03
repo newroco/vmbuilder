@@ -94,6 +94,9 @@ class Dapper(suite.Suite):
         logging.debug("Copy host settings")
         self.copy_settings()
 
+        logging.debug("Setting timezone")
+        self.set_timezone()
+
         logging.debug("Making sure system is up-to-date")
         self.update()
 
@@ -105,6 +108,9 @@ class Dapper(suite.Suite):
 
         logging.debug("Unpreventing daemons from starting")
         self.unprevent_daemons_starting()
+
+        logging.debug("Configuring for ec2")
+        self.install_ec2()
 
     def update(self):
         self.run_in_target('apt-get', '-y', '--force-yes', 'dist-upgrade',
@@ -136,8 +142,15 @@ class Dapper(suite.Suite):
         else:
             self.run_in_target('chpasswd', '-e', stdin='root:!\n')
 
+        if self.vm.lock_user:
+            logging.info('Locking %s' %(self.vm.user))
+            self.run_in_target('chpasswd', '-e', stdin=('%s:!\n' %(self.vm.user)))
+
     def create_initial_user(self):
-        self.run_in_target('adduser', '--disabled-password', '--gecos', self.vm.name, self.vm.user)
+        if self.vm.uid:
+            self.run_in_target('adduser', '--disabled-password', '--uid', self.vm.uid, '--gecos', self.vm.name, self.vm.user)
+        else:
+            self.run_in_target('adduser', '--disabled-password', '--gecos', self.vm.name, self.vm.user)
         self.run_in_target('addgroup', '--system', 'admin')
         self.run_in_target('adduser', self.vm.user, 'admin')
 
@@ -318,3 +331,18 @@ class Dapper(suite.Suite):
 
     def install_vmbuilder_log(self, logfile, rootdir):
         shutil.copy(logfile, '%s/var/log/vmbuilder-install.log' % (rootdir,))
+
+    def set_timezone(self):
+        if self.vm.timezone:
+            self.unlink('%s/etc/localtime' % self.destdir)
+            shutil.copy('%s/usr/share/zoneinfo/%s' % (self.destdir, self.vm.timezone), '%s/etc/localtime' % (self.destdir,))
+
+    def install_ec2(self):
+        if self.vm.ec2:
+            logging.debug('This suite does not support ec2')
+
+    def disable_hwclock_access(self):
+        fp = open('%s/etc/default/rcS' % self.destdir, 'a')
+        fp.write('HWCLOCKACCESS=no')
+        fp.close()
+

@@ -63,6 +63,7 @@ class Ubuntu(Distro):
         group.add_option('--components', metavar='COMPS', help='A comma seperated list of distro components to include (e.g. main,universe).')
         group.add_option('--ppa', metavar='PPA', action='append', help='Add ppa belonging to PPA to the vm\'s sources.list.')
         group.add_option('--lang', metavar='LANG', default=self.get_locale(), help='Set the locale to LANG [default: %default]')
+        group.add_option('--timezone', action='store_true', help='Set the timezone to the vm.')
         self.vm.register_setting_group(group)
 
         group = self.vm.setting_group('Settings for the initial user')
@@ -70,6 +71,9 @@ class Ubuntu(Distro):
         group.add_option('--name', default='Ubuntu', help='Full name of initial user [default: %default]')
         group.add_option('--pass', default='ubuntu', help='Password of initial user [default: %default]')
         group.add_option('--rootpass', help='Initial root password (WARNING: this has strong security implications).')
+        group.add_option('--uid', help='Initial UID value.')
+        group.add_option('--gid', help='Initial GID value.')
+        group.add_option('--lock-user', action='store_true', help='Lock the initial user [default %default]')
         self.vm.register_setting_group(group)
 
         group = self.vm.setting_group('Other options')
@@ -133,6 +137,10 @@ class Ubuntu(Distro):
                 msg = "locale-gen does not recognize your locale '%s'" % self.vm.lang
                 raise VMBuilderUserError(msg)
 
+        if self.vm.ec2:
+            self.get_ec2_kernel()
+            self.get_ec2_ramdisk()
+
     def install(self, destdir):
         self.destdir = destdir
         self.suite.install(destdir)
@@ -188,5 +196,31 @@ EOT''')
         path = '/boot/initrd.img-%s-%s' % (self.xen_kernel_version(), self.suite.xen_kernel_flavour)
         return path
 
+    def get_ec2_kernel(self):
+        if self.suite.ec2_kernel_info:
+            if not self.ec2_kernel:
+                self.ec2_kernel = self.suite.ec2_kernel_info[self.vm.arch]
+                return self.ec2_kernel
+        else:
+            raise VMBuilderUserError('EC2 is not supported for the suite selected')
+
+    def ec2_kernel_id(self):
+        aki_id = '%s' %(self.ec2_kernel)
+        return aki_id
+
+    def get_ec2_ramdisk(self):
+        if self.suite.ec2_ramdisk_info:
+            if not self.ec2_ramdisk:
+                self.ec2_ramdisk = self.suite.ec2_ramdisk_info[self.vm.arch]
+                return self.ec2_ramdisk
+        else:
+            raise VMBuilderUserError('EC2 is not supported for the suite selected')
+
+    def ec2_ramdisk_id(self):
+        ari_id = '%s' %(self.ec2_ramdisk)
+        return ari_id
+
+    def disable_hwclock_access(self):
+        return self.suite.disable_hwclock_access()
 
 register_distro(Ubuntu)

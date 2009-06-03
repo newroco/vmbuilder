@@ -17,7 +17,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from VMBuilder import register_plugin, Plugin, VMBuilderUserError
+from VMBuilder import register_plugin, Plugin, VMBuilderUserError, VMBuilderException
 from VMBuilder.util import run_cmd
 import logging
 import os
@@ -26,6 +26,9 @@ class EC2(Plugin):
     name = 'EC2 integration'
 
     def register_options(self):
+        # Don't pretend like we can do EC2 
+        if not isinstance(self.vm.hypervisor, VMBuilder.plugins.xen.Xen):
+            return
         group = self.vm.setting_group('EC2 integation')
         group.add_option('--ec2', action='store_true', help='Build for EC2')
         group.add_option('--ec2-name','--ec2-prefix', metavar='EC2_NAME', help='Name for the EC2 image.')
@@ -37,11 +40,18 @@ class EC2(Plugin):
         group.add_option('--ec2-secret-key', metavar='SECRET_ID', help='AWS secret access key.')
         group.add_option('--ec2-kernel','--ec2-aki', metavar='AKI', help='EC2 AKI (kernel) to use.')
         group.add_option('--ec2-ramdisk','--ec2-ari', metavar='ARI', help='EC2 ARI (ramdisk) to use.')
+        group.add_option('--ec2-version', metavar='EC2_VER', help='Specify the EC2 image version.')
+        group.add_option('--ec2-landscape', action='store_true', help='Install landscape client support')
         self.vm.register_setting_group(group)
 
     def preflight_check(self):
         if not self.vm.ec2:
             return True
+
+        try:
+            run_cmd('ec2-ami-tools-version')
+        except VMBuilderException, e:
+            raise VMBuilderUserError('You need to have the Amazon EC2 AMI tools installed')
 
         if not self.vm.hypervisor.name == 'Xen':
             raise VMBuilderUserError('When building for EC2 you must use the xen hypervisor.')
@@ -66,17 +76,9 @@ class EC2(Plugin):
 
         if not self.vm.ec2_kernel:
             logging.debug('No ec2-aki choosen setting to default. Use --ec2-kernel to change this')
-            if self.vm.arch == 'amd64':
-                self.vm.ec2_kernel = 'aki-d314f0ba'
-            else:
-                self.vm.ec2_kernel = 'aki-af14f0c6'
 
         if not self.vm.ec2_ramdisk:
             logging.debug('No ec2-ari choosen setting to default. Use --ec2-ramdisk to change this.')
-            if self.vm.arch == 'amd64':
-                self.vm.ec2_ramdisk = 'ari-d014f0b9'
-            else:
-                self.vm.ec2_ramdisk = 'ari-ac14f0c5'
 
         if not self.vm.ec2_bucket:
             raise VMBuilderUserError('When building for EC2 you must provide an S3 bucket to hold the AMI')
@@ -86,34 +88,55 @@ class EC2(Plugin):
 
         if not self.vm.ec2_secret_key:
             raise VMBuilderUserError('When building for EC2 you must provide your AWS secret access key.')
+        if not self.vm.ec2_version:
+            raise VMBuilderUserError('When building for EC2 you must provide version info.')
 
 
         if not self.vm.addpkg:
              self.vm.addpkg = []
 
-        self.vm.addpkg += ['openssh-server']
-        self.vm.addpkg += ['ec2-init']
-        self.vm.addpkg += ['openssh-server']
-        self.vm.addpkg += ['ec2-modules']
-        self.vm.addpkg += ['server^']
-        self.vm.addpkg += ['standard^']
+        self.vm.addpkg += ['ec2-init',
+                          'openssh-server',
+                          'ec2-modules',
+                          'standard^',
+                          'ec2-ami-tools',
+                          'update-motd']
+
+        if self.vm.ec2_landscape:
+            logging.info('Installing landscape support')
+            self.vm.addpkg += ['landscape-client']
 
         if not self.vm.ppa:
             self.vm.ppa = []
 
-        self.vm.ppa += ['ubuntu-ec2']
+        self.vm.ppa += ['ubuntu-on-ec2']
 
     def post_install(self):
         if not self.vm.ec2:
             return
 
         logging.info("Running ec2 postinstall")
-        self.install_from_template('/etc/event.d/xvc0', 'upstart')
-        self.run_in_target('passwd', '-l', self.vm.user)
+        self.install_from_template('/etc/ec2_version', 'ec2_version', { 'version' : self.vm.ec2_version } )
+        self.install_from_template('/etc/ssh/sshd_config', 'sshd_config')
+        self.install_from_template('/etc/sudoers', 'sudoers')
+
+        if self.vm.ec2_landscape:
+            self.install_from_template('/etc/default/landscape-client', 'landscape_client')
+
+        self.vm.distro.disable_hwclock_access()
 
     def deploy(self):
         if not self.vm.ec2:
             return False
+
+        if not self.vm.ec2_kernel:
+            self.vm.ec2_kernel = self.vm.distro.ec2_kernel_id()
+        logging.debug('%s - to be used for AKI.' %(self.vm.ec2_kernel))
+
+        if not self.vm.ec2_ramdisk:
+            self.vm.ec2_ramdisk = self.vm.distro.ec2_ramdisk_id()
+        logging.debug('%s - to be use for the ARI.' %(self.vm.ec2_ramdisk))
+
 
         logging.info("Building EC2 bundle")
         bundle_cmdline = ['ec2-bundle-image', '--image', self.vm.filesystems[0].filename, '--cert', self.vm.ec2_cert, '--privatekey', self.vm.ec2_key, '--user', self.vm.ec2_user, '--prefix', self.vm.ec2_name, '-r', ['i386', 'x86_64'][self.vm.arch == 'amd64'], '-d', self.vm.workdir, '--kernel', self.vm.ec2_kernel, '--ramdisk', self.vm.ec2_ramdisk]
