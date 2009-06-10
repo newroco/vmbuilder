@@ -1,6 +1,6 @@
 #
 #    Uncomplicated VM Builder
-#    Copyright (C) 2007-2008 Canonical Ltd.
+#    Copyright (C) 2007-2009 Canonical Ltd.
 #    
 #    See AUTHORS for list of contributors
 #
@@ -76,7 +76,7 @@ class VM(object):
 
         self.fsmounted = False
 
-        self.optparser = _MyOptParser(epilog="ubuntu-vm-builder is Copyright (C) 2007-2008 Canonical Ltd. and written by Soren Hansen <soren@canonical.com>.", usage='%prog hypervisor distro [options]')
+        self.optparser = _MyOptParser(epilog="ubuntu-vm-builder is Copyright (C) 2007-2009 Canonical Ltd. and written by Soren Hansen <soren@canonical.com>.", usage='%prog hypervisor distro [options]')
         self.optparser.arg_help = (('hypervisor', self.hypervisor_help), ('distro', self.distro_help))
 
         self.confparser = ConfigParser.SafeConfigParser()
