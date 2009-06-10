@@ -17,8 +17,9 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from VMBuilder import register_plugin, Plugin, VMBuilderUserError, VMBuilderException
-from VMBuilder.util import run_cmd
+import VMBuilder
+from   VMBuilder import register_plugin, Plugin, VMBuilderUserError, VMBuilderException
+from   VMBuilder.util import run_cmd
 import logging
 import os
 
@@ -42,10 +43,13 @@ class EC2(Plugin):
         group.add_option('--ec2-ramdisk','--ec2-ari', metavar='ARI', help='EC2 ARI (ramdisk) to use.')
         group.add_option('--ec2-version', metavar='EC2_VER', help='Specify the EC2 image version.')
         group.add_option('--ec2-landscape', action='store_true', help='Install landscape client support')
+        group.add_option('--ec2-bundle', action='store_true', help='Bundle the instance')
+        group.add_option('--ec2-upload', action='store_true', help='Upload the instance')
+        group.add_option('--ec2-register', action='store_true', help='Register the instance')
         self.vm.register_setting_group(group)
 
     def preflight_check(self):
-        if not self.vm.ec2:
+        if not getattr(self.vm, 'ec2', False):
             return True
 
         try:
@@ -56,41 +60,45 @@ class EC2(Plugin):
         if not self.vm.hypervisor.name == 'Xen':
             raise VMBuilderUserError('When building for EC2 you must use the xen hypervisor.')
 
-        if not self.vm.ec2_name:
-            raise VMBuilderUserError('When building for EC2 you must supply the name for the image.')
+        if self.vm.ec2_bundle:
+            if not self.vm.ec2_name:
+                raise VMBuilderUserError('When building for EC2 you must supply the name for the image.')
 
-        if not self.vm.ec2_cert:
-            if "EC2_CERT" in os.environ:
-                self.vm.ec2_cert = os.environ["EC2_CERT"]
-            else:
-                raise VMBuilderUserError('When building for EC2 you must provide your PEM encoded public key certificate')
+            if not self.vm.ec2_cert:
+                if "EC2_CERT" in os.environ:
+                    self.vm.ec2_cert = os.environ["EC2_CERT"]
+                else:
+                    raise VMBuilderUserError('When building for EC2 you must provide your PEM encoded public key certificate')
 
-        if not self.vm.ec2_key:
-            if "EC2_PRIVATE_KEY" in os.environ:
-                self.vm.ec2_key = os.environ["EC2_PRIVATE_KEY"]
-            else:
-                raise VMBuilderUserError('When building for EC2 you must provide your PEM encoded private key file')
+            if not self.vm.ec2_key:
+                if "EC2_PRIVATE_KEY" in os.environ:
+                    self.vm.ec2_key = os.environ["EC2_PRIVATE_KEY"]
+                else:
+                    raise VMBuilderUserError('When building for EC2 you must provide your PEM encoded private key file')
 
-        if not self.vm.ec2_user:
-            raise VMBuilderUserError('When building for EC2 you must provide your EC2 user ID (your AWS account number, not your AWS access key ID)')
+            if not self.vm.ec2_user:
+                raise VMBuilderUserError('When building for EC2 you must provide your EC2 user ID (your AWS account number, not your AWS access key ID)')
 
-        if not self.vm.ec2_kernel:
-            logging.debug('No ec2-aki choosen setting to default. Use --ec2-kernel to change this')
+            if not self.vm.ec2_kernel:
+                self.vm.ec2_kernel = self.vm.distro.get_ec2_kernel()
+                logging.debug('%s - to be used for AKI.' %(self.vm.ec2_kernel))
 
-        if not self.vm.ec2_ramdisk:
-            logging.debug('No ec2-ari choosen setting to default. Use --ec2-ramdisk to change this.')
+            if not self.vm.ec2_ramdisk:
+                self.vm.ec2_ramdisk = self.vm.distro.ec2_ramdisk_id()
+                logging.debug('%s - to be use for the ARI.' %(self.vm.ec2_ramdisk))
 
-        if not self.vm.ec2_bucket:
-            raise VMBuilderUserError('When building for EC2 you must provide an S3 bucket to hold the AMI')
+            if self.vm.ec2_upload:
+                if not self.vm.ec2_bucket:
+                    raise VMBuilderUserError('When building for EC2 you must provide an S3 bucket to hold the AMI')
 
-        if not self.vm.ec2_access_key:
-            raise VMBuilderUserError('When building for EC2 you must provide your AWS access key ID.')
+                if not self.vm.ec2_access_key:
+                    raise VMBuilderUserError('When building for EC2 you must provide your AWS access key ID.')
 
-        if not self.vm.ec2_secret_key:
-            raise VMBuilderUserError('When building for EC2 you must provide your AWS secret access key.')
+                if not self.vm.ec2_secret_key:
+                    raise VMBuilderUserError('When building for EC2 you must provide your AWS secret access key.')
+
         if not self.vm.ec2_version:
             raise VMBuilderUserError('When building for EC2 you must provide version info.')
-
 
         if not self.vm.addpkg:
              self.vm.addpkg = []
@@ -109,10 +117,10 @@ class EC2(Plugin):
         if not self.vm.ppa:
             self.vm.ppa = []
 
-        self.vm.ppa += ['ubuntu-on-ec2']
+        self.vm.ppa += ['ubuntu-on-ec2/ppa']
 
     def post_install(self):
-        if not self.vm.ec2:
+        if not getattr(self.vm, 'ec2', False):
             return
 
         logging.info("Running ec2 postinstall")
@@ -126,30 +134,28 @@ class EC2(Plugin):
         self.vm.distro.disable_hwclock_access()
 
     def deploy(self):
-        if not self.vm.ec2:
+        if not getattr(self.vm, 'ec2', False):
             return False
 
-        if not self.vm.ec2_kernel:
-            self.vm.ec2_kernel = self.vm.distro.ec2_kernel_id()
-        logging.debug('%s - to be used for AKI.' %(self.vm.ec2_kernel))
+        if self.vm.ec2_bundle:
+            logging.info("Building EC2 bundle")
+            bundle_cmdline = ['ec2-bundle-image', '--image', self.vm.filesystems[0].filename, '--cert', self.vm.ec2_cert, '--privatekey', self.vm.ec2_key, '--user', self.vm.ec2_user, '--prefix', self.vm.ec2_name, '-r', ['i386', 'x86_64'][self.vm.arch == 'amd64'], '-d', self.vm.workdir, '--kernel', self.vm.ec2_kernel, '--ramdisk', self.vm.ec2_ramdisk]
+            run_cmd(*bundle_cmdline)
 
-        if not self.vm.ec2_ramdisk:
-            self.vm.ec2_ramdisk = self.vm.distro.ec2_ramdisk_id()
-        logging.debug('%s - to be use for the ARI.' %(self.vm.ec2_ramdisk))
+            manifest = '%s/%s.manifest.xml' % (self.vm.workdir, self.vm.ec2_name)
+            if self.vm.ec2_upload:
+                logging.info("Uploading EC2 bundle")
+                upload_cmdline = ['ec2-upload-bundle', '--retry', '--manifest', manifest, '--bucket', self.vm.ec2_bucket, '--access-key', self.vm.ec2_access_key, '--secret-key', self.vm.ec2_secret_key]
+                run_cmd(*upload_cmdline)
 
-
-        logging.info("Building EC2 bundle")
-        bundle_cmdline = ['ec2-bundle-image', '--image', self.vm.filesystems[0].filename, '--cert', self.vm.ec2_cert, '--privatekey', self.vm.ec2_key, '--user', self.vm.ec2_user, '--prefix', self.vm.ec2_name, '-r', ['i386', 'x86_64'][self.vm.arch == 'amd64'], '-d', self.vm.workdir, '--kernel', self.vm.ec2_kernel, '--ramdisk', self.vm.ec2_ramdisk]
-
-        run_cmd(*bundle_cmdline)
-
-        logging.info("Uploading EC2 bundle")
-        upload_cmdline = ['ec2-upload-bundle', '--retry', '--manifest', '%s/%s.manifest.xml' % (self.vm.workdir, self.vm.ec2_name), '--bucket', self.vm.ec2_bucket, '--access-key', self.vm.ec2_access_key, '--secret-key', self.vm.ec2_secret_key]
-        run_cmd(*upload_cmdline)
-
-        from boto.ec2.connection import EC2Connection
-        conn = EC2Connection(self.vm.ec2_access_key, self.vm.ec2_secret_key)
-        print conn.register_image('%s/%s.manifest.xml' % (self.vm.ec2_bucket, self.vm.ec2_name))
+                if self.vm.ec2_register:
+                    from boto.ec2.connection import EC2Connection
+                    conn = EC2Connection(self.vm.ec2_access_key, self.vm.ec2_secret_key)
+                    conn.register_image('%s/%s.manifest.xml' % (self.vm.ec2_bucket, self.vm.ec2_name))
+            else:
+                self.vm.result_files.append(manifest)
+        else:
+            self.vm.result_files.append(self.vm.filesystems[0].filename)
 
         return True
 

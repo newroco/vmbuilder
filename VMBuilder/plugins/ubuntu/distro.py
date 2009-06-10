@@ -188,37 +188,27 @@ EOT''')
         else:
             raise VMBuilderUserError('There is no valid xen kernel for the suite selected.')
 
-    def xen_kernel_path(self):
-        path = '/boot/vmlinuz-%s-%s' % (self.xen_kernel_version(), self.suite.xen_kernel_flavour)
+    def xen_kernel_initrd_path(self, which):
+        path = '/boot/%s-%s-%s' % (which, self.xen_kernel_version(), self.suite.xen_kernel_flavour)
         return path
 
+    def xen_kernel_path(self):
+        return self.xen_kernel_initrd_path('kernel')
+
     def xen_ramdisk_path(self):
-        path = '/boot/initrd.img-%s-%s' % (self.xen_kernel_version(), self.suite.xen_kernel_flavour)
-        return path
+        return self.xen_kernel_initrd_path('ramdisk')
 
     def get_ec2_kernel(self):
         if self.suite.ec2_kernel_info:
-            if not self.ec2_kernel:
-                self.ec2_kernel = self.suite.ec2_kernel_info[self.vm.arch]
-                return self.ec2_kernel
+            return self.suite.ec2_kernel_info[self.vm.arch]
         else:
             raise VMBuilderUserError('EC2 is not supported for the suite selected')
-
-    def ec2_kernel_id(self):
-        aki_id = '%s' %(self.ec2_kernel)
-        return aki_id
 
     def get_ec2_ramdisk(self):
         if self.suite.ec2_ramdisk_info:
-            if not self.ec2_ramdisk:
-                self.ec2_ramdisk = self.suite.ec2_ramdisk_info[self.vm.arch]
-                return self.ec2_ramdisk
+            return self.suite.ec2_ramdisk_info[self.vm.arch]
         else:
             raise VMBuilderUserError('EC2 is not supported for the suite selected')
-
-    def ec2_ramdisk_id(self):
-        ari_id = '%s' %(self.ec2_ramdisk)
-        return ari_id
 
     def disable_hwclock_access(self):
         return self.suite.disable_hwclock_access()

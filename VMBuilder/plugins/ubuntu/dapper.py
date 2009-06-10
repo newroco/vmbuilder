@@ -106,11 +106,12 @@ class Dapper(suite.Suite):
         logging.debug("Unmounting volatile lrm filesystems")
         self.unmount_volatile()
 
+        if hasattr(self.vm, 'ec2') and self.vm.ec2:
+            logging.debug("Configuring for ec2")
+            self.install_ec2()
+
         logging.debug("Unpreventing daemons from starting")
         self.unprevent_daemons_starting()
-
-        logging.debug("Configuring for ec2")
-        self.install_ec2()
 
     def update(self):
         self.run_in_target('apt-get', '-y', '--force-yes', 'dist-upgrade',
