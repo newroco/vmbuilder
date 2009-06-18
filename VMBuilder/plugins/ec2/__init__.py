@@ -51,15 +51,15 @@ class EC2(Plugin):
         if not getattr(self.vm, 'ec2', False):
             return True
 
-        try:
-            run_cmd('ec2-ami-tools-version')
-        except VMBuilderException, e:
-            raise VMBuilderUserError('You need to have the Amazon EC2 AMI tools installed')
-
         if not self.vm.hypervisor.name == 'Xen':
             raise VMBuilderUserError('When building for EC2 you must use the xen hypervisor.')
 
         if self.vm.ec2_bundle:
+            try:
+                run_cmd('ec2-ami-tools-version')
+            except VMBuilderException, e:
+                raise VMBuilderUserError('You need to have the Amazon EC2 AMI tools installed')
+
             if not self.vm.ec2_name:
                 raise VMBuilderUserError('When building for EC2 you must supply the name for the image.')
 
