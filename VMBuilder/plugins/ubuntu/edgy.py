@@ -48,7 +48,8 @@ proc                                            /proc           proc    defaults
         return retval
 
     def copy_settings(self):
-        self.copy_to_target('/etc/default/locale', '/etc/default/locale')
+        if os.path.exists('/etc/default/locale'):
+            self.copy_to_target('/etc/default/locale', '/etc/default/locale')
         csdir = '%s/etc/console-setup' % self.destdir
         have_cs = os.path.isdir(csdir)
         if have_cs:

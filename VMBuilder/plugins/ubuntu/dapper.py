@@ -317,7 +317,8 @@ class Dapper(suite.Suite):
             os.makedirs('%s/var/lock' % fs.mntpath)
 
     def copy_settings(self):
-        self.copy_to_target('/etc/default/locale', '/etc/default/locale')
+        if os.path.exists('/etc/default/locale'):
+            self.copy_to_target('/etc/default/locale', '/etc/default/locale')
         self.copy_to_target('/etc/timezone', '/etc/timezone')
         self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'libc6')
         self.run_in_target('locale-gen', 'en_US')
