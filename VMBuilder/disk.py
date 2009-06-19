@@ -289,7 +289,10 @@ class Filesystem(object):
         if not self.dummy:
             cmd = self.mkfs_fstype() + [self.filename]
             run_cmd(*cmd)
-            self.uuid = run_cmd('vol_id', '--uuid', self.filename).rstrip()
+            if os.path.exists("/sbin/vol_id"):
+                self.uuid = run_cmd('vol_id', '--uuid', self.filename).rstrip()
+            elif os.path.exists("/sbin/blkid"):
+                self.uuid = run_cmd('blkid', '-sUUID', '-ovalue', self.filename).rstrip()
 
     def mkfs_fstype(self):
         if self.vm.suite in ['dapper', 'edgy', 'feisty', 'gutsy']:
