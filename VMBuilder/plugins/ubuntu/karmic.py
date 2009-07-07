@@ -24,7 +24,11 @@ from   VMBuilder.plugins.ubuntu.jaunty import Jaunty
 
 class Karmic(Jaunty):
     def apply_ec2_settings(self):
-        pass
+        self.vm.addpkg += ['ec2-init',
+                          'openssh-server',
+                          'standard^',
+                          'ec2-ami-tools',
+                          'update-motd']
 
     def update_passwords(self):
         # Set the user password, using using defaults from /etc/login.defs (ie, no need to specify '-m')

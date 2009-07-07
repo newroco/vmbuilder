@@ -25,6 +25,13 @@ class Hardy(Gutsy):
     ec2_ramdisk_info = { 'i386' : 'ari-6c709705', 'amd64' : 'ari-61709708' }
 
     def apply_ec2_settings(self):
+        self.vm.addpkg += ['ec2-init',
+                          'openssh-server',
+                          'ec2-modules',
+                          'standard^',
+                          'ec2-ami-tools',
+                          'update-motd']
+
         if not self.vm.ppa:
             self.vm.ppa = []
 

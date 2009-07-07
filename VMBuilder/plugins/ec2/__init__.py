@@ -102,13 +102,6 @@ class EC2(Plugin):
         if not self.vm.addpkg:
              self.vm.addpkg = []
 
-        self.vm.addpkg += ['ec2-init',
-                          'openssh-server',
-                          'ec2-modules',
-                          'standard^',
-                          'ec2-ami-tools',
-                          'update-motd']
-
         if self.vm.ec2_landscape:
             logging.info('Installing landscape support')
             self.vm.addpkg += ['landscape-client']
