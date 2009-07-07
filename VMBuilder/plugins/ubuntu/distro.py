@@ -139,6 +139,7 @@ class Ubuntu(Distro):
         if self.vm.ec2:
             self.get_ec2_kernel()
             self.get_ec2_ramdisk()
+            self.apply_ec2_settings()
 
     def install(self, destdir):
         self.destdir = destdir
