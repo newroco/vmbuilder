@@ -212,4 +212,7 @@ EOT''')
     def disable_hwclock_access(self):
         return self.suite.disable_hwclock_access()
 
+    def apply_ec2_settings(self):
+        return self.suite.apply_ec2_settings()
+
 register_distro(Ubuntu)
