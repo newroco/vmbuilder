@@ -28,7 +28,7 @@ from   VMBuilder.exception import VMBuilderUserError, VMBuilderException
 class Ubuntu(Distro):
     name = 'Ubuntu'
     arg = 'ubuntu'
-    suites = ['dapper', 'gutsy', 'hardy', 'intrepid', 'jaunty']
+    suites = ['dapper', 'gutsy', 'hardy', 'intrepid', 'jaunty', 'karmic']
     
     # Maps host arch to valid guest archs
     valid_archs = { 'amd64' : ['amd64', 'i386', 'lpia' ],
