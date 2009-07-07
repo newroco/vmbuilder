@@ -138,7 +138,8 @@ class EC2(Plugin):
                 if self.vm.ec2_register:
                     from boto.ec2.connection import EC2Connection
                     conn = EC2Connection(self.vm.ec2_access_key, self.vm.ec2_secret_key)
-                    conn.register_image('%s/%s.manifest.xml' % (self.vm.ec2_bucket, self.vm.ec2_name))
+                    amiid = conn.register_image('%s/%s.manifest.xml' % (self.vm.ec2_bucket, self.vm.ec2_name))
+                    print 'Image registered as %s' % amiid
             else:
                 self.vm.result_files.append(manifest)
         else:
