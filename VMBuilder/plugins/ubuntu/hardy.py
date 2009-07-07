@@ -24,6 +24,12 @@ class Hardy(Gutsy):
     ec2_kernel_info = { 'i386' : 'aki-6e709707', 'amd64' : 'aki-6f709706' }
     ec2_ramdisk_info = { 'i386' : 'ari-6c709705', 'amd64' : 'ari-61709708' }
 
+    def apply_ec2_settings(self):
+        if not self.vm.ppa:
+            self.vm.ppa = []
+
+        self.vm.ppa += ['ubuntu-on-ec2/ppa']
+
     def install_ec2(self):
         self.run_in_target('apt-get' ,'--force-yes', '-y', 'install', 'libc6-xen')
         self.run_in_target('apt-get','--purge','--force-yes', '-y', 'remove', 'libc6-i686')

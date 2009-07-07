@@ -23,6 +23,9 @@ from   VMBuilder.util import run_cmd
 from   VMBuilder.plugins.ubuntu.jaunty import Jaunty
 
 class Karmic(Jaunty):
+    def apply_ec2_settings(self):
+        pass
+
     def update_passwords(self):
         # Set the user password, using using defaults from /etc/login.defs (ie, no need to specify '-m')
         self.run_in_target('chpasswd', stdin=('%s:%s\n' % (self.vm.user, getattr(self.vm, 'pass'))))

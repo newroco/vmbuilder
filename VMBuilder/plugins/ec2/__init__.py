@@ -113,10 +113,7 @@ class EC2(Plugin):
             logging.info('Installing landscape support')
             self.vm.addpkg += ['landscape-client']
 
-        if not self.vm.ppa:
-            self.vm.ppa = []
-
-        self.vm.ppa += ['ubuntu-on-ec2/ppa']
+        self.vm.distro.apply_ec2_settings()
 
     def post_install(self):
         if not getattr(self.vm, 'ec2', False):
