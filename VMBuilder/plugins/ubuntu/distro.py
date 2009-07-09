@@ -136,7 +136,7 @@ class Ubuntu(Distro):
                 msg = "locale-gen does not recognize your locale '%s'" % self.vm.lang
                 raise VMBuilderUserError(msg)
 
-        if self.vm.ec2:
+        if getattr(self.vm, 'ec2', False):
             self.get_ec2_kernel()
             self.get_ec2_ramdisk()
             self.apply_ec2_settings()
