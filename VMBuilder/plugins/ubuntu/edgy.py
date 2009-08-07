@@ -56,7 +56,6 @@ proc                                            /proc           proc    defaults
             shutil.rmtree(csdir)
             self.copy_to_target('/etc/console-setup', '/etc/console-setup')
             self.copy_to_target('/etc/default/console-setup', '/etc/default/console-setup')
-        self.copy_to_target('/etc/timezone', '/etc/timezone')
         self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'tzdata')
         self.run_in_target('locale-gen', 'en_US')
         if self.vm.lang:
