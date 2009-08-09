@@ -102,7 +102,14 @@ def run_cmd(*argv, **kwargs):
     proc_env['LANG'] = 'C'
     proc_env['LC_ALL'] = 'C'
     proc_env.update(env)
-    proc = subprocess.Popen(args, stdin=stdin_arg, stderr=subprocess.PIPE, stdout=subprocess.PIPE, env=proc_env)
+
+    try:
+        proc = subprocess.Popen(args, stdin=stdin_arg, stderr=subprocess.PIPE, stdout=subprocess.PIPE, env=proc_env)
+    except OSError as error:
+        if error.errno == 2:
+            raise VMBuilderUserError, "Couldn't find the program '%s' on your system" % (argv[1])
+        else:
+            raise VMBuilderUserError, "Couldn't launch the program '%s': %s" % (argv[1], error)
 
     if stdin:
         proc.stdin.write(stdin)
