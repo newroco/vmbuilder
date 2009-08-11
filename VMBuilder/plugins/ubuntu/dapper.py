@@ -332,7 +332,7 @@ class Dapper(suite.Suite):
 
     def set_timezone(self):
         if self.vm.timezone:
-            self.unlink('%s/etc/localtime' % self.destdir)
+            os.unlink('%s/etc/localtime' % self.destdir)
             shutil.copy('%s/usr/share/zoneinfo/%s' % (self.destdir, self.vm.timezone), '%s/etc/localtime' % (self.destdir,))
 
     def install_ec2(self):
