@@ -37,6 +37,9 @@ class Dapper(suite.Suite):
     xen_kernel_flavour = None
     virtio_net = False
 
+    def pre_install():
+        pass
+
     def check_kernel_flavour(self, arch, flavour):
         return flavour in self.valid_flavours[arch]
 
@@ -48,6 +51,8 @@ class Dapper(suite.Suite):
 
         logging.debug("debootstrapping")
         self.debootstrap()
+
+        self.pre_install()
 
         logging.debug("Setting up sources.list")
         self.install_sources_list()

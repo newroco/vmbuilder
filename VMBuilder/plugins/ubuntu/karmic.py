@@ -40,3 +40,5 @@ class Karmic(Jaunty):
         else:
             self.run_in_target('usermod', '--password=!', 'root')
 
+    def pre_install(self):
+        self.vm.install_file('/etc/hosts', contents='')
