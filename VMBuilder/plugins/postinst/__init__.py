@@ -48,6 +48,10 @@ class postinst(Plugin):
             if not(os.path.isfile(self.vm.execscript)):
                 raise VMBuilderUserError('The path to the --execscript file is invalid: %s. Make sure you are providing a full path.' % self.vm.execscript) 
 
+            logging.debug("Checking permissions of --exec PATH: %s" % self.vm.execscript)
+            if not os.access(self.vm.execscript, os.X_OK|os.R_OK):
+                raise VMBuilderUserError('The path to the --execscript file has invalid permissions: %s. Make sure the path is readable and executable.' % self.vm.execscript)
+
     def post_install(self):
         if self.vm.copy:
             logging.info("Copying files specified by --copy in: %s" % self.vm.copy)
