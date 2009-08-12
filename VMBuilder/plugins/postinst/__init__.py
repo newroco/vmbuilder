@@ -58,6 +58,8 @@ class postinst(Plugin):
             try:
                 for line in file(self.vm.copy):
                     pair = line.strip().split(' ')
+                    if len(pair) < 2: # skip blank and incomplete lines
+                        continue
                     util.run_cmd('cp', '-LpR', pair[0], '%s%s' % (self.vm.installdir, pair[1]))
 
             except IOError, (errno, strerror):
