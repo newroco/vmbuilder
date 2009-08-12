@@ -37,7 +37,7 @@ class Dapper(suite.Suite):
     xen_kernel_flavour = None
     virtio_net = False
 
-    def pre_install():
+    def pre_install(self):
         pass
 
     def check_kernel_flavour(self, arch, flavour):
