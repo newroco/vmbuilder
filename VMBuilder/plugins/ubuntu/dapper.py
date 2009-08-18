@@ -71,6 +71,9 @@ class Dapper(suite.Suite):
         logging.debug("Preventing daemons from starting")
         self.prevent_daemons_starting()
 
+        logging.debug('Binding /dev and /proc filesystems')
+        self.mount_dev_proc()
+
         if self.vm.hypervisor.needs_bootloader:
             logging.debug("Installing menu.list")
             self.install_menu_lst()
@@ -105,6 +108,9 @@ class Dapper(suite.Suite):
         logging.debug("Unmounting volatile lrm filesystems")
         self.unmount_volatile()
 
+        logging.debug('Unbinding /dev and /proc filesystems')
+        self.unmount_dev_proc()
+
         if hasattr(self.vm, 'ec2') and self.vm.ec2:
             logging.debug("Configuring for ec2")
             self.install_ec2()
@@ -131,6 +137,21 @@ class Dapper(suite.Suite):
             if not self.vm.addpkg:
                 self.vm.addpkg = []
             self.vm.addpkg += ['openssh-server']
+
+    def mount_dev_proc(self):
+        run_cmd('mount', '--bind', '/dev', '%s/dev' % self.destdir)
+        self.vm.add_clean_cmd('umount', '%s/dev' % self.destdir, ignore_fail=True)
+
+        run_cmd('mount', '--bind', '/dev/pts', '%s/dev/pts' % self.destdir)
+        self.vm.add_clean_cmd('umount', '%s/dev/pts' % self.destdir, ignore_fail=True)
+
+        self.run_in_target('mount', '-t', 'proc', 'proc', '/proc')
+        self.vm.add_clean_cmd('umount', '%s/proc' % self.destdir, ignore_fail=True)
+
+    def unmount_dev_proc(self):
+    	run_cmd('umount', '%s/dev/pts' % self.destdir)
+        run_cmd('umount', '%s/dev' % self.destdir)
+        run_cmd('umount', '%s/proc' % self.destdir)
 
     def update_passwords(self):
         # Set the user password, using md5
@@ -188,19 +209,10 @@ class Dapper(suite.Suite):
             run_cmd('umount', mntpnt)
 
     def install_menu_lst(self):
-        run_cmd('mount', '--bind', '/dev', '%s/dev' % self.destdir)
-        self.vm.add_clean_cmd('umount', '%s/dev' % self.destdir, ignore_fail=True)
-
-        self.run_in_target('mount', '-t', 'proc', 'proc', '/proc')
-        self.vm.add_clean_cmd('umount', '%s/proc' % self.destdir, ignore_fail=True)
-
         self.run_in_target(self.updategrub, '-y')
         self.mangle_grub_menu_lst()
         self.run_in_target(self.updategrub)
         self.run_in_target('grub-set-default', '0')
-
-        run_cmd('umount', '%s/dev' % self.destdir)
-        run_cmd('umount', '%s/proc' % self.destdir)
 
     def mangle_grub_menu_lst(self):
         bootdev = disk.bootpart(self.vm.disks)
