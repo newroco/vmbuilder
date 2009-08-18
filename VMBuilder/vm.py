@@ -492,7 +492,7 @@ class VM(object):
 
             finished = True
         except VMBuilderException,e:
-            raise e
+            raise
         finally:
             if not finished:
                 logging.debug("Oh, dear, an exception occurred")
