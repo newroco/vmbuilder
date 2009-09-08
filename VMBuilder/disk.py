@@ -21,6 +21,7 @@
 import logging
 import os.path
 import re
+import stat
 import string
 import tempfile
 import VMBuilder
@@ -85,6 +86,7 @@ class Disk(object):
                 self.filename = '%s/%s' % (directory, self.filename)
             logging.info('Creating disk image: %s' % self.filename)
             run_cmd(qemu_img_path(), 'create', '-f', 'raw', self.filename, '%dM' % self.size)
+            os.chmod(self.filename, stat.S_IRUSR | stat.S_IWUSR)
 
         # From here, we assume that self.filename refers to whatever holds the disk image,
         # be it a file, a partition, logical volume, actual disk..
