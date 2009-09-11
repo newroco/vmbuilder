@@ -17,6 +17,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #    Various utility functions
+import errno
 import logging
 import os
 import os.path
@@ -102,7 +103,14 @@ def run_cmd(*argv, **kwargs):
     proc_env['LANG'] = 'C'
     proc_env['LC_ALL'] = 'C'
     proc_env.update(env)
-    proc = subprocess.Popen(args, stdin=stdin_arg, stderr=subprocess.PIPE, stdout=subprocess.PIPE, env=proc_env)
+
+    try:
+        proc = subprocess.Popen(args, stdin=stdin_arg, stderr=subprocess.PIPE, stdout=subprocess.PIPE, env=proc_env)
+    except OSError, error:
+        if error.errno == errno.ENOENT:
+            raise VMBuilderUserError, "Couldn't find the program '%s' on your system" % (argv[0])
+        else:
+            raise VMBuilderUserError, "Couldn't launch the program '%s': %s" % (argv[0], error)
 
     if stdin:
         proc.stdin.write(stdin)
