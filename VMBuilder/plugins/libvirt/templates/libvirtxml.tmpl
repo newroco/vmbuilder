@@ -1,6 +1,6 @@
 <domain type='kvm'>
   <name>$hostname</name>
-  <memory>#echo $mem * 1024 #</memory>
+  <memory>#echo int($mem) * 1024 #</memory>
   <vcpu>$cpus</vcpu>
   <os>
     <type>hvm</type>
