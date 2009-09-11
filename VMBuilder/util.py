@@ -107,9 +107,9 @@ def run_cmd(*argv, **kwargs):
         proc = subprocess.Popen(args, stdin=stdin_arg, stderr=subprocess.PIPE, stdout=subprocess.PIPE, env=proc_env)
     except OSError as error:
         if error.errno == 2:
-            raise VMBuilderUserError, "Couldn't find the program '%s' on your system" % (argv[1])
+            raise VMBuilderUserError, "Couldn't find the program '%s' on your system" % (argv[0])
         else:
-            raise VMBuilderUserError, "Couldn't launch the program '%s': %s" % (argv[1], error)
+            raise VMBuilderUserError, "Couldn't launch the program '%s': %s" % (argv[0], error)
 
     if stdin:
         proc.stdin.write(stdin)
