@@ -1,8 +1,13 @@
 #!/usr/bin/make -f
 
-test:
-	@echo Running unittests...
-	@nosetests
+test: clean stamp
+	@nosetests --verbose
+
+stamp:
+	@touch $@
+
+build:
+	@python setup.py bdist_egg sdist
 
 coverage:
 	@nosetests --quiet --with-coverage --cover-package VMBuilder
@@ -11,4 +16,4 @@ report:
 	@nosetests --quiet --with-coverage --cover-package VMBuilder --cover-html --cover-html-dir coverage-report
 
 clean:
-	rm -rf .coverage coverage-report
+	@rm -rf stamp .coverage coverage-report

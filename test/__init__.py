@@ -45,18 +45,6 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertEqual(VMBuilder.disk.devname_to_index('zz'), 701)
         self.assertEqual(VMBuilder.disk.devname_to_index('zzz'), 18277)
 
-class TestUbuntuPlugin(unittest.TestCase):
-    def test_preflight_check_failed(self):
-        import VMBuilder
-        from VMBuilder.plugins.ubuntu.distro import Ubuntu
-        from VMBuilder.exception import VMBuilderUserError
-
-        vm = VMBuilder.VM()
-        vm.suite = 'foo'
-        ubuntu = Ubuntu(vm)
-        self.assertRaises(VMBuilderUserError, ubuntu.preflight_check)
-
-
 class TestUtils(unittest.TestCase):
     def test_run_cmd(self):
         import VMBuilder
