@@ -78,6 +78,7 @@ class Ubuntu(Distro):
         group = self.vm.setting_group('Other options')
         group.add_option('--ssh-key', metavar='PATH', help='Add PATH to root\'s ~/.ssh/authorized_keys (WARNING: this has strong security implications).')
         group.add_option('--ssh-user-key', help='Add PATH to the user\'s ~/.ssh/authorized_keys.')
+        group.add_option('--manifest', metavar='PATH', help='If passed, a manifest will be written to PATH')
         self.vm.register_setting_group(group)
 
     def set_defaults(self):

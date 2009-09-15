@@ -123,6 +123,13 @@ class Dapper(suite.Suite):
         logging.debug("Unpreventing daemons from starting")
         self.unprevent_daemons_starting()
 
+        if self.vm.manifest:
+            logging.debug("Creating manifest")
+            manifest_contents = self.run_in_target('dpkg-query', '-W', '--showformat=${Package} ${Version}\n')
+            fp = open(self.vm.manifest, 'w')
+            fp.write(manifest_contents)
+            fp.close
+
     def update(self):
         self.run_in_target('apt-get', '-y', '--force-yes', 'dist-upgrade',
                            env={ 'DEBIAN_FRONTEND' : 'noninteractive' })
@@ -314,7 +321,7 @@ class Dapper(suite.Suite):
         return self.vm.distro.install_from_template(*args, **kwargs)
 
     def run_in_target(self, *args, **kwargs):
-        self.vm.distro.run_in_target(*args, **kwargs)
+        return self.vm.distro.run_in_target(*args, **kwargs)
 
     def copy_to_target(self, infile, destpath):
         logging.debug("Copying %s on host to %s in guest" % (infile, destpath))
