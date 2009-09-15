@@ -28,7 +28,8 @@ class Karmic(Jaunty):
                           'openssh-server',
                           'standard^',
                           'ec2-ami-tools',
-                          'update-motd']
+                          'update-motd',
+                          'libc6-xen']
 
     def pre_install(self):
         self.vm.install_file('/etc/hosts', contents='')
