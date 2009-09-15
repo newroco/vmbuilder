@@ -36,6 +36,7 @@ class Dapper(suite.Suite):
     disk_prefix = 'hd'
     xen_kernel_flavour = None
     virtio_net = False
+    chpasswd_cmd = [ 'chpasswd', '--md5' ]
 
     def pre_install(self):
         pass
@@ -167,17 +168,17 @@ class Dapper(suite.Suite):
 
     def update_passwords(self):
         # Set the user password, using md5
-        self.run_in_target('chpasswd', '-m', stdin=('%s:%s\n' % (self.vm.user, getattr(self.vm, 'pass'))))
+        self.run_in_target(*self.chpasswd_cmd, stdin=('%s:%s\n' % (self.vm.user, getattr(self.vm, 'pass'))))
 
         # Lock root account only if we didn't set the root password
         if self.vm.rootpass:
-            self.run_in_target('chpasswd', '-m', stdin=('%s:%s\n' % ('root', self.vm.rootpass)))
+            self.run_in_target(*self.chpasswd_cmd, stdin=('%s:%s\n' % ('root', self.vm.rootpass)))
         else:
-            self.run_in_target('chpasswd', '-e', stdin='root:!\n')
+            self.run_in_target('usermod', '-L', 'root')
 
         if self.vm.lock_user:
             logging.info('Locking %s' %(self.vm.user))
-            self.run_in_target('chpasswd', '-e', stdin=('%s:!\n' %(self.vm.user)))
+            self.run_in_target('usermod', '-L', self.vm.user)
 
     def create_initial_user(self):
         if self.vm.uid:

@@ -26,6 +26,7 @@ class Jaunty(Intrepid):
     xen_kernel_flavour = 'server'
     ec2_kernel_info = { 'i386' : 'aki-c553b4ac', 'amd64' : 'aki-d653b4bf' }
     ec2_ramdisk_info = { 'i386' : 'ari-c253b4ab', 'amd64' : 'ari-d753b4be' }
+    chpasswd_cmd= [ 'chpasswd' ]
 
     def install_ec2(self):
         self.run_in_target('apt-get', '--force-yes', '-y', 'install', 'server^')
@@ -37,14 +38,4 @@ class Jaunty(Intrepid):
         run_cmd('sed', '-ie', 's/^# kopt=root=\([^ ]*\)\(.*\)/# kopt=root=UUID=%s\\2/g' % bootdev.fs.uuid, '%s/boot/grub/menu.lst' % self.destdir)
         run_cmd('sed', '-ie', 's/^# groot.*/# groot=%s/g' % bootdev.fs.uuid, '%s/boot/grub/menu.lst' % self.destdir)
         run_cmd('sed', '-ie', '/^# kopt_2_6/ d', '%s/boot/grub/menu.lst' % self.destdir)
-
-    def update_passwords(self):
-        # Set the user password, using using defaults from /etc/login.defs (ie, no need to specify '-m')
-        self.run_in_target('chpasswd', stdin=('%s:%s\n' % (self.vm.user, getattr(self.vm, 'pass'))))
-
-        # Lock root account only if we didn't set the root password
-        if self.vm.rootpass:
-            self.run_in_target('chpasswd', stdin=('%s:%s\n' % ('root', self.vm.rootpass)))
-        else:
-            self.run_in_target('chpasswd', '-e', stdin='root:!\n')
 

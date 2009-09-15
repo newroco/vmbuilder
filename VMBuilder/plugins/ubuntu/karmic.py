@@ -30,15 +30,5 @@ class Karmic(Jaunty):
                           'ec2-ami-tools',
                           'update-motd']
 
-    def update_passwords(self):
-        # Set the user password, using using defaults from /etc/login.defs (ie, no need to specify '-m')
-        self.run_in_target('chpasswd', stdin=('%s:%s\n' % (self.vm.user, getattr(self.vm, 'pass'))))
-
-        # Lock root account only if we didn't set the root password
-        if self.vm.rootpass:
-            self.run_in_target('chpasswd', stdin=('%s:%s\n' % ('root', self.vm.rootpass)))
-        else:
-            self.run_in_target('usermod', '--password=!', 'root')
-
     def pre_install(self):
         self.vm.install_file('/etc/hosts', contents='')
