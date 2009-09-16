@@ -1,3 +1,3 @@
 root 10240 a1
-/mnt 0 a2
+/mnt 1 a2
 swap 1024 a3
