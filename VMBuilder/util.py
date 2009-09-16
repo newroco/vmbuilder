@@ -98,7 +98,7 @@ def run_cmd(*argv, **kwargs):
         logging.debug('stdin was set and it was a string: %s' % (stdin,))
         stdin_arg = subprocess.PIPE
     else:
-        stdin_arg = file('/dev/null', 'w')
+        stdin_arg = file('/dev/null', 'r')
     proc_env = dict(os.environ)
     proc_env['LANG'] = 'C'
     proc_env['LC_ALL'] = 'C'
