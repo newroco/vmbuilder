@@ -168,11 +168,11 @@ class Dapper(suite.Suite):
 
     def update_passwords(self):
         # Set the user password, using md5
-        self.run_in_target(*self.chpasswd_cmd, stdin=('%s:%s\n' % (self.vm.user, getattr(self.vm, 'pass'))))
+        self.run_in_target(stdin=('%s:%s\n' % (self.vm.user, getattr(self.vm, 'pass'))), *self.chpasswd_cmd)
 
         # Lock root account only if we didn't set the root password
         if self.vm.rootpass:
-            self.run_in_target(*self.chpasswd_cmd, stdin=('%s:%s\n' % ('root', self.vm.rootpass)))
+            self.run_in_target(stdin=('%s:%s\n' % ('root', self.vm.rootpass)), *self.chpasswd_cmd)
         else:
             self.run_in_target('usermod', '-L', 'root')
 
