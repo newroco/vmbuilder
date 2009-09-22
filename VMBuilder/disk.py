@@ -217,7 +217,7 @@ class Disk(object):
             @rtype: string
             @return: the filesystem type of the partition suitable for passing to parted
             """
-            return { TYPE_EXT2: 'ext2', TYPE_EXT3: 'ext2', TYPE_XFS: 'ext2', TYPE_SWAP: 'linux-swap' }[self.type]
+            return { TYPE_EXT2: 'ext2', TYPE_EXT3: 'ext2', TYPE_XFS: 'ext2', TYPE_SWAP: 'linux-swap(new)' }[self.type]
 
         def create(self, disk):
             """Adds partition to the disk image (does not mkfs or anything like that)"""
