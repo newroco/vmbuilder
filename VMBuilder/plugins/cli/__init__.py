@@ -70,7 +70,7 @@ class CLI(VMBuilder.Frontend):
             print >> sys.stderr, e
 
     def versioninfo(self, option, opt, value, parser, vm=None):
-        print '%(major)d.%(minor)d.r%(revno)d' % vm.get_version_info()
+        print '%(major)d.%(minor)d.%(micro).r%(revno)d' % vm.get_version_info()
         sys.exit(0)
 
     def set_usage(self, vm):

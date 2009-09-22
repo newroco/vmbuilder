@@ -96,7 +96,8 @@ class VM(object):
         import vcsversion
         info = vcsversion.version_info
         info['major'] = 0
-        info['minor'] = 10
+        info['minor'] = 11
+        info['micro'] = 1
         return info
        
     def cleanup(self):
