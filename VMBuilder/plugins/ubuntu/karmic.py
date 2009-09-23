@@ -28,7 +28,8 @@ class Karmic(Jaunty):
                           'openssh-server',
                           'standard^',
                           'ec2-ami-tools',
-                          'update-motd']
+                          'update-motd',
+                          'linux-ec2']
         if self.vm.arch == 'i386':
             self.vm.addpkg += ['libc6-xen']
 
