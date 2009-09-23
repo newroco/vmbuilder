@@ -29,7 +29,8 @@ class Karmic(Jaunty):
                           'standard^',
                           'ec2-ami-tools',
                           'update-motd',
-                          'linux-ec2']
+                          'linux-ec2',
+                          'linux-virtual']
         if self.vm.arch == 'i386':
             self.vm.addpkg += ['libc6-xen']
 
