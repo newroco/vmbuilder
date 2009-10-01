@@ -23,6 +23,7 @@ import suite
 import shutil
 import socket
 import tempfile
+import subprocess
 import VMBuilder
 import VMBuilder.disk as disk
 from   VMBuilder.util import run_cmd
@@ -208,9 +209,27 @@ class Dapper(suite.Suite):
     def prevent_daemons_starting(self):
         os.chmod(self.install_from_template('/usr/sbin/policy-rc.d', 'nostart-policy-rc.d'), 0755)
 
+    def seed(self, seedfile):
+        """Seed debconf with the contents of a seedfile"""
+        logging.info('Seeding with "%s"' % seedfile)
+
+        f = open(seedfile, 'r')
+        filecontents = ''
+        for line in f:
+            filecontents += line
+
+        filecontents += '\nEOF'
+        cmd = "chroot %s debconf-set-selections <<EOF\n%s" % (self.destdir, filecontents)
+        proc = subprocess.Popen(cmd, shell=True)
+        proc.communicate();
+
     def install_extras(self):
+        if self.vm.seedfile:
+            self.seed(self.vm.seedfile)
+
         if not self.vm.addpkg and not self.vm.removepkg:
             return
+
         cmd = ['apt-get', 'install', '-y', '--force-yes']
         cmd += self.vm.addpkg or []
         cmd += ['%s-' % pkg for pkg in self.vm.removepkg or []]

@@ -41,6 +41,7 @@ class Ubuntu(Distro):
         group = self.vm.setting_group('Package options')
         group.add_option('--addpkg', action='append', metavar='PKG', help='Install PKG into the guest (can be specfied multiple times).')
         group.add_option('--removepkg', action='append', metavar='PKG', help='Remove PKG from the guest (can be specfied multiple times)')
+        group.add_option('--seedfile', metavar="SEEDFILE", help='Seed the debconf database with the contents of this seed file before installing packages')
         self.vm.register_setting_group(group)
 
         group = self.vm.setting_group('General OS options')
