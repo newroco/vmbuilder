@@ -19,6 +19,7 @@
 import glob
 import logging
 import os
+import errno
 import suite
 import shutil
 import socket
@@ -216,7 +217,7 @@ class Dapper(suite.Suite):
 
         try:
             f = open(seedfile, 'r')
-        except OSError, error:
+        except IOError, error:
             if error.errno == errno.ENOENT:
                 raise VMBuilderUserError, "Seedfile '%s' does not exist" % seedfile
             elif error.errno == errno.EACCES:
@@ -227,6 +228,7 @@ class Dapper(suite.Suite):
         filecontents = ''
         for line in f:
             filecontents += line
+        f.close()
 
         filecontents += '\nEOF'
         cmd = "chroot %s debconf-set-selections <<EOF\n%s" % (self.destdir, filecontents)
