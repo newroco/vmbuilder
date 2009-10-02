@@ -27,6 +27,7 @@ import subprocess
 import VMBuilder
 import VMBuilder.disk as disk
 from   VMBuilder.util import run_cmd
+from   exception      import VMBuilderException, VMBuilderUserError
 
 class Dapper(suite.Suite):
     updategrub = "/sbin/update-grub"
@@ -213,7 +214,16 @@ class Dapper(suite.Suite):
         """Seed debconf with the contents of a seedfile"""
         logging.info('Seeding with "%s"' % seedfile)
 
-        f = open(seedfile, 'r')
+        try:
+            f = open(seedfile, 'r')
+        except OSError, error:
+            if error.errno == errno.ENOENT:
+                raise VMBuilderUserError, "Seedfile '%s' does not exist" % seedfile
+            elif error.errno == errno.EACCES:
+                raise VMBuilderUserError, "Couldn't read seedfile '%s': Access denied" % seedfile
+            else:
+                raise VMBuilderUserError, "Couldn't read seedfile '%s': %s" % (seedfile, error)
+
         filecontents = ''
         for line in f:
             filecontents += line
