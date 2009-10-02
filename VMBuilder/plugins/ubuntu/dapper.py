@@ -27,7 +27,7 @@ import subprocess
 import VMBuilder
 import VMBuilder.disk as disk
 from   VMBuilder.util import run_cmd
-from   exception      import VMBuilderException, VMBuilderUserError
+from   VMBuilder.exception import VMBuilderException, VMBuilderUserError
 
 class Dapper(suite.Suite):
     updategrub = "/sbin/update-grub"
