@@ -20,6 +20,7 @@ import logging
 import os
 import socket
 import types
+import shutil
 import VMBuilder
 from   VMBuilder           import register_distro, Distro
 from   VMBuilder.util      import run_cmd
@@ -155,15 +156,30 @@ class Ubuntu(Distro):
     def use_virtio_net(self):
         return self.suite.virtio_net
 
+    def install_bootloader_cleanup(self):
+        self.vm.cancel_cleanup(self.install_bootloader_cleanup)
+        tmpdir = '%s/tmp/vmbuilder-grub' % self.destdir
+        for disk in os.listdir(tmpdir):
+            if disk != 'device.map':
+                run_cmd('umount', os.path.join(tmpdir, disk))
+        shutil.rmtree(tmpdir)
+
     def install_bootloader(self):
-        devmapfile = '%s/device.map' % self.vm.workdir
-        devmap = open(devmapfile, 'w')
+        tmpdir = '/tmp/vmbuilder-grub'
+        os.makedirs('%s%s' % (self.destdir, tmpdir))
+        self.vm.add_clean_cb(self.install_bootloader_cleanup)
+        devmapfile = os.path.join(tmpdir, 'device.map')
+        devmap = open('%s%s' % (self.destdir, devmapfile), 'w')
         for (disk, id) in zip(self.vm.disks, range(len(self.vm.disks))):
-            devmap.write("(hd%d) %s\n" % (id, disk.filename))
+            new_filename = os.path.join(tmpdir, os.path.basename(disk.filename))
+            open('%s%s' % (self.destdir, new_filename), 'w').close()
+            run_cmd('mount', '--bind', disk.filename, '%s%s' % (self.destdir, new_filename))
+            devmap.write("(hd%d) %s\n" % (id, new_filename))
         devmap.close()
-        run_cmd('grub', '--device-map=%s' % devmapfile, '--batch',  stdin='''root (hd0,0)
+        self.run_in_target('grub', '--device-map=%s' % devmapfile, '--batch',  stdin='''root (hd0,0)
 setup (hd0)
 EOT''')
+        self.install_bootloader_cleanup()
 
     def xen_kernel_version(self):
         if self.suite.xen_kernel_flavour:
