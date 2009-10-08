@@ -143,10 +143,10 @@ class Ubuntu(Distro):
             self.get_ec2_ramdisk()
             self.apply_ec2_settings()
 
-        # check if the seedfile exits if one is to be used
+        # check if the seedfile exists if one is to be used
         if self.vm.seedfile:
             if not os.path.exists(self.vm.seedfile):
-                raise VMBuilderUserError, "Seedfile %s doesn't exits" % self.vm.seedfile
+                raise VMBuilderUserError, "Seedfile %s doesn't exists" % self.vm.seedfile
 
     def install(self, destdir):
         self.destdir = destdir
