@@ -111,6 +111,9 @@ class Dapper(suite.Suite):
         logging.debug("Setting up final sources.list")
         self.install_sources_list(final=True)
 
+        logging.debug("cleaning apt")
+        self.run_in_target('apt-get', 'clean');
+
         logging.debug("Unmounting volatile lrm filesystems")
         self.unmount_volatile()
 
