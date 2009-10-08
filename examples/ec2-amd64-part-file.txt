@@ -1,2 +1,2 @@
-root 10240 a1
+root 2048 a1
 /mnt 1 b
