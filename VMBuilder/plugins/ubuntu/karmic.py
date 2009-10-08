@@ -24,13 +24,8 @@ from   VMBuilder.plugins.ubuntu.jaunty import Jaunty
 
 class Karmic(Jaunty):
     def apply_ec2_settings(self):
-        self.vm.addpkg += ['ec2-init',
-                          'openssh-server',
-                          'standard^',
-                          'ec2-ami-tools',
-                          'update-motd']
-        if self.vm.arch == 'i386':
-            self.vm.addpkg += ['libc6-xen']
+        self.vm.addpkg += ['standard^',
+                          'uec^']
 
     def pre_install(self):
         self.vm.install_file('/etc/hosts', contents='')

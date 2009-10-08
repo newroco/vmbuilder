@@ -38,10 +38,12 @@ class Hardy(Gutsy):
         self.vm.ppa += ['ubuntu-on-ec2/ppa']
 
     def install_ec2(self):
-        self.run_in_target('apt-get' ,'--force-yes', '-y', 'install', 'libc6-xen')
-        self.run_in_target('apt-get','--purge','--force-yes', '-y', 'remove', 'libc6-i686')
+
+        if self.vm.arch == 'i386':
+            self.run_in_target('apt-get' ,'--force-yes', '-y', 'install', 'libc6-xen')
+            self.run_in_target('apt-get','--purge','--force-yes', '-y', 'remove', 'libc6-i686')
+            self.install_from_template('/etc/ld.so.conf.d/libc6-xen.conf', 'xen-ld-so-conf')
         self.install_from_template('/etc/event.d/xvc0', 'upstart', { 'console' : 'xvc0' })
-        self.install_from_template('/etc/ld.so.conf.d/libc6-xen.conf', 'xen-ld-so-conf')
         self.run_in_target('update-rc.d', '-f', 'hwclockfirst.sh', 'remove')
         self.install_from_template('/etc/update-motd.d/51_update-motd', '51_update-motd-hardy')
         self.run_in_target('chmod', '755', '/etc/update-motd.d/51_update-motd')

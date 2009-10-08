@@ -31,6 +31,7 @@ class Jaunty(Intrepid):
     def install_ec2(self):
         self.run_in_target('apt-get', '--force-yes', '-y', 'install', 'server^')
         self.install_from_template('/etc/update-motd.d/51_update-motd', '51_update-motd')
+        self.install_from_template('/etc/ec2-init/is-compat-env', 'is-compat-env')
         self.run_in_target('chmod', '755', '/etc/update-motd.d/51_update-motd')
 
     def mangle_grub_menu_lst(self):
