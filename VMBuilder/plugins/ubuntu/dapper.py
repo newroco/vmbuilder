@@ -24,7 +24,6 @@ import suite
 import shutil
 import socket
 import tempfile
-import subprocess
 import VMBuilder
 import VMBuilder.disk as disk
 from   VMBuilder.util import run_cmd
@@ -230,10 +229,7 @@ class Dapper(suite.Suite):
             filecontents += line
         f.close()
 
-        filecontents += '\nEOF'
-        cmd = "chroot %s debconf-set-selections <<EOF\n%s" % (self.destdir, filecontents)
-        proc = subprocess.Popen(cmd, shell=True)
-        proc.communicate();
+        self.run_in_target('debconf-set-selections', stdin=filecontents)
 
     def install_extras(self):
         if self.vm.seedfile:
