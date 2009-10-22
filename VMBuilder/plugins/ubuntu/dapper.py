@@ -309,7 +309,7 @@ class Dapper(suite.Suite):
 
     def install_grub(self):
         self.run_in_target('apt-get', '--force-yes', '-y', 'install', 'grub')
-        run_cmd('cp', '-a', '%s%s/%s/' % (self.destdir, self.grubroot, self.vm.arch == 'amd64' and 'x86_64-pc' or 'i386-pc'), '%s/boot/grub' % self.destdir) 
+        run_cmd('rsync', '-a', '%s%s/%s/' % (self.destdir, self.grubroot, self.vm.arch == 'amd64' and 'x86_64-pc' or 'i386-pc'), '%s/boot/grub/' % self.destdir) 
 
     def create_devices(self):
         import VMBuilder.plugins.xen
