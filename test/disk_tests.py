@@ -65,5 +65,6 @@ class TestSequenceFunctions(unittest.TestCase):
 
     def test_index_to_devname_and_back(self):
         for i in range(18277):
-            self.assertEqual(i, VMBuilder.disk.devname_to_index(VMBuilder.disk.index_to_devname(i)))
+            self.assertEqual(i, devname_to_index(index_to_devname(i)))
+
 
