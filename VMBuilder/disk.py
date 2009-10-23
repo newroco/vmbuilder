@@ -424,7 +424,7 @@ def devname_to_index_rec(devname):
 def index_to_devname(index, suffix=''):
     if index < 0:
         return suffix
-    return suffix + index_to_devname(index / 26 -1, string.ascii_lowercase[index % 26])
+    return index_to_devname(index / 26 -1, string.ascii_lowercase[index % 26]) + suffix
 
 def qemu_img_path():
     exes = ['kvm-img', 'qemu-img']
