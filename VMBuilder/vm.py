@@ -301,7 +301,7 @@ class VM(object):
                 if (ipclass > 0) and (ipclass <= 127):
                     mask = 0xFF
                 elif (ipclass > 128) and (ipclass < 192):
-                    mask = OxFFFF
+                    mask = 0xFFFF
                 elif (ipclass < 224):
                     mask = 0xFFFFFF
                 else:
