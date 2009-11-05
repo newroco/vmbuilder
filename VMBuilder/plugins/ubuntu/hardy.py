@@ -47,6 +47,7 @@ class Hardy(Gutsy):
         self.run_in_target('update-rc.d', '-f', 'hwclockfirst.sh', 'remove')
         self.install_from_template('/etc/update-motd.d/51_update-motd', '51_update-motd-hardy')
         self.run_in_target('chmod', '755', '/etc/update-motd.d/51_update-motd')
+        self.install_from_template('/etc/ec2-init/is-compat-env', 'is-compat-env')
 
     def xen_kernel_path(self):
         return '/boot/vmlinuz-2.6.24-19-xen'
