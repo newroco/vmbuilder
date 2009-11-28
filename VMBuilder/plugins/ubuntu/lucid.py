@@ -20,7 +20,7 @@ import suite
 import logging
 import VMBuilder.disk as disk
 from   VMBuilder.util import run_cmd
-from   VMBuilder.plugins.ubuntu.jaunty import Jaunty
+from   VMBuilder.plugins.ubuntu.karmic import Karmic
 
-class Karmic(Jaunty):
+class Lucid(Karmic):
    pass
