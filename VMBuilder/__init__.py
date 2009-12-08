@@ -62,7 +62,7 @@ def set_frontend(arg):
 
 def run():
     """This is sort of weird, but a handy shortcut, if you want to use one of the frontends"""
-    frontend.run()
+    return(frontend.run())
 
 logging.debug('Loading plugins')
 VMBuilder.plugins.load_plugins()

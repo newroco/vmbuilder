@@ -19,11 +19,11 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-#import sys
+import sys
 #import os
 #sys.path += [os.getcwd()]
 
 import VMBuilder
 
 VMBuilder.set_frontend('cli')
-VMBuilder.run()
+sys.exit(VMBuilder.run())

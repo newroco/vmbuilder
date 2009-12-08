@@ -68,6 +68,9 @@ class CLI(VMBuilder.Frontend):
             vm.create()
         except VMBuilder.VMBuilderUserError, e:
             print >> sys.stderr, e
+            return(1)
+
+        return(0)
 
     def versioninfo(self, option, opt, value, parser, vm=None):
         print '%(major)d.%(minor)d.%(micro).r%(revno)d' % vm.get_version_info()

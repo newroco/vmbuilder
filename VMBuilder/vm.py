@@ -499,6 +499,10 @@ class VM(object):
                 logging.debug("Oh, dear, an exception occurred")
             self.cleanup()
 
+        if not finished:
+            return(1)
+        return(0)
+
 class _MyOptParser(optparse.OptionParser):
     def format_arg_help(self, formatter):
         result = []
