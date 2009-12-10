@@ -29,3 +29,8 @@ class Karmic(Jaunty):
 
     def pre_install(self):
         self.vm.install_file('/etc/hosts', contents='')
+
+    def set_filesystem_types(self):
+        # Default for Karmic and later is ext4
+        for filesystem in self.filesystems:
+            filesystem.set_type('ext4')

@@ -143,6 +143,8 @@ class Ubuntu(Distro):
             self.get_ec2_ramdisk()
             self.apply_ec2_settings()
 
+        self.set_filesystem_types()
+
     def install(self, destdir):
         self.destdir = destdir
         self.suite.install(destdir)
@@ -232,5 +234,8 @@ EOT''')
 
     def apply_ec2_settings(self):
         return self.suite.apply_ec2_settings()
+
+    def set_filesystem_types(self):
+        pass
 
 register_distro(Ubuntu)
