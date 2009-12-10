@@ -32,5 +32,7 @@ class Karmic(Jaunty):
 
     def set_filesystem_types(self):
         # Default for Karmic and later is ext4
-        for filesystem in self.filesystems:
-            filesystem.set_type('ext4')
+        for disk in self.vm.disks:
+            for partition in disk.partitions:
+                if partition.parted_fstype() == "ext2":
+                    partition.set_type('ext4')
