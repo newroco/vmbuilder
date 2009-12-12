@@ -25,7 +25,7 @@ import socket
 import tempfile
 import VMBuilder
 import VMBuilder.disk as disk
-from   VMBuilder.util import run_cmd
+from   VMBuilder.util import run_cmd, give_to_caller
 
 class Dapper(suite.Suite):
     updategrub = "/sbin/update-grub"
@@ -133,6 +133,7 @@ class Dapper(suite.Suite):
             fp = open(self.vm.manifest, 'w')
             fp.write(manifest_contents)
             fp.close
+            give_to_caller(self.vm.manifest)
 
     def update(self):
         self.run_in_target('apt-get', '-y', '--force-yes', 'dist-upgrade',
