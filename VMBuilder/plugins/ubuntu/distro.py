@@ -183,6 +183,13 @@ EOT''')
 
     def xen_kernel_version(self):
         if self.suite.xen_kernel_flavour:
+            # if this is ec2, do not call rmadison.
+            # this could be replaced with a method to get most recent
+            # stable kernel, but really, this is not used at all for ec2
+            if hasattr(self.vm, 'ec2') and self.vm.ec2:
+                logging.debug("selecting ec2 kernel")
+                self.xen_kernel = "2.6.ec2-kernel"
+                return self.xen_kernel
             if not self.xen_kernel:
                 rmad = run_cmd('rmadison', 'linux-image-%s' % self.suite.xen_kernel_flavour)
                 version = ['0', '0','0', '0']
