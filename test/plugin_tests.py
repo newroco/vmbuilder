@@ -25,6 +25,7 @@ class TestPluginsSettings(unittest.TestCase):
 
         self.vm.set_setting_default('testsetting', 'newdefault')
         self.assertEqual(self.vm.get_setting('testsetting'), 'newdefault', "Setting does not return custom default value when no value is set.")
+        self.assertEqual(self.vm.get_setting_default('testsetting'), 'newdefault', "Setting does not return custom default value through get_setting_default().")
 
         self.vm.set_setting('testsetting', 'foo')
         self.assertEqual(self.vm.get_setting('testsetting'), 'foo', "Setting does not return set value.")
@@ -36,6 +37,18 @@ class TestPluginsSettings(unittest.TestCase):
         setting_group = self.plugin.setting_group('Test Setting Group')
         self.assertRaises(VMBuilderException, setting_group.add_setting, 'oddsetting', type='odd')
 
+    def test_valid_options(self):
+        setting_group = self.plugin.setting_group('Test Setting Group')
+
+        setting_group.add_setting('strsetting')
+        self.assertRaises(VMBuilderException, self.vm.set_setting_valid_options, 'strsetting', '')
+        self.vm.set_setting_valid_options('strsetting', ['foo', 'bar'])
+        self.assertEqual(self.vm.get_setting_valid_options('strsetting'), ['foo', 'bar'])
+        self.vm.set_setting('strsetting', 'foo')
+        self.assertRaises(VMBuilderException, self.vm.set_setting, 'strsetting', 'baz')
+        self.vm.set_setting_valid_options('strsetting', None)
+        self.vm.set_setting('strsetting', 'baz')
+        
     def test_invalid_type_setting_raises_exception(self):
         setting_group = self.plugin.setting_group('Test Setting Group')
 
@@ -84,5 +97,3 @@ class TestPluginsSettings(unittest.TestCase):
 
     def test_add_setting(self):
         setting_group = self.plugin.setting_group('Test Setting Group')
-
-

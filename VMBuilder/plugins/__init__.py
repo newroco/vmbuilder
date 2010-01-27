@@ -120,7 +120,7 @@ class Plugin(object):
     class Setting(object):
         default = None
 
-        def __init__(self, setting_group, name, metavar=None, help=None, extra_args=None, action=None, **kwargs):
+        def __init__(self, setting_group, name, metavar=None, help=None, extra_args=None, valid_options=None, action=None, **kwargs):
             # The Setting Group object that owns this Setting
             self.setting_group = setting_group
             # The name if the setting
@@ -136,6 +136,7 @@ class Plugin(object):
             self.extra_args = extra_args or []
             self.value = None
             self.value_set = False
+            self.valid_options = valid_options
 
             if self.name in self.setting_group.vm._config:
                 raise VMBuilderException("Setting named %s already exists. Previous definition in %s/%s/%s." % 
@@ -157,18 +158,48 @@ class Plugin(object):
             else:
                 return self.default
 
+        def do_check_value(self, value):
+            """
+            Checks the value's validity.
+            """
+            if self.valid_options is not None:
+                if value not in self.valid_options:
+                    raise VMBuilderException('%r is not a valid option for %s. Valid options are: %s' % (value, self.name, ' '.join(self.valid_options)))
+            else:
+                self.check_value(value)
+
+        def get_valid_options(self):
+            return self.valid_options
+
+        def set_valid_options(self, valid_options):
+            """
+            Set the list of valid options for this setting.
+            """
+            if not type(valid_options) == list and valid_options is not None:
+                raise VMBuilderException('set_valid_options only accepts lists or None')
+            if valid_options:
+                for option in valid_options:
+                    self.check_value(option)
+            self.valid_options = valid_options
+
+        def get_default(self):
+            """
+            Return the default value.
+            """
+            return self.default
+
         def set_default(self, value):
             """
             Set a new default value.
             """
-            self.check_value(value)
+            self.do_check_value(value)
             self.default = value
 
         def set_value(self, value):
             """
             Set a new value.
             """
-            self.check_value(value)
+            self.do_check_value(value)
             self.value = value
             self.value_set = True
 
@@ -206,14 +237,28 @@ class Plugin(object):
             raise VMBuilderException('Unknown config key: %s' % name)
         return self._config[name].get_value()
 
-    def set_setting_default(self, name, value):
-        if not name in self.vm._config:
-            raise VMBuilderException('Unknown config key: %s' % name)
-        self._config[name].set_default(value)
-
     def set_setting(self, name, value):
         if not name in self.vm._config:
             raise VMBuilderException('Unknown config key: %s' % name)
         self._config[name].set_value(value)
 
+    def set_setting_default(self, name, value):
+        if not name in self.vm._config:
+            raise VMBuilderException('Unknown config key: %s' % name)
+        self._config[name].set_default(value)
+
+    def get_setting_default(self, name):
+        if not name in self.vm._config:
+            raise VMBuilderException('Unknown config key: %s' % name)
+        return self._config[name].get_default()
+
+    def get_setting_valid_options(self, name):
+        if not name in self._config:
+            raise VMBuilderException('Unknown config key: %s' % name)
+        return self._config[name].get_valid_options()
+
+    def set_setting_valid_options(self, name, valid_options):
+        if not name in self._config:
+            raise VMBuilderException('Unknown config key: %s' % name)
+        self._config[name].set_valid_options(valid_options)
 
