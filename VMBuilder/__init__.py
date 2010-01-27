@@ -52,6 +52,7 @@ def register_frontend(cls):
 def register_plugin(cls):
     """Register a plugin with VMBuilder"""
     _plugins.append(cls)
+    _plugins.sort(key=lambda x: x.priority)
 
 def set_frontend(arg):
     global frontend

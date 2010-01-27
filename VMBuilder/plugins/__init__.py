@@ -34,6 +34,8 @@ def find_plugins():
     return retval
 
 class Plugin(object):
+    priority = 10
+
     def __init__(self, vm):
         self.vm = vm
         self.register_options()
