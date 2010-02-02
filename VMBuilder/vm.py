@@ -272,62 +272,6 @@ class VM(object):
             self.distro.set_defaults()
             self.hypervisor.set_defaults()
 
-
-    def ip_defaults(self):
-        """
-        is called to validate the ip configuration given and set defaults
-        """
-
-        logging.debug("ip: %s" % self.ip)
-        
-        if self.mac:
-            valid_mac_address = re.compile("([0-9a-f]{2}:){5}([0-9a-f]{2})", re.IGNORECASE)
-            if not valid_mac_address.search(self.mac):
-                raise VMBuilderUserError("Malformed MAC address entered: %s" % self.mac)
-            else:
-                logging.debug("Valid mac given: %s" % self.mac)
-
-        if self.ip != 'dhcp':
-            if self.domain == '':
-                raise VMBuilderUserError('Domain is undefined and host has no domain set.')
-
-            try:
-                numip = struct.unpack('I', socket.inet_aton(self.ip))[0] 
-            except socket.error:
-                raise VMBuilderUserError('%s is not a valid ip address' % self.ip)
-             
-            if not self.mask:
-                ipclass = numip & 0xFF
-                if (ipclass > 0) and (ipclass <= 127):
-                    mask = 0xFF
-                elif (ipclass > 128) and (ipclass < 192):
-                    mask = 0xFFFF
-                elif (ipclass < 224):
-                    mask = 0xFFFFFF
-                else:
-                    raise VMBuilderUserError('The class of the ip address specified (%s) does not seem right' % self.ip)
-            else:
-                mask = struct.unpack('I', socket.inet_aton(self.mask))[0]
-
-            numnet = numip & mask
-
-            if not self.net:
-                self.net = socket.inet_ntoa( struct.pack('I', numnet ) )
-            if not self.bcast:
-                self.bcast = socket.inet_ntoa( struct.pack('I', numnet + (mask ^ 0xFFFFFFFF)))
-            if not self.gw:
-                self.gw = socket.inet_ntoa( struct.pack('I', numnet + 0x01000000 ) )
-            if not self.dns:
-                self.dns = self.gw
-
-            self.mask = socket.inet_ntoa( struct.pack('I', mask ) )
-
-            logging.debug("net: %s" % self.net)
-            logging.debug("netmask: %s" % self.mask)
-            logging.debug("broadcast: %s" % self.bcast)
-            logging.debug("gateway: %s" % self.gw)
-            logging.debug("dns: %s" % self.dns)
-
     def create_directory_structure(self):
         """Creates the directory structure where we'll be doing all the work
 
@@ -423,7 +367,6 @@ class VM(object):
             if '-' in opt:
                 raise VMBuilderUserError('You specified a "%s" config option in a config file, but that is not valid. Perhaps you meant "%s"?' % (opt, opt.replace('-', '_')))
 
-        self.ip_defaults()
         self.call_hooks('preflight_check')
 
         # Check repository availability
