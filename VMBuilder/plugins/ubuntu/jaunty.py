@@ -18,6 +18,7 @@
 #
 import suite
 import logging
+import os
 import VMBuilder.disk as disk
 from   VMBuilder.util import run_cmd
 from   VMBuilder.plugins.ubuntu.intrepid import Intrepid
