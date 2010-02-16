@@ -1,7 +1,7 @@
 #
 #    Uncomplicated VM Builder
-#    Copyright (C) 2007-2009 Canonical Ltd.
-#    
+#    Copyright (C) 2007-2010 Canonical Ltd.
+#
 #    See AUTHORS for list of contributors
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -29,7 +29,7 @@ from   VMBuilder.exception import VMBuilderUserError, VMBuilderException
 class Ubuntu(Distro):
     name = 'Ubuntu'
     arg = 'ubuntu'
-    suites = ['dapper', 'gutsy', 'hardy', 'intrepid', 'jaunty', 'karmic', 'lucid' ]
+    suites = ['dapper', 'gutsy', 'hardy', 'intrepid', 'jaunty', 'karmic', 'lucid']
     
     # Maps host arch to valid guest archs
     valid_archs = { 'amd64' : ['amd64', 'i386', 'lpia' ],
@@ -142,6 +142,9 @@ class Ubuntu(Distro):
             self.get_ec2_kernel()
             self.get_ec2_ramdisk()
             self.apply_ec2_settings()
+
+        if getattr(self.suite, 'set_filesystem_types', False):
+            self.suite.set_filesystem_types()
 
     def install(self, destdir):
         self.destdir = destdir

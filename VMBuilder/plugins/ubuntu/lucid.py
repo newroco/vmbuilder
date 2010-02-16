@@ -1,7 +1,7 @@
 #
 #    Uncomplicated VM Builder
-#    Copyright (C) 2007-2009 Canonical Ltd.
-#    
+#    Copyright (C) 2010 Canonical Ltd.
+#
 #    See AUTHORS for list of contributors
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -23,4 +23,4 @@ from   VMBuilder.util import run_cmd
 from   VMBuilder.plugins.ubuntu.karmic import Karmic
 
 class Lucid(Karmic):
-   pass
+    pass
