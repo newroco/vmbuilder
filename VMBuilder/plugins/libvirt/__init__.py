@@ -1,7 +1,7 @@
 #
 #    Uncomplicated VM Builder
-#    Copyright (C) 2007-2009 Canonical Ltd.
-#    
+#    Copyright (C) 2007-2010 Canonical Ltd.
+#
 #    See AUTHORS for list of contributors
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -26,6 +26,7 @@ class Libvirt(Plugin):
         group = self.vm.setting_group('libvirt integration')
         group.add_option('--libvirt', metavar='URI', help='Add VM to given URI')
         group.add_option('--bridge', metavar="BRIDGE", help='Set up bridged network connected to BRIDGE.')
+        group.add_option('--network', metavar='NETWORK', default='default', help='Set up a network connection to virtual network NETWORK.')
         self.vm.register_setting_group(group)
 
     def all_domains(self):
