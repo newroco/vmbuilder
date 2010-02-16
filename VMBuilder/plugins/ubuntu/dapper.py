@@ -1,7 +1,7 @@
 #
 #    Uncomplicated VM Builder
-#    Copyright (C) 2007-2009 Canonical Ltd.
-#    
+#    Copyright (C) 2007-2010 Canonical Ltd.
+#
 #    See AUTHORS for list of contributors
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -148,7 +148,7 @@ class Dapper(suite.Suite):
             os.mkdir('%s/home/%s/.ssh' % (self.destdir, self.vm.user), 0700)
             shutil.copy(self.vm.ssh_user_key, '%s/home/%s/.ssh/authorized_keys' % (self.destdir, self.vm.user))
             os.chmod('%s/home/%s/.ssh/authorized_keys' % (self.destdir, self.vm.user), 0644)
-            self.run_in_target('chown', '-R', '%s:%s' % (self.vm.user,)*2, '/home/%s/.ssh/' % (self.vm.user)) 
+            self.run_in_target('chown', '-R', '%s:%s' % ((self.vm.user,)*2), '/home/%s/.ssh/' % (self.vm.user)) 
 
         if self.vm.ssh_user_key or self.vm.ssh_key:
             if not self.vm.addpkg:

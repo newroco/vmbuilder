@@ -1,7 +1,7 @@
 #
 #    Uncomplicated VM Builder
-#    Copyright (C) 2007-2009 Canonical Ltd.
-#    
+#    Copyright (C) 2007-2010 Canonical Ltd.
+#
 #    See AUTHORS for list of contributors
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -29,3 +29,10 @@ class Karmic(Jaunty):
 
     def pre_install(self):
         self.vm.install_file('/etc/hosts', contents='')
+
+    def set_filesystem_types(self):
+        # Default for Karmic and later is ext4
+        for disk in self.vm.disks:
+            for partition in disk.partitions:
+                if partition.parted_fstype() == "ext2":
+                    partition.set_type('ext4')
