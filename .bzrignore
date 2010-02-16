@@ -1,3 +1,6 @@
 Doxyfile
 doc
 .bzrignore
+VMBuilder/vcsversion.py
+dist
+MANIFEST
