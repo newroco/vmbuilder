@@ -1,7 +1,7 @@
 #
 #    Uncomplicated VM Builder
-#    Copyright (C) 2007-2009 Canonical Ltd.
-#    
+#    Copyright (C) 2007-2010 Canonical Ltd.
+#
 #    See AUTHORS for list of contributors
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -32,6 +32,7 @@ TYPE_EXT2 = 0
 TYPE_EXT3 = 1
 TYPE_XFS = 2
 TYPE_SWAP = 3
+TYPE_EXT4 = 4
 
 class Disk(object):
     def __init__(self, vm, size='5G', preallocated=False, filename=None):
@@ -217,7 +218,7 @@ class Disk(object):
             @rtype: string
             @return: the filesystem type of the partition suitable for passing to parted
             """
-            return { TYPE_EXT2: 'ext2', TYPE_EXT3: 'ext2', TYPE_XFS: 'ext2', TYPE_SWAP: 'linux-swap(new)' }[self.type]
+            return { TYPE_EXT2: 'ext2', TYPE_EXT3: 'ext2', TYPE_EXT4: 'ext2', TYPE_XFS: 'ext2', TYPE_SWAP: 'linux-swap(new)' }[self.type]
 
         def create(self, disk):
             """Adds partition to the disk image (does not mkfs or anything like that)"""
@@ -254,13 +255,7 @@ class Filesystem(object):
         self.device = device
         self.dummy = dummy
            
-        try:
-            if int(type) == type:
-                self.type = type
-            else:
-                self.type = str_to_type(type)
-        except ValueError, e:
-            self.type = str_to_type(type)
+        self.set_type(type)
 
         self.mntpnt = mntpnt
 
@@ -299,13 +294,13 @@ class Filesystem(object):
     def mkfs_fstype(self):
         if self.vm.suite in ['dapper', 'edgy', 'feisty', 'gutsy']:
             logging.debug('%s: 128 bit inode' % self.vm.suite)
-            return { TYPE_EXT2: ['mkfs.ext2', '-F'], TYPE_EXT3: ['mkfs.ext3', '-I 128', '-F'], TYPE_XFS: ['mkfs.xfs'], TYPE_SWAP: ['mkswap'] }[self.type]
+            return { TYPE_EXT2: ['mkfs.ext2', '-F'], TYPE_EXT3: ['mkfs.ext3', '-I 128', '-F'], TYPE_EXT4: ['mkfs.ext4', '-I 128', '-F'], TYPE_XFS: ['mkfs.xfs'], TYPE_SWAP: ['mkswap'] }[self.type]
         else:
             logging.debug('%s: 256 bit inode' % self.vm.suite)
-            return { TYPE_EXT2: ['mkfs.ext2', '-F'], TYPE_EXT3: ['mkfs.ext3', '-F'], TYPE_XFS: ['mkfs.xfs'], TYPE_SWAP: ['mkswap'] }[self.type]
+            return { TYPE_EXT2: ['mkfs.ext2', '-F'], TYPE_EXT3: ['mkfs.ext3', '-F'], TYPE_EXT4: ['mkfs.ext4', '-F'], TYPE_XFS: ['mkfs.xfs'], TYPE_SWAP: ['mkswap'] }[self.type]
 
     def fstab_fstype(self):
-        return { TYPE_EXT2: 'ext2', TYPE_EXT3: 'ext3', TYPE_XFS: 'xfs', TYPE_SWAP: 'swap' }[self.type]
+        return { TYPE_EXT2: 'ext2', TYPE_EXT3: 'ext3', TYPE_EXT4: 'ext4', TYPE_XFS: 'xfs', TYPE_SWAP: 'swap' }[self.type]
 
     def fstab_options(self):
         return 'defaults'
@@ -344,7 +339,16 @@ class Filesystem(object):
     def get_index(self):
         """Index of the disk (starting from 0)"""
         return self.vm.filesystems.index(self)
-                
+
+    def set_type(self, type):
+        try:
+            if int(type) == type:
+                self.type = type
+            else:
+                self.type = str_to_type(type)
+        except ValueError, e:
+            self.type = str_to_type(type)
+
 def parse_size(size_str):
     """Takes a size like qemu-img would accept it and returns the size in MB"""
     try:
@@ -366,6 +370,7 @@ def parse_size(size_str):
 
 str_to_type_map = { 'ext2': TYPE_EXT2,
                  'ext3': TYPE_EXT3,
+                 'ext4': TYPE_EXT4,
                  'xfs': TYPE_XFS,
                  'swap': TYPE_SWAP,
                  'linux-swap': TYPE_SWAP }
