@@ -24,6 +24,7 @@ import re
 import stat
 import string
 import tempfile
+import time
 import VMBuilder
 from   VMBuilder.util      import run_cmd 
 from   VMBuilder.exception import VMBuilderUserError, VMBuilderException
@@ -142,7 +143,25 @@ class Disk(object):
         """
         Destroy all mapping devices
         """
+        # first sleep to give the loopback devices a chance to settle down
+        time.sleep(3)
+
+        tries = 0
+        max_tries = 3
+        while tries < max_tries:
+            try:
+                run_cmd('kpartx', '-d', self.filename, ignore_fail=False)
+                break
+            except:
+                pass
+            tries += 1
+            time.sleep(3)
+
+            if tries >= max_tries:
+                # try it one last time
+                logging.info("Could not unmount '%s' after '%d' attempts. Final attempt" % (self.filename, tries))
         run_cmd('kpartx', '-d', self.filename, ignore_fail=ignore_fail)
+
         for part in self.partitions:
             self.mapdev = None
 
