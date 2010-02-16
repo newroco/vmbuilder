@@ -7,3 +7,5 @@ VMBuilder.egg-info
 build
 stamp
 VMBuilder/vcsversion.py
+dist
+MANIFEST
