@@ -264,6 +264,15 @@ class Disk(object):
             """Index of the disk (starting from 0)"""
             return self.disk.partitions.index(self)
 
+        def set_type(self, type):
+            try:
+                if int(type) == type:
+                    self.type = type
+                else:
+                    self.type = str_to_type(type)
+            except ValueError, e:
+                self.type = str_to_type(type)
+
 class Filesystem(object):
     def __init__(self, vm, size=0, preallocated=False, type=None, mntpnt=None, filename=None, devletter='a', device='', dummy=False):
         self.vm = vm
