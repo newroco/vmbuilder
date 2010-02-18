@@ -7,7 +7,7 @@ class TestPluginsSettings(unittest.TestCase):
     class VM(VMBuilder.plugins.Plugin):
         def __init__(self, *args, **kwargs):
             self._config = {}
-            self.vm = self
+            self.context = self
 
     class TestPlugin(VMBuilder.plugins.Plugin):
         pass

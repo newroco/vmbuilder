@@ -39,8 +39,8 @@ def find_plugins():
 class Plugin(object):
     priority = 10
 
-    def __init__(self, vm):
-        self.vm = vm
+    def __init__(self, context):
+        self.context = context
         self._setting_groups = []
         self.register_options()
 
@@ -84,11 +84,11 @@ class Plugin(object):
 
     # Settings
     class SettingGroup(object):
-        def __init__(self, plugin, vm, name):
+        def __init__(self, plugin, context, name):
             # The plugin that owns this setting
             self.plugin = plugin
             # The VM object
-            self.vm = vm
+            self.context = context
             # Name of the Setting Group
             self.name = name
             # A list of Setting objects
@@ -136,18 +136,19 @@ class Plugin(object):
             self.help = help
             # Alternate names (for the CLI)
             self.extra_args = extra_args or []
+            self.metavar = metavar
             self.value = None
             self.value_set = False
             self.valid_options = valid_options
 
-            if self.name in self.setting_group.vm._config:
+            if self.name in self.setting_group.context._config:
                 raise VMBuilderException("Setting named %s already exists. Previous definition in %s/%s/%s." % 
                                             (self.name,
                                              self.setting_group.plugin.__name__,
                                              self.setting_group.plugin._config[self.name].setting_group.name,
                                              self.setting_group.plugin._config[self.name].name))
 
-            self.setting_group.vm._config[self.name] = self
+            self.setting_group.context._config[self.name] = self
 
         def get_value(self):
             """
@@ -230,37 +231,37 @@ class Plugin(object):
                 raise VMBuilderException('%r is type %s, expected str.' % (value, type(value)))
 
     def setting_group(self, name):
-        setting_group = self.SettingGroup(self, self.vm, name)
+        setting_group = self.SettingGroup(self, self.context, name)
         self._setting_groups.append(setting_group)
         return setting_group
 
     def get_setting(self, name):
-        if not name in self._config:
+        if not name in self.context._config:
             raise VMBuilderException('Unknown config key: %s' % name)
-        return self._config[name].get_value()
+        return self.context._config[name].get_value()
 
     def set_setting(self, name, value):
-        if not name in self.vm._config:
+        if not name in self.context._config:
             raise VMBuilderException('Unknown config key: %s' % name)
-        self._config[name].set_value(value)
+        self.context._config[name].set_value(value)
 
     def set_setting_default(self, name, value):
-        if not name in self.vm._config:
+        if not name in self.context._config:
             raise VMBuilderException('Unknown config key: %s' % name)
-        self._config[name].set_default(value)
+        self.context._config[name].set_default(value)
 
     def get_setting_default(self, name):
-        if not name in self.vm._config:
+        if not name in self.context._config:
             raise VMBuilderException('Unknown config key: %s' % name)
-        return self._config[name].get_default()
+        return self.context._config[name].get_default()
 
     def get_setting_valid_options(self, name):
-        if not name in self._config:
+        if not name in self.context._config:
             raise VMBuilderException('Unknown config key: %s' % name)
-        return self._config[name].get_valid_options()
+        return self.context._config[name].get_valid_options()
 
     def set_setting_valid_options(self, name, valid_options):
-        if not name in self._config:
+        if not name in self.context._config:
             raise VMBuilderException('Unknown config key: %s' % name)
-        self._config[name].set_valid_options(valid_options)
+        self.context._config[name].set_valid_options(valid_options)
 
