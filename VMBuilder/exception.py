@@ -22,6 +22,6 @@ class VMBuilderException(Exception):
     """Something failed inside VMBuilder"""
     pass
 
-class VMBuilderUserError(Exception):
+class VMBuilderUserError(VMBuilderException):
     """The user did something silly."""
     pass

@@ -30,7 +30,7 @@ fd, logfile = tempfile.mkstemp()
 logging.basicConfig(format=format, level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M', stream=os.fdopen(fd, 'a+'), filemode='w')
 
 console = logging.StreamHandler()
-console.setLevel(logging.INFO)
+console.setLevel(logging.DEBUG)
 console.setFormatter(logging.Formatter(format))
 logging.getLogger('').addHandler(console)
 

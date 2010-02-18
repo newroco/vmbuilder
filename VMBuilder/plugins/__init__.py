@@ -20,7 +20,7 @@ import os
 import re
 
 import VMBuilder
-from VMBuilder.util import run_cmd
+import VMBuilder.util as util
 from VMBuilder.exception import VMBuilderException
 
 def load_plugins():
@@ -64,23 +64,26 @@ class Plugin(object):
         """
         pass
 
-    def deploy(self):
-        """
-        Perform deployment of the VM.
-
-        If True is returned, no further deployment will be done.
-        """
-        return False
+    def install_file(self, path, contents=None, source=None, mode=None):
+        fullpath = '%s%s' % (self.chroot_dir, path)
+        if source and not contents:
+            shutil.copy(source, fullpath) 
+        else:
+            fp = open(fullpath, 'w')
+            fp.write(contents)
+            fp.close()
+        if mode:
+            os.chmod(fullpath, mode)
+        return fullpath
 
     def install_from_template(self, path, tmplname, context=None, mode=None):
-        if not self.vm.fsmounted:
-            raise VMBuilderException('install_from_template called while file system is not mounted')
-        return self.vm.install_file(path, VMBuilder.util.render_template(self.__module__.split('.')[2], self.vm, tmplname, context), mode=mode)
+        return self.install_file(path, VMBuilder.util.render_template(self.__module__.split('.')[2], self.context, tmplname, context), mode=mode)
 
     def run_in_target(self, *args, **kwargs):
-        if not self.vm.fsmounted:
-            raise VMBuilderException('install_from_template called while file system is not mounted')
-        return run_cmd('chroot', self.vm.installdir, *args, **kwargs)
+        return util.run_cmd('chroot', self.chroot_dir, *args, **kwargs)
+
+    def call_hooks(self, *args, **kwargs):
+        return util.call_hooks(self.context, *args, **kwargs)
 
     # Settings
     class SettingGroup(object):
@@ -234,6 +237,9 @@ class Plugin(object):
         setting_group = self.SettingGroup(self, self.context, name)
         self._setting_groups.append(setting_group)
         return setting_group
+
+    def has_setting(self, name):
+        return name in self.context._config
 
     def get_setting(self, name):
         if not name in self.context._config:

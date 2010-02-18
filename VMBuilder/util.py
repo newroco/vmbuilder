@@ -21,10 +21,10 @@ import errno
 import logging
 import os
 import os.path
-import pwd
 import select
 import subprocess
 import sys
+import tempfile
 import time
 from   exception        import VMBuilderException, VMBuilderUserError
 
@@ -135,19 +135,6 @@ def run_cmd(*argv, **kwargs):
         raise VMBuilderException, "Process (%s) returned %d. stdout: %s, stderr: %s" % (args.__repr__(), status, stdout, stderr)
     return stdout
 
-def give_to_caller(path):
-    """
-    Change ownership of file to $SUDO_USER.
-
-    @type  path: string
-    @param path: file or directory to give to $SUDO_USER
-    """
-
-    if 'SUDO_USER' in os.environ:
-        logging.debug('Changing ownership of %s to %s' % (path, os.environ['SUDO_USER']))
-        (uid, gid) = pwd.getpwnam(os.environ['SUDO_USER'])[2:4]
-        os.chown(path, uid, gid)
-
 def checkroot():
     """
     Check if we're running as root, and bail out if we're not.
@@ -155,18 +142,6 @@ def checkroot():
 
     if os.geteuid() != 0:
         raise VMBuilderUserError("This script must be run as root (e.g. via sudo)")
-
-def fix_ownership(files):
-    """
-    Goes through files and fixes their ownership of them. 
-    
-    @type  files: list
-    @param files: files whose ownership should be fixed up (currently 
-                  simply calls L{give_to_caller})
-
-    """
-    for file in files:
-        give_to_caller(file)
 
 def render_template(plugin, vm, tmplname, context=None):
     # Import here to avoid having to build-dep on python-cheetah
@@ -180,8 +155,8 @@ def render_template(plugin, vm, tmplname, context=None):
                 os.path.dirname(__file__) + '/plugins/%s/templates',
                 '/etc/vmbuilder/%s']
 
-    if vm.templates:
-        tmpldirs.insert(0,'%s/%%s' % vm.templates)
+#    if vm.templates:
+#        tmpldirs.insert(0,'%s/%%s' % vm.templates)
     
     tmpldirs = [dir % plugin for dir in tmpldirs]
 
@@ -194,3 +169,30 @@ def render_template(plugin, vm, tmplname, context=None):
             return output
 
     raise VMBuilderException('Template %s.tmpl not found in any of %s' % (tmplname, ', '.join(tmpldirs)))
+
+def call_hooks(context, func, *args, **kwargs):
+    logging.debug('Calling hook: %s(args=%r, kwargs=%r)' % (func, args, kwargs))
+    for plugin in context.plugins:
+        logging.debug('Calling %s method in %s plugin.' % (func, plugin.__module__))
+        getattr(plugin, func, log_no_such_method)(*args, **kwargs)
+
+    logging.debug('Calling %s method in context plugin %s.' % (func, context.__module__))
+    getattr(context, func, log_no_such_method)(*args, **kwargs)
+
+def log_no_such_method(*args, **kwargs):
+    logging.debug('No such method')
+    return
+
+def tmpfile(suffix='', keep=True):
+    (fd, filename) = tempfile.mkstemp(suffix=suffix)
+    os.close(fd)
+    if not keep:
+        os.unlink(filename)
+    return filename
+
+def tmpdir(suffix='', keep=True):
+    dir = tempfile.mkdtemp(suffix=suffix)
+    if not keep:
+        os.rmdir(dir)
+    return dir
+

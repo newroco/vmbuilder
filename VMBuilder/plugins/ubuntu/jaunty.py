@@ -34,9 +34,9 @@ class Jaunty(Intrepid):
         self.install_from_template('/etc/ec2-init/is-compat-env', 'is-compat-env')
         self.run_in_target('chmod', '755', '/etc/update-motd.d/51_update-motd')
 
-    def mangle_grub_menu_lst(self):
-        bootdev = disk.bootpart(self.vm.disks)
-        run_cmd('sed', '-ie', 's/^# kopt=root=\([^ ]*\)\(.*\)/# kopt=root=UUID=%s\\2/g' % bootdev.fs.uuid, '%s/boot/grub/menu.lst' % self.destdir)
-        run_cmd('sed', '-ie', 's/^# groot.*/# groot=%s/g' % bootdev.fs.uuid, '%s/boot/grub/menu.lst' % self.destdir)
-        run_cmd('sed', '-ie', '/^# kopt_2_6/ d', '%s/boot/grub/menu.lst' % self.destdir)
+    def mangle_grub_menu_lst(self, disks):
+        bootdev = disk.bootpart(disks)
+        run_cmd('sed', '-ie', 's/^# kopt=root=\([^ ]*\)\(.*\)/# kopt=root=UUID=%s\\2/g' % bootdev.fs.uuid, '%s/boot/grub/menu.lst' % self.context.chroot_dir)
+        run_cmd('sed', '-ie', 's/^# groot.*/# groot=%s/g' % bootdev.fs.uuid, '%s/boot/grub/menu.lst' % self.context.chroot_dir)
+        run_cmd('sed', '-ie', '/^# kopt_2_6/ d', '%s/boot/grub/menu.lst' % self.context.chroot_dir)
 

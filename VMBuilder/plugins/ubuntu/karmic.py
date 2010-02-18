@@ -24,8 +24,8 @@ from   VMBuilder.plugins.ubuntu.jaunty import Jaunty
 
 class Karmic(Jaunty):
     def apply_ec2_settings(self):
-        self.vm.addpkg += ['standard^',
+        self.context.addpkg += ['standard^',
                           'uec^']
 
     def pre_install(self):
-        self.vm.install_file('/etc/hosts', contents='')
+        self.context.install_file('/etc/hosts', contents='')

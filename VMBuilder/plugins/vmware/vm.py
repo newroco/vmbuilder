@@ -33,23 +33,23 @@ class VMWare(Hypervisor):
 
     def finalize(self):
         self.imgs = []
-        for disk in self.vm.disks:
-            img_path = disk.convert(self.vm.destdir, self.filetype)
+        for disk in self.context.disks:
+            img_path = disk.convert(self.context.destdir, self.filetype)
             self.imgs.append(img_path)
-            self.vm.result_files.append(img_path)
+            self.context.result_files.append(img_path)
 
     def disks(self):
-        return self.vm.disks
+        return self.context.disks
 
     def deploy(self):
-        vmdesc = VMBuilder.util.render_template('vmware', self.vm, self.vmxtemplate, { 'disks' : self.disks(), 'vmhwversion' : self.vmhwversion, 'cpus' : self.vm.cpus, 'mem' : self.vm.mem, 'hostname' : self.vm.hostname, 'arch' : self.vm.arch, 'guestos' : (self.vm.arch == 'amd64' and 'ubuntu-64' or 'ubuntu') })
+        vmdesc = VMBuilder.util.render_template('vmware', self.context, self.vmxtemplate, { 'disks' : self.disks(), 'vmhwversion' : self.vmhwversion, 'cpus' : self.context.cpus, 'mem' : self.context.mem, 'hostname' : self.context.hostname, 'arch' : self.context.arch, 'guestos' : (self.context.arch == 'amd64' and 'ubuntu-64' or 'ubuntu') })
 
-        vmx = '%s/%s.vmx' % (self.vm.destdir, self.vm.hostname)
+        vmx = '%s/%s.vmx' % (self.context.destdir, self.context.hostname)
         fp = open(vmx, 'w')
         fp.write(vmdesc)
         fp.close()
         os.chmod(vmx, stat.S_IRWXU | stat.S_IRWXU | stat.S_IROTH | stat.S_IXOTH)
-        self.vm.result_files.append(vmx)
+        self.context.result_files.append(vmx)
 
 class VMWareWorkstation6(VMWare):
     name = 'VMWare Workstation 6'
@@ -72,33 +72,33 @@ class VMWareEsxi(VMWare):
 
     def finalize(self):
         self.imgs = []
-        for disk in self.vm.disks:
+        for disk in self.context.disks:
 
             # Move raw image to <imagename>-flat.vmdk
             diskfilename = os.path.basename(disk.filename)
             if '.' in diskfilename:
                 diskfilename = diskfilename[:diskfilename.rindex('.')]
 
-            flat = '%s/%s-flat.vmdk' % (self.vm.destdir, diskfilename)
+            flat = '%s/%s-flat.vmdk' % (self.context.destdir, diskfilename)
             self.vmdks.append(diskfilename)
             
             move(disk.filename, flat)
             
-            self.vm.result_files.append(flat)
+            self.context.result_files.append(flat)
             
             # Create disk descriptor file            
             sectorTotal = disk.size * 2048
             sector = int(floor(sectorTotal / 16065)) # pseudo geometry
             
-            diskdescriptor = VMBuilder.util.render_template('vmware', self.vm, 'flat.vmdk',  { 'adaptertype' : self.adaptertype, 'sectors' : sector, 'diskname' : os.path.basename(flat), 'disksize' : sectorTotal })
-            vmdk = '%s/%s.vmdk' % (self.vm.destdir, diskfilename)
+            diskdescriptor = VMBuilder.util.render_template('vmware', self.context, 'flat.vmdk',  { 'adaptertype' : self.adaptertype, 'sectors' : sector, 'diskname' : os.path.basename(flat), 'disksize' : sectorTotal })
+            vmdk = '%s/%s.vmdk' % (self.context.destdir, diskfilename)
             
             fp = open(vmdk, 'w')
             fp.write(diskdescriptor)
             fp.close()
             os.chmod(vmdk, stat.S_IRWXU | stat.S_IRWXU | stat.S_IROTH | stat.S_IXOTH)
             
-            self.vm.result_files.append(vmdk)            
+            self.context.result_files.append(vmdk)            
 
     def disks(self):
         return self.vmdks

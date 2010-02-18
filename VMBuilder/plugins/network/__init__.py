@@ -23,7 +23,7 @@ import re
 import struct
 import socket
 
-from   VMBuilder           import register_plugin
+from   VMBuilder           import register_hypervisor_plugin, register_distro_plugin
 from   VMBuilder.plugins   import Plugin
 from   VMBuilder.exception import VMBuilderUserError
 
@@ -64,52 +64,80 @@ def calculate_broadcast_address_from_ip_and_netmask(net, mask):
 def guess_gw_from_ip(ip):
     return ip + 0x01000000
 
-class NetworkPlugin(Plugin):
+class NetworkDistroPlugin(Plugin):
+    def register_options(self):
+        group = self.setting_group('Network')
+        domainname = '.'.join(socket.gethostbyname_ex(socket.gethostname())[0].split('.')[1:]) or "defaultdomain"
+        group.add_setting('domain', metavar='DOMAIN', default=domainname, help='Set DOMAIN as the domain name of the guest [default: %default].')
+
+    def preflight_check(self):
+        domain = self.context.get_setting('domain')
+        if domain == '':
+            raise VMBuilderUserError('Domain is undefined and host has no domain set.')
+
+class NetworkHypervisorPlugin(Plugin):
+    def register_options(self):
+        group = self.setting_group('Network')
+        group.add_setting('ip', metavar='ADDRESS', default='dhcp', help='IP address in dotted form [default: %default].')
+        group.add_setting('mac', metavar='MAC', help='MAC address of the guest [default: random].')
+        group.add_setting('mask', metavar='VALUE', help='IP mask in dotted form [default: based on ip setting]. Ignored if ip is not specified.')
+        group.add_setting('net', metavar='ADDRESS', help='IP net address in dotted form [default: based on ip setting]. Ignored if ip is not specified.')
+        group.add_setting('bcast', metavar='VALUE', help='IP broadcast in dotted form [default: based on ip setting]. Ignored if ip is not specified.')
+        group.add_setting('gw', metavar='ADDRESS', help='Gateway (router) address in dotted form [default: based on ip setting (first valid address in the network)]. Ignored if ip is not specified.')
+        group.add_setting('dns', metavar='ADDRESS', help='DNS address in dotted form [default: based on ip setting (first valid address in the network)] Ignored if ip is not specified.')
+
+
     def preflight_check(self):
         """
         Validate the ip configuration given and set defaults
         """
 
-        logging.debug("ip: %s" % self.vm.ip)
+        ip = self.context.get_setting('ip')
+        logging.debug("ip: %s" % ip)
         
-        if self.vm.mac:
+        mac = self.context.get_setting('mac')
+        if mac:
             if not validate_mac(mac):
                 raise VMBuilderUserError("Malformed MAC address entered: %s" % mac)
 
-        if self.vm.ip != 'dhcp':
-            if self.vm.domain == '':
-                raise VMBuilderUserError('Domain is undefined and host has no domain set.')
-
+        if ip != 'dhcp':
             # num* are numeric representations
-            numip = dotted_to_numeric_ip(self.vm.ip)
+            numip = dotted_to_numeric_ip(ip)
             
-            if not self.vm.mask:
+            mask = self.context.get_setting('mask')
+            if not mask:
                 nummask = guess_mask_from_ip(numip)
             else:
-                nummask = dotted_to_numeric_ip(self.vm.mask)
+                nummask = dotted_to_numeric_ip(mask)
 
             numnet = calculate_net_address_from_ip_and_netmask(numip, nummask)
 
-            if not self.vm.net:
-                self.vm.net = numeric_to_dotted_ip(numnet)
+            net = self.context.get_setting('net')
+            if not net:
+                self.context.set_setting('net', numeric_to_dotted_ip(numnet))
 
-            if not self.vm.bcast:
+            bcast = self.context.get_setting('bcast')
+            if not bcast:
                 numbcast = calculate_broadcast_address_from_ip_and_netmask(numnet, nummask)
-                self.vm.bcast = numeric_to_dotted_ip(numbcast)
+                self.context.set_setting('bcast', numeric_to_dotted_ip(numbcast))
 
-            if not self.vm.gw:
+            gw = self.context.get_setting('gw')
+            if not gw:
                 numgw = guess_gw_from_ip(numip)
-                self.vm.gw = numeric_to_dotted_ip(numgw)
+                self.context.set_setting('gw', numeric_to_dotted_ip(numgw))
 
-            if not self.vm.dns:
-                self.vm.dns = self.vm.gw
+            dns = self.context.get_setting('dns')
+            if not dns:
+                self.context.dns = self.context.gw
+                self.context.set_setting('dns', self.context.get_setting('gw'))
 
-            self.vm.mask = numeric_to_dotted_ip(nummask)
+            self.context.set_setting('mask', numeric_to_dotted_ip(nummask))
 
-            logging.debug("net: %s" % self.vm.net)
-            logging.debug("netmask: %s" % self.vm.mask)
-            logging.debug("broadcast: %s" % self.vm.bcast)
-            logging.debug("gateway: %s" % self.vm.gw)
-            logging.debug("dns: %s" % self.vm.dns)
+            logging.debug("net: %s" % self.context.get_setting('net'))
+            logging.debug("netmask: %s" % self.context.get_setting('mask'))
+            logging.debug("broadcast: %s" % self.context.get_setting('bcast'))
+            logging.debug("gateway: %s" % self.context.get_setting('gw'))
+            logging.debug("dns: %s" % self.context.get_setting('dns'))
 
-register_plugin(NetworkPlugin)
+register_distro_plugin(NetworkDistroPlugin)
+register_hypervisor_plugin(NetworkHypervisorPlugin)

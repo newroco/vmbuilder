@@ -31,7 +31,7 @@ class Edgy(Dapper):
     disk_prefix = 'sd'
 
     def mangle_grub_menu_lst(self):
-        bootdev = disk.bootpart(self.vm.disks)
+        bootdev = disk.bootpart(self.context.disks)
         run_cmd('sed', '-ie', 's/^# kopt=root=\([^ ]*\)\(.*\)/# kopt=root=UUID=%s\\2/g' % bootdev.fs.uuid, '%s/boot/grub/menu.lst' % self.destdir)
         run_cmd('sed', '-ie', 's/^# groot.*/# groot %s/g' % bootdev.get_grub_id(), '%s/boot/grub/menu.lst' % self.destdir)
         run_cmd('sed', '-ie', '/^# kopt_2_6/ d', '%s/boot/grub/menu.lst' % self.destdir)
@@ -42,7 +42,7 @@ class Edgy(Dapper):
 # <file system>                                 <mount point>   <type>  <options>       <dump>  <pass>
 proc                                            /proc           proc    defaults        0       0
 '''
-        parts = disk.get_ordered_partitions(self.vm.disks)
+        parts = disk.get_ordered_partitions(self.context.disks)
         for part in parts:
             retval += "UUID=%-40s %15s %7s %15s %d       %d\n" % (part.fs.uuid, part.fs.mntpnt, part.fs.fstab_fstype(), part.fs.fstab_options(), 0, 0)
         return retval
@@ -58,9 +58,9 @@ proc                                            /proc           proc    defaults
             self.copy_to_target('/etc/default/console-setup', '/etc/default/console-setup')
         self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'tzdata')
         self.run_in_target('locale-gen', 'en_US')
-        if self.vm.lang:
-            self.run_in_target('locale-gen', self.vm.lang)
-            self.install_from_template('/etc/default/locale', 'locale', { 'lang' : self.vm.lang })
+        if self.context.lang:
+            self.run_in_target('locale-gen', self.context.lang)
+            self.install_from_template('/etc/default/locale', 'locale', { 'lang' : self.context.lang })
         self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'locales')
         if have_cs:
             self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'console-setup')

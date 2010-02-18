@@ -33,7 +33,6 @@ class TestUbuntuPlugin(unittest.TestCase):
     def test_invalid_suite_raises_UserError(self):
     	'Building Ubuntu VMs with an invalid suite raises UserError'
 
-        vm = VMBuilder.VM()
-        vm.suite = 'foo'
-        ubuntu = Ubuntu(vm)
+        ubuntu = Ubuntu()
+        ubuntu.set_setting('suite', 'foo')
         self.assertRaises(VMBuilderUserError, ubuntu.preflight_check)
