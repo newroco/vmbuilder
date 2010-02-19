@@ -239,6 +239,3 @@ class UVB(CLI):
         vm.set_hypervisor(args[0])
         vm.set_distro('ubuntu')
         vm.suite = args[1]
- 
-VMBuilder.register_frontend(CLI)
-VMBuilder.register_frontend(UVB)
