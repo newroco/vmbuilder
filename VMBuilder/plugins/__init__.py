@@ -66,6 +66,8 @@ class Plugin(object):
 
     def install_file(self, path, contents=None, source=None, mode=None):
         fullpath = '%s%s' % (self.chroot_dir, path)
+        if not os.path.isdir(os.path.dirname(fullpath)):
+            os.makedirs(os.path.dirname(fullpath))
         if source and not contents:
             shutil.copy(source, fullpath) 
         else:

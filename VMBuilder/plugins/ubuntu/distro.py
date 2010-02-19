@@ -159,6 +159,7 @@ class Ubuntu(Distro):
         self.suite.install_authorized_keys()
         self.suite.config_host_and_domainname()
         self.suite.set_timezone()
+        self.suite.update()
         self.suite.install_sources_list(final=True)
         self.suite.run_in_target('apt-get', 'clean');
         self.suite.unmount_volatile()
@@ -166,6 +167,7 @@ class Ubuntu(Distro):
         self.suite.unmount_dev_pts()
         self.suite.unmount_dev()
         self.suite.unprevent_daemons_starting()
+        self.suite.create_manifest()
 
     def configure_networking(self, nics):
         self.suite.config_interfaces(nics)

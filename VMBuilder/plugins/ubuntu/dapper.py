@@ -50,56 +50,10 @@ class Dapper(suite.Suite):
         
     def install(self, destdir):
         raise VMBuilderException('Do not call this method!')
-        self.destdir = destdir
 
-        logging.debug("debootstrapping")
-        self.debootstrap()
-
-        self.pre_install()
-
-        logging.debug("Setting up sources.list")
-        self.install_sources_list()
-
-        logging.debug("Setting up apt proxy")
-        self.install_apt_proxy()
-
-        logging.debug("Installing fstab")
-        self.install_fstab()
-
-        logging.debug("Creating devices")
-        self.create_devices()
-    
-        if self.distro.hypervisor.needs_bootloader:
-            logging.debug("Installing grub")
-            self.install_grub()
-        
-        logging.debug("Configuring guest networking")
-        self.config_network()
-
-        logging.debug("Preventing daemons from starting")
-        self.prevent_daemons_starting()
-
-        logging.debug('Binding /dev and /proc filesystems')
-        self.mount_dev_proc()
-
-        if self.context.hypervisor.needs_bootloader:
-            logging.debug("Installing menu.list")
-            self.install_menu_lst()
-
-            logging.debug("Installing kernel")
-            self.install_kernel()
-
-            logging.debug("Creating device.map")
-            self.install_device_map()
-
-        logging.debug("Installing extra packages")
-        self.install_extras()
-
-        logging.debug("Creating initial user")
-        self.create_initial_user()
-
-        logging.debug("Installing ssh keys")
-        self.install_authorized_keys()
+        # These are still missing after the refactoring.
+        logging.debug("Creating device.map")
+        self.install_device_map()
 
         logging.debug("Copy host settings")
         self.copy_settings()
@@ -107,35 +61,19 @@ class Dapper(suite.Suite):
         logging.debug("Setting timezone")
         self.set_timezone()
 
-        logging.debug("Making sure system is up-to-date")
-        self.update()
-
-        logging.debug("Setting up final sources.list")
-        self.install_sources_list(final=True)
-
-        logging.debug("cleaning apt")
-        self.run_in_target('apt-get', 'clean');
-
-        logging.debug("Unmounting volatile lrm filesystems")
-        self.unmount_volatile()
-
-        logging.debug('Unbinding /dev and /proc filesystems')
-        self.unmount_dev_proc()
-
         if hasattr(self.context, 'ec2') and self.context.ec2:
             logging.debug("Configuring for ec2")
             self.install_ec2()
 
-        logging.debug("Unpreventing daemons from starting")
-        self.unprevent_daemons_starting()
-
-        if self.context.manifest:
+    def create_manifest(self):
+        manifest = self.context.get_setting('manifest')
+        if manifest:
             logging.debug("Creating manifest")
             manifest_contents = self.run_in_target('dpkg-query', '-W', '--showformat=${Package} ${Version}\n')
-            fp = open(self.context.manifest, 'w')
+            fp = open(manifest, 'w')
             fp.write(manifest_contents)
             fp.close
-            give_to_caller(self.context.manifest)
+            self.call_hook('fix_ownership', manifest)
 
     def update(self):
         self.run_in_target('apt-get', '-y', '--force-yes', 'dist-upgrade',
