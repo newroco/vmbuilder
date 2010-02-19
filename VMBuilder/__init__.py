@@ -24,7 +24,6 @@ import VMBuilder.plugins
 from   VMBuilder.distro     import Distro
 from   VMBuilder.hypervisor import Hypervisor
 from   VMBuilder.plugins    import Plugin
-from   VMBuilder.frontend   import Frontend
 from   VMBuilder.vm         import VM
 from   VMBuilder.exception  import VMBuilderException, VMBuilderUserError
 
@@ -33,8 +32,6 @@ distros = {}
 hypervisors = {}
 _distro_plugins = []
 _hypervisor_plugins = []
-frontends = {}
-frontend = None
 
 # This is meant to be populated by plugins. It should contain a list of the files that we give back to the user.
 
@@ -58,10 +55,6 @@ def get_distro(name):
     else:
         raise VMBuilderUserError('No such distro. Available distros: %s' % (' '.join(distros.keys())))
 
-def register_frontend(cls):
-    """Register a frontend plugin with VMBuilder"""
-    frontends[cls.arg] = cls
-
 def register_distro_plugin(cls):
     """Register a plugin with VMBuilder"""
     _distro_plugins.append(cls)
@@ -71,17 +64,6 @@ def register_hypervisor_plugin(cls):
     """Register a plugin with VMBuilder"""
     _hypervisor_plugins.append(cls)
     _hypervisor_plugins.sort(key=lambda x: x.priority)
-
-def set_frontend(arg):
-    global frontend
-    if arg in frontends.keys():
-        frontend = frontends[arg]()
-    else:
-        raise VMBuilderException("Unknown frontend")
-
-def run():
-    """This is sort of weird, but a handy shortcut, if you want to use one of the frontends"""
-    return(frontend.run())
 
 def get_version_info():
     import vcsversion

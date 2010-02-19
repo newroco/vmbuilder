@@ -16,33 +16,25 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #    CLI plugin
-from gettext import gettext
 import logging
 import optparse
 import os
 import pwd
 import sys
-import textwrap
 import VMBuilder
 import VMBuilder.util as util
 from VMBuilder.disk import parse_size
 import VMBuilder.hypervisor
-_ = gettext
 
-
-class CLI(VMBuilder.Frontend):
+class CLI(object):
     arg = 'cli'
        
-    def run(self):
-
-        if len(sys.argv) < 3:
-            print 'Usage: %s hypervisor distro [options]' % sys.argv[0]
-            sys.exit(1)
-
+    def main(self):
         optparser = optparse.OptionParser()
 
+        self.set_usage(optparser)
+
         optparser.add_option('--version', action='callback', callback=self.versioninfo, help='Show version information')
-        self.add_settings_from_context(optparser, self)
 
         group = optparse.OptionGroup(optparser, 'Build options')
         group.add_option('--config', '-c', type='str', help='Configuration file')
@@ -58,17 +50,16 @@ class CLI(VMBuilder.Frontend):
         group.add_option('--raw', metavar='PATH', type='str', help="Specify a file (or block device) to as first disk image.")
         group.add_option('--part', metavar='PATH', type='str', help="Allows to specify a partition table in PATH each line of partfile should specify (root first): \n    mountpoint size \none per line, separated by space, where size is in megabytes. You can have up to 4 virtual disks, a new disk starts on a line containing only '---'. ie: \n    root 2000 \n    /boot 512 \n    swap 1000 \n    --- \n    /var 8000 \n    /var/log 2000")
         optparser.add_option_group(group)
- 
+        
         distro_name = sys.argv[2]
         distro_class = VMBuilder.get_distro(distro_name)
         distro = distro_class()
-        distro.plugins.append(self)
         self.add_settings_from_context(optparser, distro)
 
         hypervisor_name = sys.argv[1]
         hypervisor_class = VMBuilder.get_hypervisor(hypervisor_name)
         hypervisor = hypervisor_class(distro)
-        hypervisor.plugins.append(self)
+        hypervisor.register_hook('fix_ownership', self.fix_ownership)
         self.add_settings_from_context(optparser, hypervisor)
 
         (self.options, args) = optparser.parse_args(sys.argv[2:])
@@ -81,7 +72,6 @@ class CLI(VMBuilder.Frontend):
                     distro.set_setting(option, val)
                 elif hypervisor.has_setting(option):
                     hypervisor.set_setting(option, val)
-        
         
         if self.options.existing_chroot:
             distro.set_chroot_dir(self.options.existing_chroot)
@@ -102,8 +92,7 @@ class CLI(VMBuilder.Frontend):
         os.mkdir(destdir)
         self.fix_ownership(destdir)
         hypervisor.finalise(destdir)
-
-        sys.exit(1)
+        sys.exit(0)
 
     def fix_ownership(self, filename):
         """
@@ -112,7 +101,6 @@ class CLI(VMBuilder.Frontend):
         @type  path: string
         @param path: file or directory to give to $SUDO_USER
         """
-
         if 'SUDO_USER' in os.environ:
             logging.debug('Changing ownership of %s to %s' % (filename, os.environ['SUDO_USER']))
             (uid, gid) = pwd.getpwnam(os.environ['SUDO_USER'])[2:4]
@@ -147,7 +135,7 @@ class CLI(VMBuilder.Frontend):
 
     def set_usage(self, optparser):
         optparser.set_usage('%prog hypervisor distro [options]')
-        optparser.arg_help = (('hypervisor', vm.hypervisor_help), ('distro', vm.distro_help))
+#        optparser.arg_help = (('hypervisor', vm.hypervisor_help), ('distro', vm.distro_help))
 
     def handle_args(self, vm, args):
         if len(args) < 2:
