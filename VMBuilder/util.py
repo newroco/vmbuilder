@@ -176,6 +176,10 @@ def call_hooks(context, func, *args, **kwargs):
         logging.debug('Calling %s method in %s plugin.' % (func, plugin.__module__))
         getattr(plugin, func, log_no_such_method)(*args, **kwargs)
 
+    for f in context.hooks.get(func, []):
+        logging.debug('Calling %r.' % (f,))
+        f(*args, **kwargs)
+
     logging.debug('Calling %s method in context plugin %s.' % (func, context.__module__))
     getattr(context, func, log_no_such_method)(*args, **kwargs)
 

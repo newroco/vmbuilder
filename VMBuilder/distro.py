@@ -28,6 +28,7 @@ class Context(VMBuilder.plugins.Plugin):
         self.plugins = [plugin_class(self) for plugin_class in self.plugin_classes]
         self.plugins.sort(key=lambda x:x.priority)
         self._cleanup_cbs = []
+        self.hooks = {}
 
     # Cleanup 
     def cleanup(self):
@@ -49,6 +50,10 @@ class Context(VMBuilder.plugins.Plugin):
         except ValueError, e:
             # Wasn't in there. No worries.
             pass
+
+    # Hooks
+    def register_hook(self, hook_name, func):
+        self.hooks[hook_name] = self.hooks.get(hook_name, []) + [func]
 
     def call_hooks(self, *args, **kwargs):
         try:
