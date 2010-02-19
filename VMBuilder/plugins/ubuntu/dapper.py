@@ -80,6 +80,7 @@ class Dapper(suite.Suite):
                            env={ 'DEBIAN_FRONTEND' : 'noninteractive' })
         
     def install_authorized_keys(self):
+        ssh_key = self.context.get_setting('ssh-key')
         if ssh_key:
             os.mkdir('%s/root/.ssh' % self.context.chroot_dir, 0700)
             shutil.copy(ssh_key, '%s/root/.ssh/authorized_keys' % self.context.chroot_dir)
