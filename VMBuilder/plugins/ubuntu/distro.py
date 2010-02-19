@@ -170,9 +170,6 @@ class Ubuntu(Distro):
     def configure_networking(self, nics):
         self.suite.config_interfaces(nics)
 
-        if getattr(self.suite, 'set_filesystem_types', False):
-            self.suite.set_filesystem_types()
-
     def configure_mounting(self, disks, filesystems):
         self.suite.install_fstab(disks, filesystems)
 
