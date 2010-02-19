@@ -39,19 +39,26 @@ class CLI(VMBuilder.Frontend):
             print 'Usage: %s hypervisor distro [options]' % sys.argv[0]
             sys.exit(1)
 
-        group = self.setting_group(' ')
-        group.add_setting('config', extra_args=['-c'], type='str', help='Configuration file')
-        group.add_setting('destdir', extra_args=['-d'], type='str', help='Destination directory')
-
-        group = self.setting_group('Disk')
-        group.add_setting('rootsize', metavar='SIZE', default=4096, help='Size (in MB) of the root filesystem [default: %default]')
-        group.add_setting('optsize', metavar='SIZE', default=0, help='Size (in MB) of the /opt filesystem. If not set, no /opt filesystem will be added.')
-        group.add_setting('swapsize', metavar='SIZE', default=1024, help='Size (in MB) of the swap partition [default: %default]')
-        group.add_setting('raw', metavar='PATH', type='str', help="Specify a file (or block device) to as first disk image.")
-        group.add_setting('part', metavar='PATH', type='str', help="Allows to specify a partition table in PATH each line of partfile should specify (root first): \n    mountpoint size \none per line, separated by space, where size is in megabytes. You can have up to 4 virtual disks, a new disk starts on a line containing only '---'. ie: \n    root 2000 \n    /boot 512 \n    swap 1000 \n    --- \n    /var 8000 \n    /var/log 2000")
-        
         optparser = optparse.OptionParser()
+
         optparser.add_option('--version', action='callback', callback=self.versioninfo, help='Show version information')
+        self.add_settings_from_context(optparser, self)
+
+        group = optparse.OptionGroup(optparser, 'Build options')
+        group.add_option('--config', '-c', type='str', help='Configuration file')
+        group.add_option('--destdir', '-d', type='str', help='Destination directory')
+        group.add_option('--only-chroot', action='store_true', help="Only build the chroot. Don't install it on disk images or anything.")
+        group.add_option('--existing-chroot', help="Use existing chroot.")
+        optparser.add_option_group(group)
+
+        group = optparse.OptionGroup(optparser, 'Disk')
+        group.add_option('--rootsize', metavar='SIZE', default=4096, help='Size (in MB) of the root filesystem [default: %default]')
+        group.add_option('--optsize', metavar='SIZE', default=0, help='Size (in MB) of the /opt filesystem. If not set, no /opt filesystem will be added.')
+        group.add_option('--swapsize', metavar='SIZE', default=1024, help='Size (in MB) of the swap partition [default: %default]')
+        group.add_option('--raw', metavar='PATH', type='str', help="Specify a file (or block device) to as first disk image.")
+        group.add_option('--part', metavar='PATH', type='str', help="Allows to specify a partition table in PATH each line of partfile should specify (root first): \n    mountpoint size \none per line, separated by space, where size is in megabytes. You can have up to 4 virtual disks, a new disk starts on a line containing only '---'. ie: \n    root 2000 \n    /boot 512 \n    swap 1000 \n    --- \n    /var 8000 \n    /var/log 2000")
+        optparser.add_option_group(group)
+ 
         distro_name = sys.argv[2]
         distro_class = VMBuilder.get_distro(distro_name)
         distro = distro_class()
@@ -64,28 +71,34 @@ class CLI(VMBuilder.Frontend):
         hypervisor.plugins.append(self)
         self.add_settings_from_context(optparser, hypervisor)
 
-        self.set_setting_default('destdir', '%s-%s' % (distro_name, hypervisor_name))
-
-        (options, args) = optparser.parse_args(sys.argv[2:])
-        for option in dir(options):
+        (self.options, args) = optparser.parse_args(sys.argv[2:])
+        for option in dir(self.options):
             if option.startswith('_') or option in ['ensure_value', 'read_module', 'read_file']:
                 continue
-            val = getattr(options, option)
+            val = getattr(self.options, option)
             if val:
                 if distro.has_setting(option):
                     distro.set_setting(option, val)
-                else:
+                elif hypervisor.has_setting(option):
                     hypervisor.set_setting(option, val)
         
-        chroot_dir = util.tmpdir()
+        
+        if self.options.existing_chroot:
+            distro.set_chroot_dir(self.options.existing_chroot)
+            distro.call_hooks('preflight_check')
+        else:
+            chroot_dir = util.tmpdir()
+            distro.set_chroot_dir(chroot_dir)
+            distro.build_chroot()
 
-        distro.set_chroot_dir(chroot_dir)
-        distro.build_chroot()
+        if self.options.only_chroot:
+            print 'Chroot can be found in %s' % distro.chroot_dir
+            sys.exit(0)
 
         self.set_disk_layout(hypervisor)
         hypervisor.install_os()
 
-        destdir = self.get_setting('destdir')
+        destdir = self.options.destdir or ('%s-%s' % (distro_name, hypervisor_name))
         os.mkdir(destdir)
         self.fix_ownership(destdir)
         hypervisor.finalise(destdir)
@@ -143,48 +156,47 @@ class CLI(VMBuilder.Frontend):
         self.distro = distro.vm.get_distro(args[1])
 
     def set_disk_layout(self, hypervisor):
-        if not self.get_setting('part'):
-            rootsize = parse_size(self.get_setting('rootsize'))
-            swapsize = parse_size(self.get_setting('swapsize'))
-            optsize = parse_size(self.get_setting('optsize'))
+        default_filesystem = hypervisor.distro.preferred_filesystem()
+        if not self.options.part:
+            rootsize = parse_size(self.options.rootsize)
+            swapsize = parse_size(self.options.swapsize)
+            optsize = parse_size(self.options.optsize)
             if hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
                 hypervisor.add_filesystem(size='%dM' % rootsize, type='ext3', mntpnt='/')
                 hypervisor.add_filesystem(size='%dM' % swapsize, type='swap', mntpnt=None)
                 if optsize > 0:
                     hypervisor.add_filesystem(size='%dM' % optsize, type='ext3', mntpnt='/opt')
             else:
-                raw = self.get_setting('raw')
-                if raw:
-                    disk = hypervisor.add_disk(filename=raw, preallocated=True)
+                if self.options.raw:
+                    disk = hypervisor.add_disk(filename=self.options.raw, preallocated=True)
                 else:
                     size = rootsize + swapsize + optsize
                     tmpfile = util.tmpfile(keep=False)
                     disk = hypervisor.add_disk(tmpfile, size='%dM' % size)
                 offset = 0
-                disk.add_part(offset, rootsize, 'ext3', '/')
+                disk.add_part(offset, rootsize, default_filesystem, '/')
                 offset += rootsize
                 disk.add_part(offset, swapsize, 'swap', 'swap')
                 offset += swapsize
                 if optsize > 0:
-                    disk.add_part(offset, optsize, 'ext3', '/opt')
+                    disk.add_part(offset, optsize, default_filesystem, '/opt')
         else:
             # We need to parse the file specified
-            part = self.get_setting('part')
             if vm.hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
                 try:
-                    for line in file(part):
+                    for line in file(self.options.part):
                         elements = line.strip().split(' ')
                         if elements[0] == 'root':
-                            vm.add_filesystem(elements[1], type='ext3', mntpnt='/')
+                            vm.add_filesystem(elements[1], default_filesystem, mntpnt='/')
                         elif elements[0] == 'swap':
                             vm.add_filesystem(elements[1], type='swap', mntpnt=None)
                         elif elements[0] == '---':
                             # We just ignore the user's attempt to specify multiple disks
                             pass
                         elif len(elements) == 3:
-                            vm.add_filesystem(elements[1], type='ext3', mntpnt=elements[0], devletter='', device=elements[2], dummy=(int(elements[1]) == 0))
+                            vm.add_filesystem(elements[1], type=default_filesystem, mntpnt=elements[0], devletter='', device=elements[2], dummy=(int(elements[1]) == 0))
                         else:
-                            vm.add_filesystem(elements[1], type='ext3', mntpnt=elements[0])
+                            vm.add_filesystem(elements[1], type=default_filesystem, mntpnt=elements[0])
 
                 except IOError, (errno, strerror):
                     vm.optparser.error("%s parsing --part option: %s" % (errno, strerror))
@@ -208,18 +220,19 @@ class CLI(VMBuilder.Frontend):
                 except IOError, (errno, strerror):
                     vm.optparser.error("%s parsing --part option: %s" % (errno, strerror))
     
-    def do_disk(self, vm, curdisk, size):
-        disk = vm.add_disk(size+1)
+    def do_disk(self, hypervisor, curdisk, size):
+        default_filesystem = hypervisor.distro.preferred_filesystem()
+        disk = hypervisor.add_disk(size+1)
         logging.debug("do_disk - size: %d" % size)
         offset = 0
         for pair in curdisk:
             logging.debug("do_disk - part: %s, size: %s, offset: %d" % (pair[0], pair[1], offset))
             if pair[0] == 'root':
-                disk.add_part(offset, int(pair[1]), 'ext3', '/')
+                disk.add_part(offset, int(pair[1]), default_filesystem, '/')
             elif pair[0] == 'swap':
                 disk.add_part(offset, int(pair[1]), pair[0], pair[0])
             else:
-                disk.add_part(offset, int(pair[1]), 'ext3', pair[0])
+                disk.add_part(offset, int(pair[1]), default_filesystem, pair[0])
             offset += int(pair[1])
 
 class UVB(CLI):
