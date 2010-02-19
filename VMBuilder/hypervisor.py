@@ -40,9 +40,6 @@ class Hypervisor(VMBuilder.distro.Context):
         """Adds a disk image to the virtual machine"""
         from VMBuilder.disk import Disk
 
-        if not 'type' in kwargs and hasattr(self.distro, 'preferred_filesystem'):
-            kwargs['type'] = self.distro.preferred_filesystem()
-
         disk = Disk(self, *args, **kwargs)
         self.disks.append(disk)
         return disk
