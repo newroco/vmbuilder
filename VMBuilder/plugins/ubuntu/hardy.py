@@ -25,21 +25,21 @@ class Hardy(Gutsy):
     ec2_ramdisk_info = { 'i386' : 'ari-6c709705', 'amd64' : 'ari-61709708' }
 
     def apply_ec2_settings(self):
-        self.vm.addpkg += ['ec2-init',
+        self.context.addpkg += ['ec2-init',
                           'openssh-server',
                           'ec2-modules',
                           'standard^',
                           'ec2-ami-tools',
                           'update-motd']
 
-        if not self.vm.ppa:
-            self.vm.ppa = []
+        if not self.context.ppa:
+            self.context.ppa = []
 
-        self.vm.ppa += ['ubuntu-on-ec2/ppa']
+        self.context.ppa += ['ubuntu-on-ec2/ppa']
 
     def install_ec2(self):
 
-        if self.vm.arch == 'i386':
+        if self.context.arch == 'i386':
             self.run_in_target('apt-get' ,'--force-yes', '-y', 'install', 'libc6-xen')
             self.run_in_target('apt-get','--purge','--force-yes', '-y', 'remove', 'libc6-i686')
             self.install_from_template('/etc/ld.so.conf.d/libc6-xen.conf', 'xen-ld-so-conf')
@@ -54,3 +54,6 @@ class Hardy(Gutsy):
 
     def xen_ramdisk_path(self):
         return '/boot/initrd.img-2.6.24-19-xen'
+
+    def has_256_bit_inode_ext3_support(self):
+        return True

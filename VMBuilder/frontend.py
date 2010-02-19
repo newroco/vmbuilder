@@ -18,33 +18,36 @@
 #
 #    Frontend interface and classes
 
-import VMBuilder
-import optparse
+import VMBuilder.plugins
 
-class Frontend(object):
+class Frontend(VMBuilder.plugins.Plugin):
     def __init__(self):
-        self.settings = []
+        self._setting_groups = []
+        self._config = {}
+        self.context = self
 
-    def setting_group(self, help=None):
-        return self.SettingsGroup(help)
-    
-    def add_setting_group(self, group):
-        self.settings.append(group)
+#        self.settings = []
 
-    def add_setting(self, **kwargs):
-        self.settings.append(Setting(**kwargs))
-
-    setting_types =  ['store', 'store']
-    class Setting(object):
-        def __init__(self, **kwargs):
-            self.shortarg = kwargs.get('shortarg', None)
-            self.longarg = kwargs.get('shortarg', None)
-            self.default = kwargs.get('default', None)
-            self.help = kwargs.get('help', None)
-            type = kwargs.get('type', 'store')
-            if type not in setting_types:
-                raise VMBuilderException("Invalid option type: %s" % type)
-
-    class SettingsGroup(Setting):
-        pass
+#    def setting_group(self, help=None):
+#        return self.SettingsGroup(help)
+#    
+#    def add_setting_group(self, group):
+#        self.settings.append(group)
+#
+#    def add_setting(self, **kwargs):
+#        self.settings.append(Setting(**kwargs))
+#
+#    setting_types =  ['store', 'store']
+#    class Setting(object):
+#        def __init__(self, **kwargs):
+#            self.shortarg = kwargs.get('shortarg', None)
+#            self.longarg = kwargs.get('shortarg', None)
+#            self.default = kwargs.get('default', None)
+#            self.help = kwargs.get('help', None)
+#            type = kwargs.get('type', 'store')
+#            if type not in setting_types:
+#                raise VMBuilderException("Invalid option type: %s" % type)
+#
+#    class SettingsGroup(Setting):
+#        pass
 

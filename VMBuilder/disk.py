@@ -18,7 +18,9 @@
 #
 #    Virtual disk management
 
+import fcntl
 import logging
+import os
 import os.path
 import re
 import stat
@@ -28,6 +30,7 @@ import time
 import VMBuilder
 from   VMBuilder.util      import run_cmd 
 from   VMBuilder.exception import VMBuilderUserError, VMBuilderException
+from   struct              import unpack
 
 TYPE_EXT2 = 0
 TYPE_EXT3 = 1
@@ -36,62 +39,63 @@ TYPE_SWAP = 3
 TYPE_EXT4 = 4
 
 class Disk(object):
-    def __init__(self, vm, size='5G', preallocated=False, filename=None):
+    def __init__(self, vm, filename, size=None):
         """
         @type  size: string or number
         @param size: The size of the disk image (passed to L{parse_size})
 
-        @type  preallocated: boolean
-        @param preallocated: if True, the disk image already exists and will not be created (useful for raw devices)
-
         @type  filename: string
-        @param filename: force a certain filename or to give the name of the preallocated disk image
+        @param filename: filename of the disk image. If size is given, this
+                         file will be overwritten with an image of the given size
         """
 
-        # We need this for "introspection"
         self.vm = vm
+        self.filename = filename
+        self.preallocated = False
 
-        # Perhaps this should be the frontend's responsibility?
-        self.size = parse_size(size)
-
-        self.preallocated = preallocated
-
-        # If filename isn't given, make one up
-        if filename:
-            self.filename = filename
+        if not os.path.exists(self.filename):
+            if not size:
+                raise VMBuilderUserError('%s does not exist, but no size was given.' % (self.filename))
+            self.size = parse_size(size)
         else:
-            if self.preallocated:
-                raise VMBuilderUserError('Preallocated was set, but no filename given')
-            self.filename = 'disk%d.img' % len(self.vm.disks)
+            if size:
+                raise VMBuilderUserError('%s exists, but size was given.' % (self.filename))
+            self.preallocated = True
+            self.size = detect_size(self.filename)
 
         self.partitions = []
 
-    def devletters(self):
+    def devletters(self, vm):
         """
+        @type  vm: VM object
+        @param vm: The VM object to which the disk belongs L{parse_size})
+
         @rtype: string
         @return: the series of letters that ought to correspond to the device inside
                  the VM. E.g. the first disk of a VM would return 'a', while the 702nd would return 'zz'
         """
 
-        return index_to_devname(self.vm.disks.index(self))
+        return index_to_devname(vm.disks.index(self))
 
-    def create(self, directory):
+    def create(self):
         """
-        Creates the disk image (unless preallocated), partitions it, creates the partition mapping devices and mkfs's the partitions
+        Creates the disk image (unless preallocated)
 
-        @type  directory: string
-        @param directory: If set, the disk image is created in this directory
+        It is safe to call this method even if the disk image already exists,
+        in which case, it's a no-op.
+        
+        Once this method returns, self.filename points to whatever holds the virtual disk
+        (be it a file, partition, logical volume, etc.).
         """
 
-        if not self.preallocated:
-            if directory:
-                self.filename = '%s/%s' % (directory, self.filename)
-            logging.info('Creating disk image: %s' % self.filename)
+        if not os.path.exists(self.filename):
+            logging.info('Creating disk image: "%s" of size: %dMB' % (self.filename, self.size))
             run_cmd(qemu_img_path(), 'create', '-f', 'raw', self.filename, '%dM' % self.size)
-            os.chmod(self.filename, stat.S_IRUSR | stat.S_IWUSR)
 
-        # From here, we assume that self.filename refers to whatever holds the disk image,
-        # be it a file, a partition, logical volume, actual disk..
+    def partition(self):
+        """
+        Partitions the disk image. Call this once you've added all partitions.
+        """
 
         logging.info('Adding partition table to disk image: %s' % self.filename)
         run_cmd('parted', '--script', self.filename, 'mklabel', 'msdos')
@@ -100,6 +104,10 @@ class Disk(object):
         for part in self.partitions:
             part.create(self)
 
+    def map_partitions(self):
+        """
+        Create loop devices corresponding to the partitions
+        """
         logging.info('Creating loop devices corresponding to the created partitions')
         self.vm.add_clean_cb(lambda : self.unmap(ignore_fail=True))
         kpartx_output = run_cmd('kpartx', '-av', self.filename)
@@ -115,11 +123,12 @@ class Disk(object):
         for line in parts:
             mapdevs.append(line.split(' ')[2])
         for (part, mapdev) in zip(self.partitions, mapdevs):
-            part.mapdev = '/dev/mapper/%s' % mapdev
+            part.set_filename('/dev/mapper/%s' % mapdev)
 
         # At this point, all partitions are created and their mapping device has been
-        # created and set as .mapdev
+        # created and set as .filename
 
+    def mkfs(self):
         # Adds a filesystem to the partition
         logging.info("Creating file systems")
         for part in self.partitions:
@@ -178,16 +187,15 @@ class Disk(object):
         @type  mntpnt: string
         @param mntpnt: Intended mountpoint inside the guest of the new partition
         """
+        length = parse_size(length)
         end = begin+length-1
-        logging.debug("add_part - begin %d, length %d, end %d" % (begin, length, end))
+        logging.debug("add_part - begin %d, length %d, end %d, type %s, mntpnt %s" % (begin, length, end, type, mntpnt))
         for part in self.partitions:
             if (begin >= part.begin and begin <= part.end) or \
                 (end >= part.begin and end <= part.end):
-                raise Exception('Partitions are overlapping')
-            if begin > end:
-                raise Exception('Partition\'s last block is before its first')
-            if begin < 0 or end > self.size:
-                raise Exception('Partition is out of bounds. start=%d, end=%d, disksize=%d' % (begin,end,self.size))
+                raise VMBuilderUserError('Partitions are overlapping')
+        if begin < 0 or end > self.size:
+            raise VMBuilderUserError('Partition is out of bounds. start=%d, end=%d, disksize=%d' % (begin,end,self.size))
         part = self.Partition(disk=self, begin=begin, end=end, type=str_to_type(type), mntpnt=mntpnt)
         self.partitions.append(part)
 
@@ -231,6 +239,12 @@ class Disk(object):
             self.type = type
             self.mntpnt = mntpnt
             self.mapdev = None
+            self.fs = Filesystem(vm=self.disk.vm, preallocated=True, type=self.type, mntpnt=self.mntpnt)
+
+        def set_filename(self, filename):
+            print 'set_filename called'
+            self.filename = filename
+            self.fs.filename = filename
 
         def parted_fstype(self):
             """
@@ -246,9 +260,6 @@ class Disk(object):
 
         def mkfs(self):
             """Adds Filesystem object"""
-            if not self.mapdev:
-                raise Exception('We can\'t mkfs before we have a mapper device')
-            self.fs = Filesystem(self.disk.vm, preallocated=True, filename=self.mapdev, type=self.type, mntpnt=self.mntpnt)
             self.fs.mkfs()
 
         def get_grub_id(self):
@@ -274,11 +285,10 @@ class Disk(object):
                 self.type = str_to_type(type)
 
 class Filesystem(object):
-    def __init__(self, vm, size=0, preallocated=False, type=None, mntpnt=None, filename=None, devletter='a', device='', dummy=False):
+    def __init__(self, vm=None, size=0, preallocated=False, type=None, mntpnt=None, filename=None, devletter='a', device='', dummy=False):
         self.vm = vm
         self.filename = filename
         self.size = parse_size(size)
-        self.preallocated = preallocated
         self.devletter = devletter
         self.device = device
         self.dummy = dummy
@@ -289,7 +299,7 @@ class Filesystem(object):
 
     def create(self):
         logging.info('Creating filesystem: %s, size: %d, dummy: %s' % (self.mntpnt, self.size, repr(self.dummy)))
-        if not self.preallocated:
+        if not os.path.exists(self.filename):
             logging.info('Not preallocated, so we create it.')
             if not self.filename:
                 if self.mntpnt:
@@ -311,6 +321,8 @@ class Filesystem(object):
         self.mkfs()
 
     def mkfs(self):
+        if not self.filename:
+            raise VMBuilderException('We can\'t mkfs if filename is not set. Did you forget to call .create()?')
         if not self.dummy:
             cmd = self.mkfs_fstype() + [self.filename]
             run_cmd(*cmd)
@@ -320,12 +332,12 @@ class Filesystem(object):
                 self.uuid = run_cmd('blkid', '-sUUID', '-ovalue', self.filename).rstrip()
 
     def mkfs_fstype(self):
-        if self.vm.suite in ['dapper', 'edgy', 'feisty', 'gutsy']:
-            logging.debug('%s: 128 bit inode' % self.vm.suite)
-            return { TYPE_EXT2: ['mkfs.ext2', '-F'], TYPE_EXT3: ['mkfs.ext3', '-I 128', '-F'], TYPE_EXT4: ['mkfs.ext4', '-I 128', '-F'], TYPE_XFS: ['mkfs.xfs'], TYPE_SWAP: ['mkswap'] }[self.type]
-        else:
-            logging.debug('%s: 256 bit inode' % self.vm.suite)
-            return { TYPE_EXT2: ['mkfs.ext2', '-F'], TYPE_EXT3: ['mkfs.ext3', '-F'], TYPE_EXT4: ['mkfs.ext4', '-F'], TYPE_XFS: ['mkfs.xfs'], TYPE_SWAP: ['mkswap'] }[self.type]
+        map = { TYPE_EXT2: ['mkfs.ext2', '-F'], TYPE_EXT3: ['mkfs.ext3', '-F'], TYPE_EXT4: ['mkfs.ext4', '-F'], TYPE_XFS: ['mkfs.xfs'], TYPE_SWAP: ['mkswap'] }
+
+        if not self.vm.distro.has_256_bit_inode_ext3_support():
+            map[TYPE_EXT3] = ['mkfs.ext3', '-I 128', '-F']
+
+        return map[self.type]
 
     def fstab_fstype(self):
         return { TYPE_EXT2: 'ext2', TYPE_EXT3: 'ext3', TYPE_EXT4: 'ext4', TYPE_XFS: 'xfs', TYPE_SWAP: 'swap' }[self.type]
@@ -333,10 +345,10 @@ class Filesystem(object):
     def fstab_options(self):
         return 'defaults'
 
-    def mount(self):
+    def mount(self, rootmnt):
         if (self.type != TYPE_SWAP) and not self.dummy:
             logging.debug('Mounting %s', self.mntpnt) 
-            self.mntpath = '%s%s' % (self.vm.rootmnt, self.mntpnt)
+            self.mntpath = '%s%s' % (rootmnt, self.mntpnt)
             if not os.path.exists(self.mntpath):
                 os.makedirs(self.mntpath)
             run_cmd('mount', '-o', 'loop', self.filename, self.mntpath)
@@ -458,6 +470,20 @@ def index_to_devname(index, suffix=''):
     if index < 0:
         return suffix
     return index_to_devname(index / 26 -1, string.ascii_lowercase[index % 26]) + suffix
+
+def detect_size(filename):
+    st = os.stat(filename)
+    if stat.S_ISREG(st.st_mode):
+        return st.st_size / 1024*1024
+    elif stat.S_ISBLK(st.st_mode): 
+        # I really wish someone would make these available in Python
+        BLKGETSIZE64 = 2148012658
+        fp = open(filename, 'r')
+        fd = fp.fileno()
+        s = fcntl.ioctl(fd, BLKGETSIZE64, ' '*8)
+        return unpack('L', s)[0] / 1024*1024
+
+    raise VMBuilderException('No idea how to find the size of %s' % filename)
 
 def qemu_img_path():
     exes = ['kvm-img', 'qemu-img']

@@ -92,34 +92,6 @@ class VM(object):
 
         self.add_clean_cmd('rm', log.logfile)
 
-    def get_version_info(self):
-        import vcsversion
-        info = vcsversion.version_info
-        info['major'] = 0
-        info['minor'] = 11
-        info['micro'] = 3
-        return info
-       
-    def cleanup(self):
-        logging.info("Cleaning up")
-        while len(self._cleanup_cbs) > 0:
-            self._cleanup_cbs.pop(0)()
-
-    def add_clean_cb(self, cb):
-        self._cleanup_cbs.insert(0, cb)
-
-    def add_clean_cmd(self, *argv, **kwargs):
-        cb = lambda : util.run_cmd(*argv, **kwargs)
-        self.add_clean_cb(cb)
-        return cb
-
-    def cancel_cleanup(self, cb):
-        try:
-            self._cleanup_cbs.remove(cb)
-        except ValueError, e:
-            # Wasn't in there. No worries.
-            pass
-
     def distro_help(self):
         return 'Distro. Valid options: %s' % " ".join(VMBuilder.distros.keys())
 
@@ -148,18 +120,6 @@ class VM(object):
         self.register_setting('--tmpfs', metavar="OPTS", help='Use a tmpfs as the working directory, specifying its size or "-" to use tmpfs default (suid,dev,size=1G).')
         self.register_setting('-m', '--mem', type='int', default=128, help='Assign MEM megabytes of memory to the guest vm. [default: %default]')
         self.register_setting('--cpus', type='int', default=1, help='Number of virtual CPU\'s. [default: %default]')
-
-        group = self.setting_group('Network related options')
-        domainname = '.'.join(socket.gethostbyname_ex(socket.gethostname())[0].split('.')[1:]) or "defaultdomain"
-        group.add_option('--domain', metavar='DOMAIN', default=domainname, help='Set DOMAIN as the domain name of the guest [default: The domain of the machine running this script: %default].')
-        group.add_option('--ip', metavar='ADDRESS', default='dhcp', help='IP address in dotted form [default: %default].')
-        group.add_option('--mac', metavar='VALUE', help='MAC address of the guest [default: one will be automatically generated on first run].')
-        group.add_option('--mask', metavar='VALUE', help='IP mask in dotted form [default: based on ip setting]. Ignored if --ip is not specified.')
-        group.add_option('--net', metavar='ADDRESS', help='IP net address in dotted form [default: based on ip setting]. Ignored if --ip is not specified.')
-        group.add_option('--bcast', metavar='VALUE', help='IP broadcast in dotted form [default: based on ip setting]. Ignored if --ip is not specified.')
-        group.add_option('--gw', metavar='ADDRESS', help='Gateway (router) address in dotted form [default: based on ip setting (first valid address in the network)]. Ignored if --ip is not specified.')
-        group.add_option('--dns', metavar='ADDRESS', help='DNS address in dotted form [default: based on ip setting (first valid address in the network)] Ignored if --ip is not specified.')
-        self.register_setting_group(group)
 
     def add_disk(self, *args, **kwargs):
         """Adds a disk image to the virtual machine"""
@@ -272,62 +232,6 @@ class VM(object):
             self.distro.set_defaults()
             self.hypervisor.set_defaults()
 
-
-    def ip_defaults(self):
-        """
-        is called to validate the ip configuration given and set defaults
-        """
-
-        logging.debug("ip: %s" % self.ip)
-        
-        if self.mac:
-            valid_mac_address = re.compile("([0-9a-f]{2}:){5}([0-9a-f]{2})", re.IGNORECASE)
-            if not valid_mac_address.search(self.mac):
-                raise VMBuilderUserError("Malformed MAC address entered: %s" % self.mac)
-            else:
-                logging.debug("Valid mac given: %s" % self.mac)
-
-        if self.ip != 'dhcp':
-            if self.domain == '':
-                raise VMBuilderUserError('Domain is undefined and host has no domain set.')
-
-            try:
-                numip = struct.unpack('I', socket.inet_aton(self.ip))[0] 
-            except socket.error:
-                raise VMBuilderUserError('%s is not a valid ip address' % self.ip)
-             
-            if not self.mask:
-                ipclass = numip & 0xFF
-                if (ipclass > 0) and (ipclass <= 127):
-                    mask = 0xFF
-                elif (ipclass > 128) and (ipclass < 192):
-                    mask = 0xFFFF
-                elif (ipclass < 224):
-                    mask = 0xFFFFFF
-                else:
-                    raise VMBuilderUserError('The class of the ip address specified (%s) does not seem right' % self.ip)
-            else:
-                mask = struct.unpack('I', socket.inet_aton(self.mask))[0]
-
-            numnet = numip & mask
-
-            if not self.net:
-                self.net = socket.inet_ntoa( struct.pack('I', numnet ) )
-            if not self.bcast:
-                self.bcast = socket.inet_ntoa( struct.pack('I', numnet + (mask ^ 0xFFFFFFFF)))
-            if not self.gw:
-                self.gw = socket.inet_ntoa( struct.pack('I', numnet + 0x01000000 ) )
-            if not self.dns:
-                self.dns = self.gw
-
-            self.mask = socket.inet_ntoa( struct.pack('I', mask ) )
-
-            logging.debug("net: %s" % self.net)
-            logging.debug("netmask: %s" % self.mask)
-            logging.debug("broadcast: %s" % self.bcast)
-            logging.debug("gateway: %s" % self.gw)
-            logging.debug("dns: %s" % self.dns)
-
     def create_directory_structure(self):
         """Creates the directory structure where we'll be doing all the work
 
@@ -375,28 +279,6 @@ class VM(object):
         """Creates the working directory for this vm and returns its path"""
         return tempfile.mkdtemp('', 'vmbuilder', self.tmp)
 
-    def mount_partitions(self):
-        """Mounts all the vm's partitions and filesystems below .rootmnt"""
-        logging.info('Mounting target filesystems')
-        fss = disk.get_ordered_filesystems(self)
-        for fs in fss:
-            fs.mount()
-            self.distro.post_mount(fs)
-
-        self.fsmounted = True
-
-    def umount_partitions(self):
-        """Unmounts all the vm's partitions and filesystems"""
-        logging.info('Unmounting target filesystem')
-        fss = VMBuilder.disk.get_ordered_filesystems(self)
-        fss.reverse()
-        for fs in fss:
-            fs.umount()
-        for disk in self.disks:
-            disk.unmap()
-
-        self.fsmounted = False
-
     def install(self):
         if self.in_place:
             self.installdir = self.rootmnt
@@ -423,7 +305,6 @@ class VM(object):
             if '-' in opt:
                 raise VMBuilderUserError('You specified a "%s" config option in a config file, but that is not valid. Perhaps you meant "%s"?' % (opt, opt.replace('-', '_')))
 
-        self.ip_defaults()
         self.call_hooks('preflight_check')
 
         # Check repository availability
@@ -439,18 +320,6 @@ class VM(object):
             raise VMBuilderUserError('Could not connect to %s. Please check your connectivity and try again.' % testurl)
 
         testnet.close()
-
-    def install_file(self, path, contents=None, source=None, mode=None):
-        fullpath = '%s%s' % (self.installdir, path)
-        if source and not contents:
-            shutil.copy(source, fullpath) 
-        else:
-            fp = open(fullpath, 'w')
-            fp.write(contents)
-            fp.close()
-        if mode:
-            os.chmod(fullpath, mode)
-        return fullpath
 
     def create(self):
         """

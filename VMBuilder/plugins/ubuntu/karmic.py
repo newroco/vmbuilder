@@ -23,16 +23,18 @@ from   VMBuilder.util import run_cmd
 from   VMBuilder.plugins.ubuntu.jaunty import Jaunty
 
 class Karmic(Jaunty):
+    preferred_filesystem = 'ext4'
+
     def apply_ec2_settings(self):
-        self.vm.addpkg += ['standard^',
+        self.context.addpkg += ['standard^',
                           'uec^']
 
     def pre_install(self):
-        self.vm.install_file('/etc/hosts', contents='')
+        self.context.install_file('/etc/hosts', contents='')
 
     def set_filesystem_types(self):
         # Default for Karmic and later is ext4
-        for disk in self.vm.disks:
+        for disk in self.context.disks:
             for partition in disk.partitions:
                 if partition.parted_fstype() == "ext2":
                     partition.set_type('ext4')

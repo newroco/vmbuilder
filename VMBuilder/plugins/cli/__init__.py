@@ -19,9 +19,12 @@
 from gettext import gettext
 import logging
 import optparse
+import os
+import pwd
 import sys
 import textwrap
 import VMBuilder
+import VMBuilder.util as util
 from VMBuilder.disk import parse_size
 import VMBuilder.hypervisor
 _ = gettext
@@ -31,89 +34,145 @@ class CLI(VMBuilder.Frontend):
     arg = 'cli'
        
     def run(self):
-        try:
-            next = False
-            conf = None
-            for val in sys.argv:
-                if (val == '-c') | (val == '--config'):
-                    next = True
-                elif next:
-                    conf = val
-                    break
 
-            vm = VMBuilder.VM(conf)
-            vm.register_setting('--version', action='callback', callback=self.versioninfo, callback_kwargs={ 'vm' : vm }, help='Show version information')
-            vm.register_setting('--rootsize', metavar='SIZE', default=4096, help='Size (in MB) of the root filesystem [default: %default]')
-            vm.register_setting('--optsize', metavar='SIZE', default=0, help='Size (in MB) of the /opt filesystem. If not set, no /opt filesystem will be added.')
-            vm.register_setting('--swapsize', metavar='SIZE', default=1024, help='Size (in MB) of the swap partition [default: %default]')
-            vm.register_setting('--raw', metavar='PATH', type='string', help="Specify a file (or block device) to as first disk image.")
-            vm.register_setting('--part', metavar='PATH', type='string', help="Allows to specify a partition table in PATH each line of partfile should specify (root first): \n    mountpoint size \none per line, separated by space, where size is in megabytes. You can have up to 4 virtual disks, a new disk starts on a line containing only '---'. ie: \n    root 2000 \n    /boot 512 \n    swap 1000 \n    --- \n    /var 8000 \n    /var/log 2000")
-            self.set_usage(vm)
+        if len(sys.argv) < 3:
+            print 'Usage: %s hypervisor distro [options]' % sys.argv[0]
+            sys.exit(1)
 
-            vm.optparser.disable_interspersed_args()
-            (foo, args) = vm.optparser.parse_args()
-            self.handle_args(vm, args)
-            vm.optparser.enable_interspersed_args()
+        group = self.setting_group(' ')
+        group.add_setting('config', extra_args=['-c'], type='str', help='Configuration file')
+        group.add_setting('destdir', extra_args=['-d'], type='str', help='Destination directory')
 
-            for opt in vm.optparser.option_list + sum([grp.option_list for grp in vm.optparser.option_groups], []):
-                if len(opt._long_opts) > 1 or (opt.action == 'store' and opt._long_opts[0][2:] != opt.dest):
-                    opt.help += " Config option: %s" % opt.dest
+        group = self.setting_group('Disk')
+        group.add_setting('rootsize', metavar='SIZE', default=4096, help='Size (in MB) of the root filesystem [default: %default]')
+        group.add_setting('optsize', metavar='SIZE', default=0, help='Size (in MB) of the /opt filesystem. If not set, no /opt filesystem will be added.')
+        group.add_setting('swapsize', metavar='SIZE', default=1024, help='Size (in MB) of the swap partition [default: %default]')
+        group.add_setting('raw', metavar='PATH', type='str', help="Specify a file (or block device) to as first disk image.")
+        group.add_setting('part', metavar='PATH', type='str', help="Allows to specify a partition table in PATH each line of partfile should specify (root first): \n    mountpoint size \none per line, separated by space, where size is in megabytes. You can have up to 4 virtual disks, a new disk starts on a line containing only '---'. ie: \n    root 2000 \n    /boot 512 \n    swap 1000 \n    --- \n    /var 8000 \n    /var/log 2000")
+        
+        optparser = optparse.OptionParser()
+        optparser.add_option('--version', action='callback', callback=self.versioninfo, help='Show version information')
+        distro_name = sys.argv[2]
+        distro_class = VMBuilder.get_distro(distro_name)
+        distro = distro_class()
+        distro.plugins.append(self)
+        self.add_settings_from_context(optparser, distro)
 
-            (settings, args) = vm.optparser.parse_args(values=optparse.Values())
-            for (k,v) in settings.__dict__.iteritems():
-                setattr(vm, k, v)
+        hypervisor_name = sys.argv[1]
+        hypervisor_class = VMBuilder.get_hypervisor(hypervisor_name)
+        hypervisor = hypervisor_class(distro)
+        hypervisor.plugins.append(self)
+        self.add_settings_from_context(optparser, hypervisor)
 
-            self.set_disk_layout(vm)
+        self.set_setting_default('destdir', '%s-%s' % (distro_name, hypervisor_name))
 
-            vm.create()
-        except VMBuilder.VMBuilderUserError, e:
-            print >> sys.stderr, e
-            return(1)
+        (options, args) = optparser.parse_args(sys.argv[2:])
+        for option in dir(options):
+            if option.startswith('_') or option in ['ensure_value', 'read_module', 'read_file']:
+                continue
+            val = getattr(options, option)
+            if val:
+                if distro.has_setting(option):
+                    distro.set_setting(option, val)
+                else:
+                    hypervisor.set_setting(option, val)
+        
+        chroot_dir = util.tmpdir()
 
-        return(0)
+        distro.set_chroot_dir(chroot_dir)
+        distro.build_chroot()
 
-    def versioninfo(self, option, opt, value, parser, vm=None):
-        print '%(major)d.%(minor)d.%(micro).r%(revno)d' % vm.get_version_info()
+        self.set_disk_layout(hypervisor)
+        hypervisor.install_os()
+
+        destdir = self.get_setting('destdir')
+        os.mkdir(destdir)
+        self.fix_ownership(destdir)
+        hypervisor.finalise(destdir)
+
+        sys.exit(1)
+
+    def fix_ownership(self, filename):
+        """
+        Change ownership of file to $SUDO_USER.
+
+        @type  path: string
+        @param path: file or directory to give to $SUDO_USER
+        """
+
+        if 'SUDO_USER' in os.environ:
+            logging.debug('Changing ownership of %s to %s' % (filename, os.environ['SUDO_USER']))
+            (uid, gid) = pwd.getpwnam(os.environ['SUDO_USER'])[2:4]
+            os.chown(filename, uid, gid)
+
+    def add_settings_from_context(self, optparser, context):
+        setting_groups = set([setting.setting_group for setting in context._config.values()])
+        for setting_group in setting_groups:
+            optgroup = optparse.OptionGroup(optparser, setting_group.name)
+            for setting in setting_group._settings:
+                args = ['--%s' % setting.name]
+                args += setting.extra_args
+                kwargs = {}
+                if setting.help:
+                    kwargs['help'] = setting.help
+                    if len(setting.extra_args) > 0:
+                        setting.help += " Config option: %s" % setting.name
+                if setting.metavar:
+                    kwargs['metavar'] = setting.metavar
+                if setting.get_default():
+                    kwargs['default'] = setting.get_default()
+                if type(setting) == VMBuilder.plugins.Plugin.BooleanSetting:
+                    kwargs['action'] = 'store_true'
+                if type(setting) == VMBuilder.plugins.Plugin.ListSetting:
+                    kwargs['action'] = 'append'
+                optgroup.add_option(*args, **kwargs)
+            optparser.add_option_group(optgroup)
+
+    def versioninfo(self, option, opt, value, parser):
+        print '%(major)d.%(minor)d.%(micro)s.r%(revno)d' % VMBuilder.get_version_info()
         sys.exit(0)
 
-    def set_usage(self, vm):
-        vm.optparser.set_usage('%prog hypervisor distro [options]')
-        vm.optparser.arg_help = (('hypervisor', vm.hypervisor_help), ('distro', vm.distro_help))
+    def set_usage(self, optparser):
+        optparser.set_usage('%prog hypervisor distro [options]')
+        optparser.arg_help = (('hypervisor', vm.hypervisor_help), ('distro', vm.distro_help))
 
     def handle_args(self, vm, args):
         if len(args) < 2:
             vm.optparser.error("You need to specify at least the hypervisor type and the distro")
-        vm.set_hypervisor(args[0])
-        vm.set_distro(args[1])
+        self.hypervisor = vm.get_hypervisor(args[0])
+        self.distro = distro.vm.get_distro(args[1])
 
-    def set_disk_layout(self, vm):
-        if not vm.part:
-            vm.rootsize = parse_size(vm.rootsize)
-            vm.swapsize = parse_size(vm.swapsize)
-            vm.optsize = parse_size(vm.optsize)
-            if vm.hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
-                vm.add_filesystem(size='%dM' % vm.rootsize, type='ext3', mntpnt='/')
-                vm.add_filesystem(size='%dM' % vm.swapsize, type='swap', mntpnt=None)
-                if vm.optsize > 0:
-                    vm.add_filesystem(size='%dM' % optsize, type='ext3', mntpnt='/opt')
+    def set_disk_layout(self, hypervisor):
+        if not self.get_setting('part'):
+            rootsize = parse_size(self.get_setting('rootsize'))
+            swapsize = parse_size(self.get_setting('swapsize'))
+            optsize = parse_size(self.get_setting('optsize'))
+            if hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
+                hypervisor.add_filesystem(size='%dM' % rootsize, type='ext3', mntpnt='/')
+                hypervisor.add_filesystem(size='%dM' % swapsize, type='swap', mntpnt=None)
+                if optsize > 0:
+                    hypervisor.add_filesystem(size='%dM' % optsize, type='ext3', mntpnt='/opt')
             else:
-                if vm.raw:
-                    disk = vm.add_disk(filename=vm.raw, preallocated=True)
+                raw = self.get_setting('raw')
+                if raw:
+                    disk = hypervisor.add_disk(filename=raw, preallocated=True)
                 else:
-                    size = vm.rootsize + vm.swapsize + vm.optsize
-                    disk = vm.add_disk(size='%dM' % size)
+                    size = rootsize + swapsize + optsize
+                    tmpfile = util.tmpfile(keep=False)
+                    disk = hypervisor.add_disk(tmpfile, size='%dM' % size)
                 offset = 0
-                disk.add_part(offset, vm.rootsize, 'ext3', '/')
-                offset += vm.rootsize
-                disk.add_part(offset, vm.swapsize, 'swap', 'swap')
-                offset += vm.swapsize
-                if vm.optsize > 0:
-                    disk.add_part(offset, vm.optsize, 'ext3', '/opt')
+                disk.add_part(offset, rootsize, 'ext3', '/')
+                offset += rootsize
+                disk.add_part(offset, swapsize, 'swap', 'swap')
+                offset += swapsize
+                if optsize > 0:
+                    disk.add_part(offset, optsize, 'ext3', '/opt')
         else:
             # We need to parse the file specified
+            part = self.get_setting('part')
             if vm.hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
                 try:
-                    for line in file(vm.part):
+                    for line in file(part):
                         elements = line.strip().split(' ')
                         if elements[0] == 'root':
                             vm.add_filesystem(elements[1], type='ext3', mntpnt='/')
@@ -133,7 +192,7 @@ class CLI(VMBuilder.Frontend):
                 try:
                     curdisk = list()
                     size = 0
-                    for line in file(vm.part):
+                    for line in file(part):
                         pair = line.strip().split(' ',1) 
                         if pair[0] == '---':
                             self.do_disk(vm, curdisk, size)
@@ -167,8 +226,8 @@ class UVB(CLI):
     arg = 'ubuntu-vm-builder'
 
     def set_usage(self, vm):
-        vm.optparser.set_usage('%prog hypervisor suite [options]')
-        vm.optparser.arg_help = (('hypervisor', vm.hypervisor_help), ('suite', self.suite_help))
+        optparser.set_usage('%prog hypervisor suite [options]')
+        optparser.arg_help = (('hypervisor', vm.hypervisor_help), ('suite', self.suite_help))
 
     def suite_help(self):
         return 'Suite. Valid options: %s' % " ".join(VMBuilder.plugins.ubuntu.distro.Ubuntu.suites)

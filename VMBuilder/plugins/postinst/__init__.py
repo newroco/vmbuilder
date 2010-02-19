@@ -16,7 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from VMBuilder import register_plugin, Plugin, VMBuilderUserError
+from VMBuilder import register_distro_plugin, Plugin, VMBuilderUserError
 from VMBuilder.util import run_cmd
 
 import logging
@@ -32,43 +32,43 @@ class postinst(Plugin):
     name ='Post install plugin'
 
     def register_options(self):
-        group = self.vm.setting_group('Post install actions')
+        group = self.context.setting_group('Post install actions')
         group.add_option('--copy', metavar='FILE', help="Read 'source dest' lines from FILE, copying source files from host to dest in the guest's file system.")
         group.add_option('--execscript', '--exec', metavar='SCRIPT', help="Run SCRIPT after distro installation finishes. Script will be called with the guest's chroot as first argument, so you can use 'chroot $1 <cmd>' to run code in the virtual machine.")
-        self.vm.register_setting_group(group)
+        self.context.register_setting_group(group)
 
     def preflight_check(self):
-        if self.vm.copy:
-            logging.debug("Checking if --copy PATH exists: %s" % self.vm.copy)
-            if not(os.path.isfile(self.vm.copy)):
-                raise VMBuilderUserError('The path to the --copy directives is invalid: %s. Make sure you are providing a full path.' % self.vm.copy)
+        if self.context.copy:
+            logging.debug("Checking if --copy PATH exists: %s" % self.context.copy)
+            if not(os.path.isfile(self.context.copy)):
+                raise VMBuilderUserError('The path to the --copy directives is invalid: %s. Make sure you are providing a full path.' % self.context.copy)
                 
-        if self.vm.execscript:
-            logging.debug("Checking if --exec PATH exists: %s" % self.vm.execscript)
-            if not(os.path.isfile(self.vm.execscript)):
-                raise VMBuilderUserError('The path to the --execscript file is invalid: %s. Make sure you are providing a full path.' % self.vm.execscript) 
+        if self.context.execscript:
+            logging.debug("Checking if --exec PATH exists: %s" % self.context.execscript)
+            if not(os.path.isfile(self.context.execscript)):
+                raise VMBuilderUserError('The path to the --execscript file is invalid: %s. Make sure you are providing a full path.' % self.context.execscript) 
 
-            logging.debug("Checking permissions of --exec PATH: %s" % self.vm.execscript)
-            if not os.access(self.vm.execscript, os.X_OK|os.R_OK):
-                raise VMBuilderUserError('The path to the --execscript file has invalid permissions: %s. Make sure the path is readable and executable.' % self.vm.execscript)
+            logging.debug("Checking permissions of --exec PATH: %s" % self.context.execscript)
+            if not os.access(self.context.execscript, os.X_OK|os.R_OK):
+                raise VMBuilderUserError('The path to the --execscript file has invalid permissions: %s. Make sure the path is readable and executable.' % self.context.execscript)
 
     def post_install(self):
-        if self.vm.copy:
-            logging.info("Copying files specified by --copy in: %s" % self.vm.copy)
+        if self.context.copy:
+            logging.info("Copying files specified by --copy in: %s" % self.context.copy)
             try:
-                for line in file(self.vm.copy):
+                for line in file(self.context.copy):
                     pair = line.strip().split(' ')
                     if len(pair) < 2: # skip blank and incomplete lines
                         continue
-                    util.run_cmd('cp', '-LpR', pair[0], '%s%s' % (self.vm.installdir, pair[1]))
+                    util.run_cmd('cp', '-LpR', pair[0], '%s%s' % (self.context.installdir, pair[1]))
 
             except IOError, (errno, strerror):
                 raise VMBuilderUserError("%s executing --copy directives: %s" % (errno, strerror))
 
-        if self.vm.execscript:
-            logging.info("Executing script: %s" % self.vm.execscript)
-            util.run_cmd(self.vm.execscript, self.vm.installdir)
+        if self.context.execscript:
+            logging.info("Executing script: %s" % self.context.execscript)
+            util.run_cmd(self.context.execscript, self.vm.installdir)
 
         return True
 
-register_plugin(postinst)
+#register_plugin(postinst)
