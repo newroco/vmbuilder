@@ -23,9 +23,7 @@ import os
 import os.path
 import select
 import subprocess
-import sys
 import tempfile
-import time
 from   exception        import VMBuilderException, VMBuilderUserError
 
 class NonBufferedFile():
