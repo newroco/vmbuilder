@@ -49,7 +49,7 @@ class Ubuntu(Distro):
         group.add_setting('hostname', default='ubuntu', help='Set NAME as the hostname of the guest. Default: ubuntu. Also uses this name as the VM name.')
 
         group = self.setting_group('Installation options')
-        group.add_setting('suite', default='jaunty', help='Suite to install. Valid options: %s [default: %%default]' % ' '.join(self.suites))
+        group.add_setting('suite', default='lucid', help='Suite to install. Valid options: %s [default: %%default]' % ' '.join(self.suites))
         group.add_setting('flavour', extra_args=['--kernel-flavour'], help='Kernel flavour to use. Default and valid options depend on architecture and suite')
         group.add_setting('variant', metavar='VARIANT', help='Passed to debootstrap --variant flag; use minbase, buildd, or fakechroot.')
         group.add_setting('iso', metavar='PATH', help='Use an iso image as the source for installation of file. Full path to the iso must be provided. If --mirror is also provided, it will be used in the final sources.list of the vm.  This requires suite and kernel parameter to match what is available on the iso, obviously.')
