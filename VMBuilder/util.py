@@ -18,6 +18,7 @@
 #
 #    Various utility functions
 import errno
+import fcntl
 import logging
 import os
 import os.path
@@ -26,10 +27,18 @@ import subprocess
 import tempfile
 from   exception        import VMBuilderException, VMBuilderUserError
 
-class NonBufferedFile():
-    def __init__(self, file):
-        self.file = file
+class NonBlockingFile(object):
+    def __init__(self, fp, logfunc):
+        self.file = fp
+        self.set_non_blocking()
         self.buf = ''
+        self.logbuf = ''
+        self.logfunc = logfunc
+
+    def set_non_blocking(self):
+        flags = fcntl.fcntl(self.file, fcntl.F_GETFL)
+        flags = flags | os.O_NONBLOCK
+        fcntl.fcntl(self.file, fcntl.F_SETFL, flags)
 
     def __getattr__(self, attr):
         if attr == 'closed':
@@ -37,36 +46,19 @@ class NonBufferedFile():
         else:
             raise AttributeError()
 
-    def __iter__(self):
-        return self
+    def process_input(self):
+        data = self.file.read()
+        if data == '':
+            self.file.close()
+            if self.logbuf:
+                self.logfunc(self.logbuf)
+        else:
+            self.buf += data
+            self.logbuf += data
+            while '\n' in self.logbuf:
+                line, self.logbuf = self.logbuf.split('\n', 1)
+                self.logfunc(line)
 
-    def read_will_block(self):
-        (ins, foo, bar) = select.select([self.file], [], [], 1)
-
-        if self.file not in ins:
-            return True
-        return False
-
-    def next(self):
-        if self.file.closed:
-            raise StopIteration()
-
-        while not self.read_will_block():
-            c = self.file.read(1)
-            if not c:
-                self.file.close()
-                if self.buf:
-                    return self.buf
-                else:
-                    raise StopIteration
-            else:
-                self.buf += c
-            if self.buf.endswith('\n'):
-                ret = self.buf
-                self.buf = ''
-                return ret
-        raise StopIteration()
-    
 def run_cmd(*argv, **kwargs):
     """
     Runs a command.
@@ -89,7 +81,6 @@ def run_cmd(*argv, **kwargs):
     env = kwargs.get('env', {})
     stdin = kwargs.get('stdin', None)
     ignore_fail = kwargs.get('ignore_fail', False)
-    stdout = stderr = ''
     args = [str(arg) for arg in argv]
     logging.debug(args.__repr__())
     if stdin:
@@ -114,24 +105,20 @@ def run_cmd(*argv, **kwargs):
         proc.stdin.write(stdin)
         proc.stdin.close()
 
-    mystdout = NonBufferedFile(proc.stdout)
-    mystderr = NonBufferedFile(proc.stderr)
+    mystdout = NonBlockingFile(proc.stdout, logfunc=logging.debug)
+    mystderr = NonBlockingFile(proc.stderr, logfunc=(ignore_fail and logging.debug or logging.info))
 
     while not (mystdout.closed and mystderr.closed):
         # Block until either of them has something to offer
-        select.select([x.file for x in [mystdout, mystderr] if not x.closed], [], [])
-        for buf in mystderr:
-            stderr += buf
-            (ignore_fail and logging.debug or logging.info)(buf.rstrip())
-
-        for buf in mystdout:
-            logging.debug(buf.rstrip())
-            stdout += buf
+        fds = select.select([x.file for x in [mystdout, mystderr] if not x.closed], [], [])[0]
+        for fp in [mystderr, mystdout]:
+            if fp.file in fds:
+                fp.process_input()
 
     status = proc.wait()
     if not ignore_fail and status != 0:
-        raise VMBuilderException, "Process (%s) returned %d. stdout: %s, stderr: %s" % (args.__repr__(), status, stdout, stderr)
-    return stdout
+        raise VMBuilderException, "Process (%s) returned %d. stdout: %s, stderr: %s" % (args.__repr__(), status, mystdout.buf, mystderr.buf)
+    return mystdout.buf
 
 def checkroot():
     """
