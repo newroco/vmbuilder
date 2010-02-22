@@ -65,6 +65,9 @@ def register_hypervisor_plugin(cls):
     _hypervisor_plugins.append(cls)
     _hypervisor_plugins.sort(key=lambda x: x.priority)
 
+def set_console_loglevel(level):
+    log.console.setLevel(level)
+
 def get_version_info():
     import vcsversion
     info = vcsversion.version_info

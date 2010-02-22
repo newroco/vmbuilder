@@ -23,7 +23,7 @@ import pwd
 import sys
 import VMBuilder
 import VMBuilder.util as util
-from VMBuilder.disk import parse_size
+from   VMBuilder.disk import parse_size
 import VMBuilder.hypervisor
 
 class CLI(object):
@@ -37,6 +37,9 @@ class CLI(object):
         optparser.add_option('--version', action='callback', callback=self.versioninfo, help='Show version information')
 
         group = optparse.OptionGroup(optparser, 'Build options')
+        group.add_option('--debug', action='callback', callback=self.set_verbosity, help='Show debug information')
+        group.add_option('--verbose', '-v', action='callback', callback=self.set_verbosity, help='Show progress information')
+        group.add_option('--quiet', '-q', action='callback', callback=self.set_verbosity, help='Silent operation')
         group.add_option('--config', '-c', type='str', help='Configuration file')
         group.add_option('--destdir', '-d', type='str', help='Destination directory')
         group.add_option('--only-chroot', action='store_true', help="Only build the chroot. Don't install it on disk images or anything.")
@@ -142,6 +145,14 @@ class CLI(object):
             vm.optparser.error("You need to specify at least the hypervisor type and the distro")
         self.hypervisor = vm.get_hypervisor(args[0])
         self.distro = distro.vm.get_distro(args[1])
+
+    def set_verbosity(self, option, opt_str, value, parser):
+        if opt_str == '--debug':
+            VMBuilder.set_console_loglevel(logging.DEBUG)
+        elif opt_str == '--verbose':
+            VMBuilder.set_console_loglevel(logging.INFO)
+        elif opt_str == '--quiet':
+            VMBuilder.set_console_loglevel(logging.CRITICAL)
 
     def set_disk_layout(self, hypervisor):
         default_filesystem = hypervisor.distro.preferred_filesystem()

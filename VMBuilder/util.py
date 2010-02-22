@@ -156,7 +156,8 @@ def render_template(plugin, vm, tmplname, context=None):
     raise VMBuilderException('Template %s.tmpl not found in any of %s' % (tmplname, ', '.join(tmpldirs)))
 
 def call_hooks(context, func, *args, **kwargs):
-    logging.debug('Calling hook: %s(args=%r, kwargs=%r)' % (func, args, kwargs))
+    logging.info('Calling hook: %s' % func)
+    logging.debug('(args=%r, kwargs=%r)' % (args, kwargs))
     for plugin in context.plugins:
         logging.debug('Calling %s method in %s plugin.' % (func, plugin.__module__))
         getattr(plugin, func, log_no_such_method)(*args, **kwargs)
