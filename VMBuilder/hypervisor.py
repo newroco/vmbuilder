@@ -46,6 +46,7 @@ class Hypervisor(VMBuilder.distro.Context):
 
     def install_os(self):
         self.nics = [self.NIC()]
+        self.call_hooks('preflight_check')
         self.call_hooks('configure_networking', self.nics)
         self.call_hooks('configure_mounting', self.disks, self.filesystems)
 
@@ -89,5 +90,13 @@ class Hypervisor(VMBuilder.distro.Context):
             disk.convert(destdir, self.filetype)
         
     class NIC(object):
-        def __init__(self, type='dhcp'):
+        def __init__(self, type='dhcp', ip=None, network=None, netmask=None,
+                           broadcast=None, dns=None, gateway=None):
             self.type = type
+            self.ip = ip
+            self.network = network
+            self.netmask = netmask
+            self.broadcast = broadcast
+            self.dns = dns
+            self.gateway = gateway
+

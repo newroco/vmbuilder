@@ -128,7 +128,6 @@ class NetworkHypervisorPlugin(Plugin):
 
             dns = self.context.get_setting('dns')
             if not dns:
-                self.context.dns = self.context.gw
                 self.context.set_setting('dns', self.context.get_setting('gw'))
 
             self.context.set_setting('mask', numeric_to_dotted_ip(nummask))
@@ -139,5 +138,21 @@ class NetworkHypervisorPlugin(Plugin):
             logging.debug("gateway: %s" % self.context.get_setting('gw'))
             logging.debug("dns: %s" % self.context.get_setting('dns'))
 
+    def configure_networking(self, nics):
+        if len(nics) > 0:
+            nic = nics[0]
+        
+        ip = self.get_setting('ip')
+        if ip == 'dhcp':
+            nic.type = 'dhcp'
+        else:
+            nic.type = 'static'
+            nic.ip = ip
+            nic.network = self.context.get_setting('net')
+            nic.netmask = self.context.get_setting('mask')
+            nic.broadcast = self.context.get_setting('bcast')
+            nic.gateway = self.context.get_setting('gw')
+            nic.dns = self.context.get_setting('dns')
+        
 register_distro_plugin(NetworkDistroPlugin)
 register_hypervisor_plugin(NetworkHypervisorPlugin)
