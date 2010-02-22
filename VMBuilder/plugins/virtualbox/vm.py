@@ -32,25 +32,25 @@ class VirtualBox(Hypervisor):
     arg = 'vbox'
 
     def register_options(self):
-        group = self.vm.setting_group('VirtualBox options')
+        group = self.context.setting_group('VirtualBox options')
         group.add_option('--vbox-disk-format', metavar='FORMAT', default='vdi', help='Desired disk format. Valid options are: vdi vmdk. [default: %default]')
-        self.vm.register_setting_group(group)
+        self.context.register_setting_group(group)
 
     def finalize(self):
         self.imgs = []
-        for disk in self.vm.disks:
-            img_path = disk.convert(self.vm.destdir, self.vm.vbox_disk_format)
+        for disk in self.context.disks:
+            img_path = disk.convert(self.context.destdir, self.context.vbox_disk_format)
             self.imgs.append(img_path)
-            self.vm.result_files.append(img_path)
+            self.context.result_files.append(img_path)
 
     def deploy(self):
-        vm_deploy_script = VMBuilder.util.render_template('virtualbox', self.vm, 'vm_deploy_script', { 'os_type' : self.vm.distro.__class__.__name__, 'vm_name' : self.vm.hostname, 'vm_disks' : self.imgs, 'memory' : self.vm.mem })
+        vm_deploy_script = VMBuilder.util.render_template('virtualbox', self.context, 'vm_deploy_script', { 'os_type' : self.context.distro.__class__.__name__, 'vm_name' : self.context.hostname, 'vm_disks' : self.imgs, 'memory' : self.context.mem })
 
-        script_file = '%s/deploy_%s.sh' % (self.vm.destdir, self.vm.hostname)
+        script_file = '%s/deploy_%s.sh' % (self.context.destdir, self.context.hostname)
         fp = open(script_file, 'w')
         fp.write(vm_deploy_script)
         fp.close()
         os.chmod(script_file, stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH)
-        self.vm.result_files.append(script_file)
+        self.context.result_files.append(script_file)
 
 register_hypervisor(VirtualBox)

@@ -1,7 +1,7 @@
 #
 #    Uncomplicated VM Builder
-#    Copyright (C) 2007-2009 Canonical Ltd.
-#    
+#    Copyright (C) 2007-2010 Canonical Ltd.
+#
 #    See AUTHORS for list of contributors
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -16,53 +16,63 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from   VMBuilder import register_plugin, Plugin, VMBuilderUserError
+from   VMBuilder import register_hypervisor_plugin, Plugin, VMBuilderUserError
 import VMBuilder.util
 
 class Libvirt(Plugin):
     name = 'libvirt integration'
 
     def register_options(self):
-        group = self.vm.setting_group('libvirt integration')
-        group.add_option('--libvirt', metavar='URI', help='Add VM to given URI')
-        group.add_option('--bridge', metavar="BRIDGE", help='Set up bridged network connected to BRIDGE.')
-        self.vm.register_setting_group(group)
+        group = self.setting_group('libvirt integration')
+        group.add_setting('libvirt', metavar='URI', help='Add VM to given URI')
+        group.add_setting('bridge', metavar="BRIDGE", help='Set up bridged network connected to BRIDGE.')
+        group.add_setting('network', metavar='NETWORK', default='default', help='Set up a network connection to virtual network NETWORK.')
 
     def all_domains(self):
         # This does not seem to work when any domain is already running
         return self.conn.listDefinedDomains() + [self.conn.lookupByID(id).name() for id in self.conn.listDomainsID()]
 
     def preflight_check(self):
-        if not self.vm.libvirt:
+        libvirt_uri = self.get_setting('libvirt')
+        if not libvirt_uri:
             return True
 
         import libvirt
 
-        self.conn = libvirt.open(self.vm.libvirt)
-        if self.vm.hostname in self.all_domains() and not self.vm.overwrite:
-            raise VMBuilderUserError('Domain %s already exists at %s' % (self.vm.hostname, self.vm.libvirt))
+        self.conn = libvirt.open(libvirt_uri)
+
+        hostname = self.context.get_setting('hostname')
+        if hostname in self.all_domains() and not self.vm.overwrite:
+            raise VMBuilderUserError('Domain %s already exists at %s' % (hostname, libvirt_uri))
         
-        if not self.vm.hypervisor.name == 'KVM':
+        if not self.context.hypervisor.name == 'KVM':
             raise VMBuilderUserError('The libvirt plugin is only equiped to work with KVM at the moment.')
 
-        if not self.vm.hypervisor.name == 'KVM':
-            raise VMBuilderUserError('The libvirt plugin is only equiped to work with KVM at the moment.')
-
-    def deploy(self):
-        if not self.vm.libvirt:
+    def deploy(self, destdir):
+        libvirt_uri = self.get_setting('libvirt')
+        if not libvirt_uri:
             # Not for us
             return False
-        
-        if self.vm.hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
-            vmxml = VMBuilder.util.render_template('libvirt', self.vm, 'libvirtxml_fsimage')
-        else:
-            vmxml = VMBuilder.util.render_template('libvirt', self.vm, 'libvirtxml')
 
-        if self.vm.hostname in self.all_domains() and not self.vm.overwrite:
-            raise VMBuilderUserError('Domain %s already exists at %s' % (self.vm.hostname, self.vm.libvirt))
+        tmpl_ctxt = { 'mem': self.context.get_setting('mem'),
+                      'cpus' : self.context.get_setting('cpus'),
+                      'bridge' : self.context.get_setting('bridge'),
+                      'mac' : self.context.get_setting('mac'),
+                      'network' : self.context.get_setting('network'),
+                      'virtio_net' : self.context.get_setting('virtio-net'),
+                      'disks' : self.context.disks,
+                      'filesystems' : self.context.filesystems }
+        if self.context.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
+            vmxml = VMBuilder.util.render_template('libvirt', self.context, 'libvirtxml_fsimage', tmpl_ctxt)
+        else:
+            vmxml = VMBuilder.util.render_template('libvirt', self.context, 'libvirtxml', tmpl_ctxt)
+
+        hostname = self.context.get_setting('hostname')
+        if hostname in self.all_domains() and not self.vm.overwrite:
+            raise VMBuilderUserError('Domain %s already exists at %s' % (hostname, libvirt_uri))
         else:
             self.conn.defineXML(vmxml)
 
         return True
 
-register_plugin(Libvirt)
+register_hypervisor_plugin(Libvirt)

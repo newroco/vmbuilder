@@ -18,20 +18,27 @@
 #
 #    Various utility functions
 import errno
+import fcntl
 import logging
 import os
 import os.path
-import pwd
 import select
 import subprocess
-import sys
-import time
+import tempfile
 from   exception        import VMBuilderException, VMBuilderUserError
 
-class NonBufferedFile():
-    def __init__(self, file):
-        self.file = file
+class NonBlockingFile(object):
+    def __init__(self, fp, logfunc):
+        self.file = fp
+        self.set_non_blocking()
         self.buf = ''
+        self.logbuf = ''
+        self.logfunc = logfunc
+
+    def set_non_blocking(self):
+        flags = fcntl.fcntl(self.file, fcntl.F_GETFL)
+        flags = flags | os.O_NONBLOCK
+        fcntl.fcntl(self.file, fcntl.F_SETFL, flags)
 
     def __getattr__(self, attr):
         if attr == 'closed':
@@ -39,36 +46,19 @@ class NonBufferedFile():
         else:
             raise AttributeError()
 
-    def __iter__(self):
-        return self
+    def process_input(self):
+        data = self.file.read()
+        if data == '':
+            self.file.close()
+            if self.logbuf:
+                self.logfunc(self.logbuf)
+        else:
+            self.buf += data
+            self.logbuf += data
+            while '\n' in self.logbuf:
+                line, self.logbuf = self.logbuf.split('\n', 1)
+                self.logfunc(line)
 
-    def read_will_block(self):
-        (ins, foo, bar) = select.select([self.file], [], [], 1)
-
-        if self.file not in ins:
-            return True
-        return False
-
-    def next(self):
-        if self.file.closed:
-            raise StopIteration()
-
-        while not self.read_will_block():
-            c = self.file.read(1)
-            if not c:
-                self.file.close()
-                if self.buf:
-                    return self.buf
-                else:
-                    raise StopIteration
-            else:
-                self.buf += c
-            if self.buf.endswith('\n'):
-                ret = self.buf
-                self.buf = ''
-                return ret
-        raise StopIteration()
-    
 def run_cmd(*argv, **kwargs):
     """
     Runs a command.
@@ -91,7 +81,6 @@ def run_cmd(*argv, **kwargs):
     env = kwargs.get('env', {})
     stdin = kwargs.get('stdin', None)
     ignore_fail = kwargs.get('ignore_fail', False)
-    stdout = stderr = ''
     args = [str(arg) for arg in argv]
     logging.debug(args.__repr__())
     if stdin:
@@ -116,37 +105,20 @@ def run_cmd(*argv, **kwargs):
         proc.stdin.write(stdin)
         proc.stdin.close()
 
-    mystdout = NonBufferedFile(proc.stdout)
-    mystderr = NonBufferedFile(proc.stderr)
+    mystdout = NonBlockingFile(proc.stdout, logfunc=logging.debug)
+    mystderr = NonBlockingFile(proc.stderr, logfunc=(ignore_fail and logging.debug or logging.info))
 
     while not (mystdout.closed and mystderr.closed):
         # Block until either of them has something to offer
-        select.select([x.file for x in [mystdout, mystderr] if not x.closed], [], [])
-        for buf in mystderr:
-            stderr += buf
-            (ignore_fail and logging.debug or logging.info)(buf.rstrip())
-
-        for buf in mystdout:
-            logging.debug(buf.rstrip())
-            stdout += buf
+        fds = select.select([x.file for x in [mystdout, mystderr] if not x.closed], [], [])[0]
+        for fp in [mystderr, mystdout]:
+            if fp.file in fds:
+                fp.process_input()
 
     status = proc.wait()
     if not ignore_fail and status != 0:
-        raise VMBuilderException, "Process (%s) returned %d. stdout: %s, stderr: %s" % (args.__repr__(), status, stdout, stderr)
-    return stdout
-
-def give_to_caller(path):
-    """
-    Change ownership of file to $SUDO_USER.
-
-    @type  path: string
-    @param path: file or directory to give to $SUDO_USER
-    """
-
-    if 'SUDO_USER' in os.environ:
-        logging.debug('Changing ownership of %s to %s' % (path, os.environ['SUDO_USER']))
-        (uid, gid) = pwd.getpwnam(os.environ['SUDO_USER'])[2:4]
-        os.chown(path, uid, gid)
+        raise VMBuilderException, "Process (%s) returned %d. stdout: %s, stderr: %s" % (args.__repr__(), status, mystdout.buf, mystderr.buf)
+    return mystdout.buf
 
 def checkroot():
     """
@@ -155,18 +127,6 @@ def checkroot():
 
     if os.geteuid() != 0:
         raise VMBuilderUserError("This script must be run as root (e.g. via sudo)")
-
-def fix_ownership(files):
-    """
-    Goes through files and fixes their ownership of them. 
-    
-    @type  files: list
-    @param files: files whose ownership should be fixed up (currently 
-                  simply calls L{give_to_caller})
-
-    """
-    for file in files:
-        give_to_caller(file)
 
 def render_template(plugin, vm, tmplname, context=None):
     # Import here to avoid having to build-dep on python-cheetah
@@ -180,8 +140,8 @@ def render_template(plugin, vm, tmplname, context=None):
                 os.path.dirname(__file__) + '/plugins/%s/templates',
                 '/etc/vmbuilder/%s']
 
-    if vm.templates:
-        tmpldirs.insert(0,'%s/%%s' % vm.templates)
+#    if vm.templates:
+#        tmpldirs.insert(0,'%s/%%s' % vm.templates)
     
     tmpldirs = [dir % plugin for dir in tmpldirs]
 
@@ -194,3 +154,34 @@ def render_template(plugin, vm, tmplname, context=None):
             return output
 
     raise VMBuilderException('Template %s.tmpl not found in any of %s' % (tmplname, ', '.join(tmpldirs)))
+
+def call_hooks(context, func, *args, **kwargs):
+    logging.debug('Calling hook: %s(args=%r, kwargs=%r)' % (func, args, kwargs))
+    for plugin in context.plugins:
+        logging.debug('Calling %s method in %s plugin.' % (func, plugin.__module__))
+        getattr(plugin, func, log_no_such_method)(*args, **kwargs)
+
+    for f in context.hooks.get(func, []):
+        logging.debug('Calling %r.' % (f,))
+        f(*args, **kwargs)
+
+    logging.debug('Calling %s method in context plugin %s.' % (func, context.__module__))
+    getattr(context, func, log_no_such_method)(*args, **kwargs)
+
+def log_no_such_method(*args, **kwargs):
+    logging.debug('No such method')
+    return
+
+def tmpfile(suffix='', keep=True):
+    (fd, filename) = tempfile.mkstemp(suffix=suffix)
+    os.close(fd)
+    if not keep:
+        os.unlink(filename)
+    return filename
+
+def tmpdir(suffix='', keep=True):
+    dir = tempfile.mkdtemp(suffix=suffix)
+    if not keep:
+        os.rmdir(dir)
+    return dir
+

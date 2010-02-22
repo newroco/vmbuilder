@@ -1,7 +1,7 @@
 #
 #    Uncomplicated VM Builder
-#    Copyright (C) 2007-2009 Canonical Ltd.
-#    
+#    Copyright (C) 2007-2010 Canonical Ltd.
+#
 #    See AUTHORS for list of contributors
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -23,9 +23,11 @@ from   VMBuilder.util import run_cmd
 from   VMBuilder.plugins.ubuntu.jaunty import Jaunty
 
 class Karmic(Jaunty):
+    preferred_filesystem = 'ext4'
+
     def apply_ec2_settings(self):
-        self.vm.addpkg += ['standard^',
+        self.context.addpkg += ['standard^',
                           'uec^']
 
     def pre_install(self):
-        self.vm.install_file('/etc/hosts', contents='')
+        self.context.install_file('/etc/hosts', contents='')

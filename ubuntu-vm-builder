@@ -18,11 +18,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-#import sys
-#import os
-#sys.path += [os.getcwd()]
+from VMBuilder.contrib.cli import UVB
 
-import VMBuilder
-
-VMBuilder.set_frontend('ubuntu-vm-builder')
-VMBuilder.run()
+uvb = UVB()
+uvb.main()

@@ -23,7 +23,9 @@
 #if $mac
       <mac address='$mac'/>
 #end if
-      <source network='default'/>
+#if $network
+      <source network='$network'/>
+#end if
 #end if
 #if $virtio_net
       <model type='virtio'/>

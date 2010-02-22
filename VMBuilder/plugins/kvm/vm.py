@@ -30,24 +30,28 @@ class KVM(Hypervisor):
     preferred_storage = VMBuilder.hypervisor.STORAGE_DISK_IMAGE
     needs_bootloader = True
 
-    def finalize(self):
-        self.imgs = []
-        self.cmdline = ['kvm', '-m', str(self.vm.mem), '-smp', str(self.vm.cpus) ]
-        for disk in self.vm.disks:
-            img_path = disk.convert(self.vm.destdir, self.filetype)
-            self.imgs.append(img_path)
-            self.vm.result_files.append(img_path)
-            self.cmdline += ['-drive', 'file=%s' % os.path.basename(img_path)]
+    def register_options(self):
+        group = self.setting_group('VM settings')
+        group.add_setting('mem', extra_args=['-m'], default='128', help='Assign MEM megabytes of memory to the guest vm. [default: %default]')
+        group.add_setting('cpus', type='int', default=1, help='Number of virtual CPU\'s. [default: %default]')
 
+    def convert(self, disks, destdir):
+        self.imgs = []
+        self.cmdline = ['kvm', '-m', str(self.context.get_setting('mem')), '-smp', str(self.context.get_setting('cpus')) ]
+        for disk in disks:
+            img_path = disk.convert(destdir, self.filetype)
+            self.imgs.append(img_path)
+            self.call_hooks('fix_ownership', img_path)
+            self.cmdline += ['-drive', 'file=%s' % os.path.basename(img_path)]
     
         self.cmdline += ['"$@"']
 
-    def deploy(self):
-        script = '%s/run.sh' % self.vm.destdir
+    def deploy(self, destdir):
+        script = '%s/run.sh' % destdir
         fp = open(script, 'w')
         fp.write("#!/bin/sh\n\nexec %s\n" % ' '.join(self.cmdline))
         fp.close()
         os.chmod(script, stat.S_IRWXU | stat.S_IRWXU | stat.S_IROTH | stat.S_IXOTH)
-        self.vm.result_files.append(script)
+        self.call_hooks('fix_ownership', script)
 
 register_hypervisor(KVM)

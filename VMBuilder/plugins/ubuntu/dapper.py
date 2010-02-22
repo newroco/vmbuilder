@@ -1,7 +1,7 @@
 #
 #    Uncomplicated VM Builder
-#    Copyright (C) 2007-2009 Canonical Ltd.
-#    
+#    Copyright (C) 2007-2010 Canonical Ltd.
+#
 #    See AUTHORS for list of contributors
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -25,7 +25,7 @@ import socket
 import tempfile
 import VMBuilder
 import VMBuilder.disk as disk
-from   VMBuilder.util import run_cmd, give_to_caller
+from   VMBuilder.util import run_cmd #, give_to_caller
 
 class Dapper(suite.Suite):
     updategrub = "/sbin/update-grub"
@@ -37,6 +37,7 @@ class Dapper(suite.Suite):
     xen_kernel_flavour = None
     virtio_net = False
     chpasswd_cmd = [ 'chpasswd', '--md5' ]
+    preferred_filesystem = 'ext2'
 
     def pre_install(self):
         pass
@@ -48,56 +49,11 @@ class Dapper(suite.Suite):
         return arch in self.valid_flavours.keys()
         
     def install(self, destdir):
-        self.destdir = destdir
+        raise VMBuilderException('Do not call this method!')
 
-        logging.debug("debootstrapping")
-        self.debootstrap()
-
-        self.pre_install()
-
-        logging.debug("Setting up sources.list")
-        self.install_sources_list()
-
-        logging.debug("Setting up apt proxy")
-        self.install_apt_proxy()
-
-        logging.debug("Installing fstab")
-        self.install_fstab()
-
-        logging.debug("Creating devices")
-        self.create_devices()
-    
-        if self.vm.hypervisor.needs_bootloader:
-            logging.debug("Installing grub")
-            self.install_grub()
-        
-        logging.debug("Configuring guest networking")
-        self.config_network()
-
-        logging.debug("Preventing daemons from starting")
-        self.prevent_daemons_starting()
-
-        logging.debug('Binding /dev and /proc filesystems')
-        self.mount_dev_proc()
-
-        if self.vm.hypervisor.needs_bootloader:
-            logging.debug("Installing menu.list")
-            self.install_menu_lst()
-
-            logging.debug("Installing kernel")
-            self.install_kernel()
-
-            logging.debug("Creating device.map")
-            self.install_device_map()
-
-        logging.debug("Installing extra packages")
-        self.install_extras()
-
-        logging.debug("Creating initial user")
-        self.create_initial_user()
-
-        logging.debug("Installing ssh keys")
-        self.install_authorized_keys()
+        # These are still missing after the refactoring.
+        logging.debug("Creating device.map")
+        self.install_device_map()
 
         logging.debug("Copy host settings")
         self.copy_settings()
@@ -105,145 +61,165 @@ class Dapper(suite.Suite):
         logging.debug("Setting timezone")
         self.set_timezone()
 
-        logging.debug("Making sure system is up-to-date")
-        self.update()
-
-        logging.debug("Setting up final sources.list")
-        self.install_sources_list(final=True)
-
-        logging.debug("cleaning apt")
-        self.run_in_target('apt-get', 'clean');
-
-        logging.debug("Unmounting volatile lrm filesystems")
-        self.unmount_volatile()
-
-        logging.debug('Unbinding /dev and /proc filesystems')
-        self.unmount_dev_proc()
-
-        if hasattr(self.vm, 'ec2') and self.vm.ec2:
+        if hasattr(self.context, 'ec2') and self.context.ec2:
             logging.debug("Configuring for ec2")
             self.install_ec2()
 
-        logging.debug("Unpreventing daemons from starting")
-        self.unprevent_daemons_starting()
-
-        if self.vm.manifest:
+    def create_manifest(self):
+        manifest = self.context.get_setting('manifest')
+        if manifest:
             logging.debug("Creating manifest")
             manifest_contents = self.run_in_target('dpkg-query', '-W', '--showformat=${Package} ${Version}\n')
-            fp = open(self.vm.manifest, 'w')
+            fp = open(manifest, 'w')
             fp.write(manifest_contents)
             fp.close
-            give_to_caller(self.vm.manifest)
+            self.call_hook('fix_ownership', manifest)
 
     def update(self):
         self.run_in_target('apt-get', '-y', '--force-yes', 'dist-upgrade',
                            env={ 'DEBIAN_FRONTEND' : 'noninteractive' })
         
     def install_authorized_keys(self):
-        if self.vm.ssh_key:
-            os.mkdir('%s/root/.ssh' % self.destdir, 0700)
-            shutil.copy(self.vm.ssh_key, '%s/root/.ssh/authorized_keys' % self.destdir)
-            os.chmod('%s/root/.ssh/authorized_keys' % self.destdir, 0644)
-        if self.vm.ssh_user_key:
-            os.mkdir('%s/home/%s/.ssh' % (self.destdir, self.vm.user), 0700)
-            shutil.copy(self.vm.ssh_user_key, '%s/home/%s/.ssh/authorized_keys' % (self.destdir, self.vm.user))
-            os.chmod('%s/home/%s/.ssh/authorized_keys' % (self.destdir, self.vm.user), 0644)
-            self.run_in_target('chown', '-R', '%s:%s' % (self.vm.user,)*2, '/home/%s/.ssh/' % (self.vm.user)) 
+        ssh_key = self.context.get_setting('ssh-key')
+        if ssh_key:
+            os.mkdir('%s/root/.ssh' % self.context.chroot_dir, 0700)
+            shutil.copy(ssh_key, '%s/root/.ssh/authorized_keys' % self.context.chroot_dir)
+            os.chmod('%s/root/.ssh/authorized_keys' % self.context.chroot_dir, 0644)
 
-        if self.vm.ssh_user_key or self.vm.ssh_key:
-            if not self.vm.addpkg:
-                self.vm.addpkg = []
-            self.vm.addpkg += ['openssh-server']
+        user = self.context.get_setting('user')
+        ssh_user_key = self.context.get_setting('ssh-user-key')
+        if ssh_user_key:
+            os.mkdir('%s/home/%s/.ssh' % (self.context.chroot_dir, user), 0700)
+            shutil.copy(ssh_user_key, '%s/home/%s/.ssh/authorized_keys' % (self.context.chroot_dir, user))
+            os.chmod('%s/home/%s/.ssh/authorized_keys' % (self.context.chroot_dir, user), 0644)
+            self.run_in_target('chown', '-R', '%s:%s' % ((user,)*2), '/home/%s/.ssh/' % (user)) 
+
+        if ssh_user_key or ssh_key:
+            addpkg = self.context.get_setting('addpkg')
+            addpkg += ['openssh-server']
+            self.context.set_setting('addpkg', addpkg)
 
     def mount_dev_proc(self):
-        run_cmd('mount', '--bind', '/dev', '%s/dev' % self.destdir)
-        self.vm.add_clean_cmd('umount', '%s/dev' % self.destdir, ignore_fail=True)
+        run_cmd('mount', '--bind', '/dev', '%s/dev' % self.context.chroot_dir)
+        self.context.add_clean_cb(self.unmount_dev)
 
-        run_cmd('mount', '--bind', '/dev/pts', '%s/dev/pts' % self.destdir)
-        self.vm.add_clean_cmd('umount', '%s/dev/pts' % self.destdir, ignore_fail=True)
+        run_cmd('mount', '--bind', '/dev/pts', '%s/dev/pts' % self.context.chroot_dir)
+        self.context.add_clean_cb(self.unmount_dev_pts)
 
         self.run_in_target('mount', '-t', 'proc', 'proc', '/proc')
-        self.vm.add_clean_cmd('umount', '%s/proc' % self.destdir, ignore_fail=True)
+        self.context.add_clean_cb(self.unmount_proc)
 
-    def unmount_dev_proc(self):
-    	run_cmd('umount', '%s/dev/pts' % self.destdir)
-        run_cmd('umount', '%s/dev' % self.destdir)
-        run_cmd('umount', '%s/proc' % self.destdir)
+    def unmount_proc(self):
+        self.context.cancel_cleanup(self.unmount_proc)
+        run_cmd('umount', '%s/proc' % self.context.chroot_dir)
+
+    def unmount_dev_pts(self):
+        self.context.cancel_cleanup(self.unmount_dev_pts)
+    	run_cmd('umount', '%s/dev/pts' % self.context.chroot_dir)
+
+    def unmount_dev(self):
+        self.context.cancel_cleanup(self.unmount_dev)
+        run_cmd('umount', '%s/dev' % self.context.chroot_dir)
 
     def update_passwords(self):
         # Set the user password, using md5
-        self.run_in_target(stdin=('%s:%s\n' % (self.vm.user, getattr(self.vm, 'pass'))), *self.chpasswd_cmd)
+        user   = self.context.get_setting('user')
+        passwd = self.context.get_setting('pass')
+        self.run_in_target(stdin=('%s:%s\n' % (user, passwd)), *self.chpasswd_cmd)
 
         # Lock root account only if we didn't set the root password
-        if self.vm.rootpass:
-            self.run_in_target(stdin=('%s:%s\n' % ('root', self.vm.rootpass)), *self.chpasswd_cmd)
+        rootpass = self.context.get_setting('rootpass')
+        if rootpass:
+            self.run_in_target(stdin=('%s:%s\n' % ('root', rootpass)), *self.chpasswd_cmd)
         else:
             self.run_in_target('usermod', '-L', 'root')
 
-        if self.vm.lock_user:
-            logging.info('Locking %s' %(self.vm.user))
-            self.run_in_target('usermod', '-L', self.vm.user)
+        lock_user = self.context.get_setting('lock-user')
+        if lock_user:
+            logging.info('Locking %s' % (user, ))
+            self.run_in_target('usermod', '-L', user)
 
     def create_initial_user(self):
-        if self.vm.uid:
-            self.run_in_target('adduser', '--disabled-password', '--uid', self.vm.uid, '--gecos', self.vm.name, self.vm.user)
+        uid  = self.context.get_setting('uid')
+        name = self.context.get_setting('name')
+        user = self.context.get_setting('user')
+        if uid:
+            self.run_in_target('adduser', '--disabled-password', '--uid', uid, '--gecos', name, user)
         else:
-            self.run_in_target('adduser', '--disabled-password', '--gecos', self.vm.name, self.vm.user)
+            self.run_in_target('adduser', '--disabled-password', '--gecos', name, user)
+
         self.run_in_target('addgroup', '--system', 'admin')
-        self.run_in_target('adduser', self.vm.user, 'admin')
+        self.run_in_target('adduser', user, 'admin')
 
         self.install_from_template('/etc/sudoers', 'sudoers')
         for group in ['adm', 'audio', 'cdrom', 'dialout', 'floppy', 'video', 'plugdev', 'dip', 'netdev', 'powerdev', 'lpadmin', 'scanner']:
-            self.run_in_target('adduser', self.vm.user, group, ignore_fail=True)
+            self.run_in_target('adduser', user, group, ignore_fail=True)
 
         self.update_passwords()
 
     def kernel_name(self):
-        return 'linux-image-%s' % (self.vm.flavour or self.default_flavour[self.vm.arch],)
+        flavour = self.context.get_setting('flavour')
+        arch = self.context.get_setting('arch')
+        return 'linux-image-%s' % (flavour or self.default_flavour[arch],)
 
-    def config_network(self):
-        self.vm.install_file('/etc/hostname', self.vm.hostname)
-        self.install_from_template('/etc/hosts', 'etc_hosts', { 'hostname' : self.vm.hostname, 'domain' : self.vm.domain }) 
-        self.install_from_template('/etc/network/interfaces', 'interfaces')
+    def config_host_and_domainname(self):
+        hostname = self.context.get_setting('hostname')
+        domain = self.context.get_setting('domain')
+        self.context.install_file('/etc/hostname', hostname)
+        self.install_from_template('/etc/hosts', 'etc_hosts', { 'hostname' : hostname, 'domain' : domain }) 
+
+    def config_interfaces(self, nics):
+        self.install_from_template('/etc/network/interfaces', 'interfaces', { 'ip' : nics[0].type == 'dhcp' and 'dhcp' or nics[0].ip })
 
     def unprevent_daemons_starting(self):
-        os.unlink('%s/usr/sbin/policy-rc.d' % self.destdir)
+        os.unlink('%s/usr/sbin/policy-rc.d' % self.context.chroot_dir)
 
     def prevent_daemons_starting(self):
         os.chmod(self.install_from_template('/usr/sbin/policy-rc.d', 'nostart-policy-rc.d'), 0755)
 
     def install_extras(self):
-        if not self.vm.addpkg and not self.vm.removepkg:
+        addpkg = self.context.get_setting('addpkg')
+        removepkg = self.context.get_setting('removepkg')
+        if not addpkg and not removepkg:
             return
         cmd = ['apt-get', 'install', '-y', '--force-yes']
-        cmd += self.vm.addpkg or []
-        cmd += ['%s-' % pkg for pkg in self.vm.removepkg or []]
+        cmd += addpkg or []
+        cmd += ['%s-' % pkg for pkg in removepkg or []]
         self.run_in_target(env={ 'DEBIAN_FRONTEND' : 'noninteractive' }, *cmd)
         
     def unmount_volatile(self):
-        for mntpnt in glob.glob('%s/lib/modules/*/volatile' % self.destdir):
+        for mntpnt in glob.glob('%s/lib/modules/*/volatile' % self.context.chroot_dir):
             logging.debug("Unmounting %s" % mntpnt)
             run_cmd('umount', mntpnt)
 
-    def install_menu_lst(self):
+    def install_menu_lst(self, disks):
         self.run_in_target(self.updategrub, '-y')
-        self.mangle_grub_menu_lst()
+        self.mangle_grub_menu_lst(disks)
         self.run_in_target(self.updategrub)
         self.run_in_target('grub-set-default', '0')
 
-    def mangle_grub_menu_lst(self):
-        bootdev = disk.bootpart(self.vm.disks)
-        run_cmd('sed', '-ie', 's/^# kopt=root=\([^ ]*\)\(.*\)/# kopt=root=\/dev\/hd%s%d\\2/g' % (bootdev.disk.devletters(), bootdev.get_index()+1), '%s/boot/grub/menu.lst' % self.destdir)
-        run_cmd('sed', '-ie', 's/^# groot.*/# groot %s/g' % bootdev.get_grub_id(), '%s/boot/grub/menu.lst' % self.destdir)
-        run_cmd('sed', '-ie', '/^# kopt_2_6/ d', '%s/boot/grub/menu.lst' % self.destdir)
+    def mangle_grub_menu_lst(self, disks):
+        bootdev = disk.bootpart(disks)
+        run_cmd('sed', '-ie', 's/^# kopt=root=\([^ ]*\)\(.*\)/# kopt=root=\/dev\/hd%s%d\\2/g' % (bootdev.disk.devletters(), bootdev.get_index()+1), '%s/boot/grub/menu.lst' % self.context.chroot_dir)
+        run_cmd('sed', '-ie', 's/^# groot.*/# groot %s/g' % bootdev.get_grub_id(), '%s/boot/grub/menu.lst' % self.context.chroot_dir)
+        run_cmd('sed', '-ie', '/^# kopt_2_6/ d', '%s/boot/grub/menu.lst' % self.context.chroot_dir)
 
     def install_sources_list(self, final=False):
         if final:
-            mirror, updates_mirror, security_mirror = self.vm.mirror, self.vm.mirror, self.vm.security_mirror
+            mirror = updates_mirror = self.context.get_setting('mirror')
+            security_mirror = self.context.get_setting('security-mirror')
         else:
             mirror, updates_mirror, security_mirror = self.install_mirrors()
 
-        self.install_from_template('/etc/apt/sources.list', 'sources.list', { 'mirror' : mirror, 'security_mirror' : security_mirror, 'updates_mirror' : updates_mirror })
+        components = self.context.get_setting('components')
+        ppa        = self.context.get_setting('ppa')
+        suite      = self.context.get_setting('suite')
+        self.install_from_template('/etc/apt/sources.list', 'sources.list', { 'mirror' : mirror,
+                                                                              'security_mirror' : security_mirror,
+                                                                              'updates_mirror' : updates_mirror,
+                                                                              'components' : components,
+                                                                              'ppa' : ppa,
+                                                                              'suite' : suite })
 
         # If setting up the final mirror, allow apt-get update to fail
         # (since we might be on a complete different network than the
@@ -251,34 +227,40 @@ class Dapper(suite.Suite):
         self.run_in_target('apt-get', 'update', ignore_fail=final)
 
     def install_apt_proxy(self):
-        if self.vm.proxy is not None:
-            self.vm.install_file('/etc/apt/apt.conf', '// Proxy added by vmbuilder\nAcquire::http { Proxy "%s"; };' % self.vm.proxy)
+        proxy = self.context.get_setting('proxy')
+        if proxy is not None:
+            self.context.install_file('/etc/apt/apt.conf', '// Proxy added by vmbuilder\nAcquire::http { Proxy "%s"; };' % proxy)
 
-    def install_fstab(self):
-        if self.vm.hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
-            self.install_from_template('/etc/fstab', 'dapper_fstab_fsimage', { 'fss' : disk.get_ordered_filesystems(self.vm), 'prefix' : self.disk_prefix })
-        else:
-            self.install_from_template('/etc/fstab', 'dapper_fstab', { 'parts' : disk.get_ordered_partitions(self.vm.disks), 'prefix' : self.disk_prefix })
+    def install_fstab(self, disks, filesystems):
+        self.install_from_template('/etc/fstab', 'dapper_fstab', { 'parts' : disk.get_ordered_partitions(disks), 'prefix' : self.disk_prefix })
 
     def install_device_map(self):
         self.install_from_template('/boot/grub/device.map', 'devicemap', { 'prefix' : self.disk_prefix })
 
     def debootstrap(self):
-        cmd = ['/usr/sbin/debootstrap', '--arch=%s' % self.vm.arch]
-        if self.vm.variant:
-            cmd += ['--variant=%s' % self.vm.variant]
-        cmd += [self.vm.suite, self.destdir, self.debootstrap_mirror()]
+        arch = self.context.get_setting('arch')
+        cmd = ['/usr/sbin/debootstrap', '--arch=%s' % arch]
+
+        variant = self.context.get_setting('variant')
+        if variant:
+            cmd += ['--variant=%s' % variant]
+
+        suite = self.context.get_setting('suite')
+        cmd += [suite, self.context.chroot_dir, self.debootstrap_mirror()]
         kwargs = { 'env' : { 'DEBIAN_FRONTEND' : 'noninteractive' } }
-        if self.vm.proxy:
-            kwargs['env']['http_proxy'] = self.vm.proxy
+
+        proxy = self.context.get_setting('proxy')
+        if proxy:
+            kwargs['env']['http_proxy'] = proxy
         run_cmd(*cmd, **kwargs)
     
     def debootstrap_mirror(self):
-        if self.vm.iso:
+        iso = self.context.get_setting('iso')
+        if iso:
             isodir = tempfile.mkdtemp()
-            self.vm.add_clean_cb(lambda:os.rmdir(isodir))
-            run_cmd('mount', '-o', 'loop', '-t', 'iso9660', self.vm.iso, isodir)
-            self.vm.add_clean_cmd('umount', isodir)
+            self.context.add_clean_cb(lambda:os.rmdir(isodir))
+            run_cmd('mount', '-o', 'loop', '-t', 'iso9660', iso, isodir)
+            self.context.add_clean_cmd('umount', isodir)
             self.iso_mounted = True
 
             return 'file://%s' % isodir
@@ -287,46 +269,48 @@ class Dapper(suite.Suite):
 
 
     def install_mirrors(self):
-        if self.vm.install_mirror:
-            mirror = self.vm.install_mirror
+        install_mirror = self.context.get_setting('install-mirror')
+        if install_mirror:
+            mirror = install_mirror
         else:
-            mirror = self.vm.mirror
+            mirror = self.context.get_setting('mirror')
 
-        if self.vm.install_mirror:
-            updates_mirror = self.vm.install_mirror
-        else:
-            updates_mirror = self.vm.mirror
+        updates_mirror = mirror
 
-        if self.vm.install_security_mirror:
-            security_mirror = self.vm.install_security_mirror
+        install_security_mirror = self.context.get_setting('install-security-mirror')
+        if install_security_mirror:
+            security_mirror = install_security_mirror
         else:
-            security_mirror = self.vm.security_mirror
+            security_mirror = self.context.get_setting('security-mirror')
 
         return (mirror, updates_mirror, security_mirror)
 
-    def install_kernel(self):
+    def install_kernel(self, destdir):
         self.install_from_template('/etc/kernel-img.conf', 'kernelimg', { 'updategrub' : self.updategrub }) 
-        run_cmd('chroot', self.destdir, 'apt-get', '--force-yes', '-y', 'install', self.kernel_name(), 'grub')
+        run_cmd('chroot', destdir, 'apt-get', '--force-yes', '-y', 'install', self.kernel_name(), 'grub')
 
-    def install_grub(self):
+    def install_grub(self, chroot_dir):
+        arch = self.context.get_setting('arch')
         self.run_in_target('apt-get', '--force-yes', '-y', 'install', 'grub')
-        run_cmd('rsync', '-a', '%s%s/%s/' % (self.destdir, self.grubroot, self.vm.arch == 'amd64' and 'x86_64-pc' or 'i386-pc'), '%s/boot/grub/' % self.destdir) 
+        run_cmd('rsync', '-a', '%s%s/%s/' % (chroot_dir, self.grubroot, arch == 'amd64' and 'x86_64-pc' or 'i386-pc'), '%s/boot/grub/' % chroot_dir) 
 
     def create_devices(self):
-        import VMBuilder.plugins.xen
+        pass
+# FIXME
+#        import VMBuilder.plugins.xen
 
-        if isinstance(self.vm.hypervisor, VMBuilder.plugins.xen.Xen):
-            self.run_in_target('mknod', '/dev/xvda', 'b', '202', '0')
-            self.run_in_target('mknod', '/dev/xvda1', 'b', '202', '1')
-            self.run_in_target('mknod', '/dev/xvda2', 'b', '202', '2')
-            self.run_in_target('mknod', '/dev/xvda3', 'b', '202', '3')
-            self.run_in_target('mknod', '/dev/xvc0', 'c', '204', '191')
+#        if isinstance(self.context.hypervisor, VMBuilder.plugins.xen.Xen):
+#            self.run_in_target('mknod', '/dev/xvda', 'b', '202', '0')
+#            self.run_in_target('mknod', '/dev/xvda1', 'b', '202', '1')
+#            self.run_in_target('mknod', '/dev/xvda2', 'b', '202', '2')
+#            self.run_in_target('mknod', '/dev/xvda3', 'b', '202', '3')
+#            self.run_in_target('mknod', '/dev/xvc0', 'c', '204', '191')
 
     def install_from_template(self, *args, **kwargs):
-        return self.vm.distro.install_from_template(*args, **kwargs)
+        return self.context.install_from_template(*args, **kwargs)
 
     def run_in_target(self, *args, **kwargs):
-        return self.vm.distro.run_in_target(*args, **kwargs)
+        return self.context.run_in_target(*args, **kwargs)
 
     def copy_to_target(self, infile, destpath):
         logging.debug("Copying %s on host to %s in guest" % (infile, destpath))
@@ -350,9 +334,9 @@ class Dapper(suite.Suite):
             self.copy_to_target('/etc/default/locale', '/etc/default/locale')
         self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'libc6')
         self.run_in_target('locale-gen', 'en_US')
-        if self.vm.lang:
-            self.run_in_target('locale-gen', self.vm.lang)
-            self.install_from_template('/etc/default/locale', 'locale', { 'lang' : self.vm.lang })
+        if self.context.lang:
+            self.run_in_target('locale-gen', self.context.lang)
+            self.install_from_template('/etc/default/locale', 'locale', { 'lang' : self.context.lang })
         self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'locales')
         self.run_in_target('dpkg-reconfigure', '-pcritical', 'locales')
 
@@ -360,16 +344,20 @@ class Dapper(suite.Suite):
         shutil.copy(logfile, '%s/var/log/vmbuilder-install.log' % (rootdir,))
 
     def set_timezone(self):
-        if self.vm.timezone:
-            os.unlink('%s/etc/localtime' % self.destdir)
-            shutil.copy('%s/usr/share/zoneinfo/%s' % (self.destdir, self.vm.timezone), '%s/etc/localtime' % (self.destdir,))
+        timezone = self.context.get_setting('timezone')
+        if timezone:
+            os.unlink('%s/etc/localtime' % self.context.chroot_dir)
+            shutil.copy('%s/usr/share/zoneinfo/%s' % (self.context.chroot_dir, timezone), '%s/etc/localtime' % (self.context.chroot_dir,))
 
     def install_ec2(self):
-        if self.vm.ec2:
+        if self.context.ec2:
             logging.debug('This suite does not support ec2')
 
     def disable_hwclock_access(self):
         fp = open('%s/etc/default/rcS' % self.destdir, 'a')
         fp.write('HWCLOCKACCESS=no')
         fp.close()
+
+    def has_256_bit_inode_ext3_support(self):
+        return False
 

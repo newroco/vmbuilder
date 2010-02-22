@@ -20,12 +20,12 @@ class TestUtils(unittest.TestCase):
         class PluginC(Plugin):
             priority = 15
 
-        saved_plugins = VMBuilder._plugins
-        VMBuilder._plugins = []
-        VMBuilder.register_plugin(PluginA)
-        VMBuilder.register_plugin(PluginB)
-        VMBuilder.register_plugin(PluginC)
-        self.assertEqual(VMBuilder._plugins[0], PluginB)
-        self.assertEqual(VMBuilder._plugins[1], PluginA)
-        self.assertEqual(VMBuilder._plugins[2], PluginC)
-        VMBuilder._plugins = saved_plugins
+        saved_hypervisor_plugins = VMBuilder._hypervisor_plugins
+        VMBuilder._hypervisor_plugins = []
+        VMBuilder.register_hypervisor_plugin(PluginA)
+        VMBuilder.register_hypervisor_plugin(PluginB)
+        VMBuilder.register_hypervisor_plugin(PluginC)
+        self.assertEqual(VMBuilder._hypervisor_plugins[0], PluginB)
+        self.assertEqual(VMBuilder._hypervisor_plugins[1], PluginA)
+        self.assertEqual(VMBuilder._hypervisor_plugins[2], PluginC)
+        VMBuilder._hypervisor_plugins = saved_hypervisor_plugins

@@ -24,8 +24,8 @@ import glob
 import sys
 
 class Suite(object):
-    def __init__(self, vm):
-        self.vm = vm
+    def __init__(self, context):
+        self.context = context
         self.isodir = '/media/vmbuilder_inst_image'
         self.iso_mounted = False
 

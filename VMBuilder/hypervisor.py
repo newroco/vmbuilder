@@ -18,12 +18,76 @@
 #
 #    Hypervisor super class
 
-import VMBuilder.plugins
+import logging
+import VMBuilder.distro
+import VMBuilder.disk
+from   VMBuilder.util    import call_hooks, run_cmd, tmpdir
 
 STORAGE_DISK_IMAGE = 0
 STORAGE_FS_IMAGE = 1
 
-class Hypervisor(VMBuilder.plugins.Plugin):
-    def finalize(self):
-        raise NotImplemented('Hypervisor subclasses need to implement the finalize method')
+class Hypervisor(VMBuilder.distro.Context):
+    def __init__(self, distro):
+        self.plugin_classes = VMBuilder._hypervisor_plugins
+        super(Hypervisor, self).__init__()
+        self.plugins += [distro]
+        self.distro = distro
+        self.filesystems = []
+        self.disks = []
+        self.nics = []
 
+    def add_disk(self, *args, **kwargs):
+        """Adds a disk image to the virtual machine"""
+        from VMBuilder.disk import Disk
+
+        disk = Disk(self, *args, **kwargs)
+        self.disks.append(disk)
+        return disk
+
+    def install_os(self):
+        self.nics = [self.NIC()]
+        self.call_hooks('configure_networking', self.nics)
+        self.call_hooks('configure_mounting', self.disks, self.filesystems)
+
+        self.chroot_dir = tmpdir()
+        self.call_hooks('mount_partitions', self.chroot_dir)
+        run_cmd('rsync', '-aHA', '%s/' % self.distro.chroot_dir, self.chroot_dir)
+        self.distro.set_chroot_dir(self.chroot_dir)
+        self.call_hooks('install_bootloader', self.chroot_dir, self.disks)
+        self.call_hooks('install_kernel', self.chroot_dir)
+        self.call_hooks('unmount_partitions')
+
+    def finalise(self, destdir):
+        self.call_hooks('convert', self.disks, destdir)
+        self.call_hooks('deploy', destdir)
+
+    def mount_partitions(self, mntdir):
+        """Mounts all the vm's partitions and filesystems below .rootmnt"""
+        logging.info('Mounting target filesystems')
+        for disk in self.disks:
+            disk.create()
+            disk.partition()
+            disk.map_partitions()
+            disk.mkfs()
+        fss = VMBuilder.disk.get_ordered_filesystems(self)
+        for fs in fss:
+            fs.mount(mntdir)
+            self.distro.post_mount(fs)
+
+    def unmount_partitions(self):
+        """Unmounts all the vm's partitions and filesystems"""
+        logging.info('Unmounting target filesystem')
+        fss = VMBuilder.disk.get_ordered_filesystems(self)
+        fss.reverse()
+        for fs in fss:
+            fs.umount()
+        for disk in self.disks:
+            disk.unmap()
+
+    def convert_disks(self, disks, destdir):
+        for disk in disks:
+            disk.convert(destdir, self.filetype)
+        
+    class NIC(object):
+        def __init__(self, type='dhcp'):
+            self.type = type
