@@ -30,14 +30,7 @@ fd, logfile = tempfile.mkstemp()
 logging.basicConfig(format=format, level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M', stream=os.fdopen(fd, 'a+'), filemode='w')
 
 console = logging.StreamHandler()
-console.setLevel(logging.DEBUG)
+console.setLevel(logging.INFO)
 console.setFormatter(logging.Formatter(format))
 logging.getLogger('').addHandler(console)
 
-def set_verbosity(option, opt_str, value, parser):
-    if opt_str == '--debug':
-        console.setLevel(logging.DEBUG)
-    elif opt_str == '--verbose':
-        console.setLevel(logging.INFO)
-    elif opt_str == '--quiet':
-        console.setLevel(logging.CRITICAL)
