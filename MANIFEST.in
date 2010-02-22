@@ -4,4 +4,3 @@ include examples/*
 include ubuntu-vm-builder
 include ubuntu-vm-builder.1
 include vmbuilder.1
-include tests.py
