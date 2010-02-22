@@ -69,8 +69,8 @@ def get_version_info():
     import vcsversion
     info = vcsversion.version_info
     info['major'] = 0
-    info['minor'] = 11
-    info['micro'] = 4
+    info['minor'] = 12
+    info['micro'] = 0
     return info
  
 logging.debug('Loading plugins')
