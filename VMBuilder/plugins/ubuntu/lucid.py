@@ -23,4 +23,7 @@ from   VMBuilder.util import run_cmd
 from   VMBuilder.plugins.ubuntu.karmic import Karmic
 
 class Lucid(Karmic):
+    valid_flavours = { 'i386' :  ['386', 'generic', 'generic-pae', 'virtual'],
+                       'amd64' : ['generic', 'preempt', 'server', 'virtual'] }
+
     pass

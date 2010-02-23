@@ -24,6 +24,9 @@ from   VMBuilder.util import run_cmd
 from   VMBuilder.plugins.ubuntu.intrepid import Intrepid
 
 class Jaunty(Intrepid):
+    valid_flavours = { 'i386' :  ['generic', 'server', 'virtual'],
+                       'amd64' : ['generic', 'server', 'virtual'],
+                       'lpia'  : ['lpia', 'lpiacompat'] }
     xen_kernel_flavour = 'server'
     ec2_kernel_info = { 'i386' : 'aki-c553b4ac', 'amd64' : 'aki-d653b4bf' }
     ec2_ramdisk_info = { 'i386' : 'ari-c253b4ab', 'amd64' : 'ari-d753b4be' }

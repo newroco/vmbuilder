@@ -23,6 +23,10 @@ from   VMBuilder.util import run_cmd
 from   VMBuilder.plugins.ubuntu.jaunty import Jaunty
 
 class Karmic(Jaunty):
+    valid_flavours = { 'i386' :  ['386', 'generic', 'generic-pae', 'virtual'],
+                       'amd64' : ['generic', 'server', 'virtual'],
+                       'lpia'  : ['lpia'] }
+
     preferred_filesystem = 'ext4'
 
     def apply_ec2_settings(self):
