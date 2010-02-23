@@ -101,6 +101,11 @@ class Ubuntu(Distro):
             self.set_setting_default('components',  components.split(','))
 
     def get_locale(self):
+        lang = os.getenv('LANG')
+        # People's $LANG looks different since lucid, but locale-gen still
+        # wants the old format.
+        if lang.endswith('utf8'):
+            return lang[:-4] + 'UTF-8'
         return os.getenv('LANG')
 
     def preflight_check(self):
