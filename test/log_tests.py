@@ -15,5 +15,5 @@ class LogTestSuite(unittest.TestCase):
 
         for opt, level in checks:
             set_verbosity(None, opt, None, None)
-w           self.assertEquals(level, console.level, 'Found wrong logging level after setting flag "%s"' % opt)
+            self.assertEquals(level, console.level, 'Found wrong logging level after setting flag "%s"' % opt)
 
