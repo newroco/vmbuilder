@@ -25,6 +25,7 @@ import VMBuilder
 import VMBuilder.util as util
 from   VMBuilder.disk import parse_size
 import VMBuilder.hypervisor
+from   VMBuilder.exception import VMBuilderUserError
 
 class CLI(object):
     arg = 'cli'
@@ -69,6 +70,10 @@ class CLI(object):
         config_files = ['/etc/vmbuilder.cfg', os.path.expanduser('~/.vmbuilder.cfg')]
         (self.options, args) = optparser.parse_args(sys.argv[2:])
 
+        destdir = self.options.destdir or ('%s-%s' % (distro_name, hypervisor_name))
+        if os.path.exists(destdir):
+             raise VMBuilderUserError('%s already exists' % destdir)
+
         if self.options.config:
             config_files.append(self.options.config)
         util.apply_config_files_to_context(config_files, distro)
@@ -103,7 +108,6 @@ class CLI(object):
         self.set_disk_layout(hypervisor)
         hypervisor.install_os()
 
-        destdir = self.options.destdir or ('%s-%s' % (distro_name, hypervisor_name))
         os.mkdir(destdir)
         self.fix_ownership(destdir)
         hypervisor.finalise(destdir)
