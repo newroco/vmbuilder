@@ -65,7 +65,14 @@ class CLI(object):
         hypervisor.register_hook('fix_ownership', self.fix_ownership)
         self.add_settings_from_context(optparser, hypervisor)
 
+        config_files = ['/etc/vmbuilder.cfg', os.path.expanduser('~/.vmbuilder.cfg')]
         (self.options, args) = optparser.parse_args(sys.argv[2:])
+
+        if self.options.config:
+            config_files.append(self.options.config)
+        util.apply_config_files_to_context(config_files, distro)
+        util.apply_config_files_to_context(config_files, hypervisor)
+
         for option in dir(self.options):
             if option.startswith('_') or option in ['ensure_value', 'read_module', 'read_file']:
                 continue

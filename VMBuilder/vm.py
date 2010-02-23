@@ -167,41 +167,7 @@ class VM(object):
         else:
             raise VMBuilderUserError("Invalid hypervisor. Valid hypervisors: %s" % " ".join(VMBuilder.hypervisors.keys()))
 
-    def get_conf_value(self, key):
-        # This is horrible. Did I mention I hate people who (ab)use exceptions
-        # to handle non-exceptional events?
-        confvalue = None
-        try:
-            confvalue = self.confparser.get('DEFAULT', key)
-        except ConfigParser.NoSectionError, e:
-            pass
-        except ConfigParser.NoOptionError, e:
-            pass
-
-        try:
-            confvalue = self.confparser.get(self.hypervisor.arg, key)
-        except ConfigParser.NoSectionError, e:
-            pass
-        except ConfigParser.NoOptionError, e:
-            pass
-
-        try:
-            confvalue = self.confparser.get(self.distro.arg, key)
-        except ConfigParser.NoSectionError, e:
-            pass
-        except ConfigParser.NoOptionError, e:
-            pass
-
-        try:
-            confvalue = self.confparser.get('%s/%s' % (self.hypervisor.arg, self.distro.arg), key)
-        except ConfigParser.NoSectionError, e:
-            pass
-        except ConfigParser.NoOptionError, e:
-            pass
-
-        logging.debug('Returning value %s for configuration key %s' % (repr(confvalue), key))
-        return confvalue
-    
+   
     def set_defaults(self):
         """
         is called to give all the plugins and the distro and hypervisor plugin a chance to set
