@@ -21,7 +21,6 @@ import ConfigParser
 import errno
 import fcntl
 import logging
-import os
 import os.path
 import select
 import subprocess
@@ -129,22 +128,17 @@ def checkroot():
     if os.geteuid() != 0:
         raise VMBuilderUserError("This script must be run as root (e.g. via sudo)")
 
-def render_template(plugin, vm, tmplname, context=None):
+def render_template(plugin, context, tmplname, extra_context=None):
     # Import here to avoid having to build-dep on python-cheetah
     from   Cheetah.Template import Template
     searchList = []
     if context:
-        searchList.append(context)
-    searchList.append(vm)
+        searchList.append(extra_context)
+    searchList.append(context)
 
-    tmpldirs = [os.path.expanduser('~/.vmbuilder/%s'),
-                os.path.dirname(__file__) + '/plugins/%s/templates',
-                '/etc/vmbuilder/%s']
-
-#    if vm.templates:
 #        tmpldirs.insert(0,'%s/%%s' % vm.templates)
     
-    tmpldirs = [dir % plugin for dir in tmpldirs]
+    tmpldirs = [dir % plugin for dir in context.template_dirs]
 
     for dir in tmpldirs:
         tmplfile = '%s/%s.tmpl' % (dir, tmplname)

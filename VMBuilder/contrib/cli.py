@@ -41,6 +41,7 @@ class CLI(object):
         group.add_option('--verbose', '-v', action='callback', callback=self.set_verbosity, help='Show progress information')
         group.add_option('--quiet', '-q', action='callback', callback=self.set_verbosity, help='Silent operation')
         group.add_option('--config', '-c', type='str', help='Configuration file')
+        group.add_option('--templates', metavar='DIR', help='Prepend DIR to template search path.')
         group.add_option('--destdir', '-d', type='str', help='Destination directory')
         group.add_option('--only-chroot', action='store_true', help="Only build the chroot. Don't install it on disk images or anything.")
         group.add_option('--existing-chroot', help="Use existing chroot.")
@@ -72,6 +73,10 @@ class CLI(object):
             config_files.append(self.options.config)
         util.apply_config_files_to_context(config_files, distro)
         util.apply_config_files_to_context(config_files, hypervisor)
+
+        if self.options.templates:
+            distro.template_dirs.insert(0,'%s/%%s' % self.options.templates)
+            hypervisor.template_dirs.insert(0,'%s/%%s' % self.options.templates)
 
         for option in dir(self.options):
             if option.startswith('_') or option in ['ensure_value', 'read_module', 'read_file']:

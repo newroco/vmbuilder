@@ -17,9 +17,12 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #    Distro super class
+
+import logging
+import os
+
 from   VMBuilder.util    import run_cmd, call_hooks
 import VMBuilder.plugins
-import logging
 
 class Context(VMBuilder.plugins.Plugin):
     def __init__(self):
@@ -29,6 +32,9 @@ class Context(VMBuilder.plugins.Plugin):
         self.plugins.sort(key=lambda x:x.priority)
         self._cleanup_cbs = []
         self.hooks = {}
+        self.template_dirs = [os.path.expanduser('~/.vmbuilder/%s'),
+                              os.path.dirname(__file__) + '/plugins/%s/templates',
+                              '/etc/vmbuilder/%s']
 
     # Cleanup 
     def cleanup(self):
