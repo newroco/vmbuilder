@@ -37,7 +37,7 @@ class Dapper(suite.Suite):
     xen_kernel_flavour = None
     virtio_net = False
     chpasswd_cmd = [ 'chpasswd', '--md5' ]
-    preferred_filesystem = 'ext2'
+    preferred_filesystem = 'ext3'
 
     def pre_install(self):
         pass
