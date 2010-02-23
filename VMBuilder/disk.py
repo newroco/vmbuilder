@@ -326,6 +326,8 @@ class Filesystem(object):
         if not self.dummy:
             cmd = self.mkfs_fstype() + [self.filename]
             run_cmd(*cmd)
+            # Let udev have a chance to extract the UUID for us
+            run_cmd('udevadm', 'settle')
             if os.path.exists("/sbin/vol_id"):
                 self.uuid = run_cmd('vol_id', '--uuid', self.filename).rstrip()
             elif os.path.exists("/sbin/blkid"):
