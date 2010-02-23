@@ -17,6 +17,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #    Various utility functions
+import ConfigParser
 import errno
 import fcntl
 import logging
@@ -186,3 +187,30 @@ def tmpdir(suffix='', keep=True):
         os.rmdir(dir)
     return dir
 
+def get_conf_value(context, confparser, key):
+    confvalue = None
+    try:
+        confvalue = confparser.get('DEFAULT', key)
+    except ConfigParser.NoSectionError, e:
+        pass
+    except ConfigParser.NoOptionError, e:
+        pass
+
+    if confparser.has_option(context.arg, key):
+        confvalue = confparser.get(context.arg, key)
+
+    logging.debug('Returning value %s for configuration key %s' % (repr(confvalue), key))
+    return confvalue
+ 
+def apply_config_files_to_context(config_files, context):
+    confparser = ConfigParser.SafeConfigParser()
+    confparser.read(config_files)
+
+    for (key, setting) in context._config.iteritems():
+        confvalue = get_conf_value(context, confparser, key)
+        if confvalue:
+            if type(setting.get_value()) == list:
+                values = multiline_split.split(confvalue)
+                setting.set_default(values)
+            else:
+                setting.set_default(confvalue)
