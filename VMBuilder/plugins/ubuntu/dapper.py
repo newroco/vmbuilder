@@ -115,7 +115,7 @@ class Dapper(suite.Suite):
 
     def unmount_dev_pts(self):
         self.context.cancel_cleanup(self.unmount_dev_pts)
-    	run_cmd('umount', '%s/dev/pts' % self.context.chroot_dir)
+        run_cmd('umount', '%s/dev/pts' % self.context.chroot_dir)
 
     def unmount_dev(self):
         self.context.cancel_cleanup(self.unmount_dev)

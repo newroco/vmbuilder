@@ -21,7 +21,7 @@
 import unittest
 
 import VMBuilder
-        
+
 from VMBuilder.plugins.ubuntu.distro import Ubuntu
 from VMBuilder.exception import VMBuilderUserError
 from VMBuilder.log import set_verbosity
@@ -29,9 +29,9 @@ from VMBuilder.log import set_verbosity
 class TestUbuntuPlugin(unittest.TestCase):
     def setUp(self):
         set_verbosity(None, '--quiet', None, None)
-		
+
     def test_invalid_suite_raises_UserError(self):
-    	'Building Ubuntu VMs with an invalid suite raises UserError'
+        'Building Ubuntu VMs with an invalid suite raises UserError'
 
         ubuntu = Ubuntu()
         ubuntu.set_setting('suite', 'foo')
