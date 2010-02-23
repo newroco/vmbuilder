@@ -114,23 +114,23 @@ class NetworkHypervisorPlugin(Plugin):
 
             net = self.context.get_setting('net')
             if not net:
-                self.context.set_setting('net', numeric_to_dotted_ip(numnet))
+                self.context.set_setting_default('net', numeric_to_dotted_ip(numnet))
 
             bcast = self.context.get_setting('bcast')
             if not bcast:
                 numbcast = calculate_broadcast_address_from_ip_and_netmask(numnet, nummask)
-                self.context.set_setting('bcast', numeric_to_dotted_ip(numbcast))
+                self.context.set_setting_default('bcast', numeric_to_dotted_ip(numbcast))
 
             gw = self.context.get_setting('gw')
             if not gw:
                 numgw = guess_gw_from_ip(numip)
-                self.context.set_setting('gw', numeric_to_dotted_ip(numgw))
+                self.context.set_setting_default('gw', numeric_to_dotted_ip(numgw))
 
             dns = self.context.get_setting('dns')
             if not dns:
-                self.context.set_setting('dns', self.context.get_setting('gw'))
+                self.context.set_setting_default('dns', self.context.get_setting('gw'))
 
-            self.context.set_setting('mask', numeric_to_dotted_ip(nummask))
+            self.context.set_setting_default('mask', numeric_to_dotted_ip(nummask))
 
             logging.debug("net: %s" % self.context.get_setting('net'))
             logging.debug("netmask: %s" % self.context.get_setting('mask'))
