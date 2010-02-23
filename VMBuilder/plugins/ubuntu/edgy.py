@@ -64,3 +64,14 @@ proc                                            /proc           proc    defaults
         self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'locales')
         if have_cs:
             self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'console-setup')
+
+    def prevent_daemons_starting(self):
+        super(Edgy, self).prevent_daemons_starting()
+        initctl = '%s/sbin/initctl' % (self.context.chroot_dir,)
+        os.rename(initctl, '%s.REAL' % (initctl,))
+        self.install_from_template('/sbin/initctl', 'initctl-stub', mode=0755)
+
+    def unprevent_daemons_starting(self):
+        super(Edgy, self).unprevent_daemons_starting()
+        initctl = '%s/sbin/initctl' % (self.context.chroot_dir,)
+        os.rename('%s.REAL' % (initctl,), initctl)
