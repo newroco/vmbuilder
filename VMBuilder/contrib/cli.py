@@ -78,9 +78,9 @@ class CLI(object):
                 continue
             val = getattr(self.options, option)
             if val:
-                if distro.has_setting(option):
+                if distro.has_setting(option) and distro.get_setting_default(option) != val:
                     distro.set_setting(option, val)
-                elif hypervisor.has_setting(option):
+                elif hypervisor.has_setting(option) and hypervisor.get_setting_default(option) != val:
                     hypervisor.set_setting(option, val)
         
         if self.options.existing_chroot:
