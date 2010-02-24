@@ -25,7 +25,8 @@ import socket
 import tempfile
 import VMBuilder
 import VMBuilder.disk as disk
-from   VMBuilder.util import run_cmd #, give_to_caller
+from   VMBuilder.util import run_cmd
+from   VMBuilder.exception import VMBuilderException
 
 class Dapper(suite.Suite):
     updategrub = "/sbin/update-grub"
@@ -184,11 +185,22 @@ class Dapper(suite.Suite):
     def prevent_daemons_starting(self):
         os.chmod(self.install_from_template('/usr/sbin/policy-rc.d', 'nostart-policy-rc.d'), 0755)
 
+    def seed(self, seedfile):
+        """Seed debconf with the contents of a seedfile"""
+        logging.info('Seeding with "%s"' % seedfile)
+
+        self.run_in_target('debconf-set-selections', stdin=open(seedfile, 'r').read())
+
     def install_extras(self):
+        seedfile = self.context.get_setting('seedfile')
+        if seedfile:
+            self.seed(seedfile)
+
         addpkg = self.context.get_setting('addpkg')
         removepkg = self.context.get_setting('removepkg')
         if not addpkg and not removepkg:
             return
+
         cmd = ['apt-get', 'install', '-y', '--force-yes']
         cmd += addpkg or []
         cmd += ['%s-' % pkg for pkg in removepkg or []]

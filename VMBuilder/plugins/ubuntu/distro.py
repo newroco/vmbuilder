@@ -42,6 +42,7 @@ class Ubuntu(Distro):
         group = self.setting_group('Package options')
         group.add_setting('addpkg', type='list', metavar='PKG', help='Install PKG into the guest (can be specfied multiple times).')
         group.add_setting('removepkg', type='list', metavar='PKG', help='Remove PKG from the guest (can be specfied multiple times)')
+        group.add_setting('seedfile', metavar="SEEDFILE", help='Seed the debconf database with the contents of this seed file before installing packages')
 
         group = self.setting_group('General OS options')
         self.host_arch = run_cmd('dpkg', '--print-architecture').rstrip()
@@ -135,6 +136,11 @@ class Ubuntu(Distro):
                 self.vm.components = self.vm.components.split(',')
 
         self.context.virtio_net = self.use_virtio_net()
+
+        # check if the seedfile exists if one is to be used
+        seedfile = self.context.get_setting('seedfile')
+        if seedfile and not os.path.exists(seedfile):
+            raise VMBuilderUserError("Seedfile '%s' does not exist" % seedfile)
 
         lang = self.get_setting('lang')
         if lang:
