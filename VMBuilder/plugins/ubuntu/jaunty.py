@@ -42,8 +42,9 @@ class Jaunty(Intrepid):
         self.run_in_target('chmod', '755', '/etc/update-motd.d/51_update-motd')
 
     def mangle_grub_menu_lst(self, disks):
+        rootdev = disk.rootpart(disks)
         bootdev = disk.bootpart(disks)
-        run_cmd('sed', '-ie', 's/^# kopt=root=\([^ ]*\)\(.*\)/# kopt=root=UUID=%s\\2/g' % bootdev.fs.uuid, '%s/boot/grub/menu.lst' % self.context.chroot_dir)
+        run_cmd('sed', '-ie', 's/^# kopt=root=\([^ ]*\)\(.*\)/# kopt=root=UUID=%s\\2/g' % rootdev.fs.uuid, '%s/boot/grub/menu.lst' % self.context.chroot_dir)
         run_cmd('sed', '-ie', 's/^# groot.*/# groot=%s/g' % bootdev.fs.uuid, '%s/boot/grub/menu.lst' % self.context.chroot_dir)
         run_cmd('sed', '-ie', '/^# kopt_2_6/ d', '%s/boot/grub/menu.lst' % self.context.chroot_dir)
 

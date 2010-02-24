@@ -211,6 +211,8 @@ class Ubuntu(Distro):
         self.suite.install_kernel(destdir)
 
     def install_bootloader(self, chroot_dir, disks):
+        root_dev = VMBuilder.disk.bootpart(disks).get_grub_id()
+
         tmpdir = '/tmp/vmbuilder-grub'
         os.makedirs('%s%s' % (chroot_dir, tmpdir))
         self.context.add_clean_cb(self.install_bootloader_cleanup)
@@ -223,9 +225,9 @@ class Ubuntu(Distro):
             devmap.write("(hd%d) %s\n" % (id, new_filename))
         devmap.close()
         self.suite.install_grub(chroot_dir)
-        self.run_in_target('grub', '--device-map=%s' % devmapfile, '--batch',  stdin='''root (hd0,0)
+        self.run_in_target('grub', '--device-map=%s' % devmapfile, '--batch',  stdin='''root %s
 setup (hd0)
-EOT''') 
+EOT''' % root_dev) 
         self.suite.install_menu_lst(disks)
         self.install_bootloader_cleanup(chroot_dir)
 

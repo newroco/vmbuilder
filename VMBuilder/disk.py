@@ -423,6 +423,10 @@ def str_to_type(type):
     except KeyError, e:
         raise Exception('Unknown partition type: %s' % type)
         
+def rootpart(disks):
+    """Returns the partition which contains the root dir"""
+    return path_to_partition(disks, '/')
+
 def bootpart(disks):
     """Returns the partition which contains /boot"""
     return path_to_partition(disks, '/boot/foo')
