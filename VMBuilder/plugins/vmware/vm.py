@@ -31,25 +31,42 @@ class VMWare(Hypervisor):
     needs_bootloader = True
     vmxtemplate = 'vmware'
 
-    def finalize(self):
+    def register_options(self):
+        group = self.setting_group('VM settings')
+        group.add_setting('mem', extra_args=['-m'], default='128', help='Assign MEM megabytes of memory to the guest vm. [default: %default]')
+
+    def convert(self, disks, destdir):
         self.imgs = []
-        for disk in self.context.disks:
-            img_path = disk.convert(self.context.destdir, self.filetype)
+        for disk in self.get_disks():
+            img_path = disk.convert(destdir, self.filetype)
             self.imgs.append(img_path)
-            self.context.result_files.append(img_path)
+            self.call_hooks('fix_ownership', img_path)
 
-    def disks(self):
-        return self.context.disks
+    def get_disks(self):
+        return self.disks
 
-    def deploy(self):
-        vmdesc = VMBuilder.util.render_template('vmware', self.context, self.vmxtemplate, { 'disks' : self.disks(), 'vmhwversion' : self.vmhwversion, 'mem' : self.context.mem, 'hostname' : self.context.hostname, 'arch' : self.context.arch, 'guestos' : (self.context.arch == 'amd64' and 'ubuntu-64' or 'ubuntu') })
+    def deploy(self, destdir):
+        mem = self.context.get_setting('mem')
+        hostname = self.context.distro.get_setting('hostname')
+        arch = self.context.distro.get_setting('arch')
+        mac = self.context.get_setting('mac')
+        vmdesc = VMBuilder.util.render_template('vmware',
+                                                self.context,
+                                                self.vmxtemplate,
+                                                { 'disks' : self.get_disks(),
+                                                  'vmhwversion' : self.vmhwversion,
+                                                  'mem' : mem,
+                                                  'hostname' : hostname,
+                                                  'arch' : arch,
+                                                  'mac' : mac,
+                                                  'guestos' : (arch == 'amd64' and 'ubuntu-64' or 'ubuntu') })
 
-        vmx = '%s/%s.vmx' % (self.context.destdir, self.context.hostname)
+        vmx = '%s/%s.vmx' % (destdir, hostname)
         fp = open(vmx, 'w')
         fp.write(vmdesc)
         fp.close()
         os.chmod(vmx, stat.S_IRWXU | stat.S_IRWXU | stat.S_IROTH | stat.S_IXOTH)
-        self.context.result_files.append(vmx)
+        self.call_hooks('fix_ownership', vmx)
 
 class VMWareWorkstation6(VMWare):
     name = 'VMWare Workstation 6'
@@ -70,37 +87,37 @@ class VMWareEsxi(VMWare):
 
     vmdks = [] # vmdk filenames used when deploying vmx file
 
-    def finalize(self):
+    def convert(self, disks, destdir):
         self.imgs = []
-        for disk in self.context.disks:
+        for disk in disks:
 
             # Move raw image to <imagename>-flat.vmdk
             diskfilename = os.path.basename(disk.filename)
             if '.' in diskfilename:
                 diskfilename = diskfilename[:diskfilename.rindex('.')]
 
-            flat = '%s/%s-flat.vmdk' % (self.context.destdir, diskfilename)
+            flat = '%s/%s-flat.vmdk' % (destdir, diskfilename)
             self.vmdks.append(diskfilename)
-            
+
             move(disk.filename, flat)
-            
-            self.context.result_files.append(flat)
-            
-            # Create disk descriptor file            
+
+            self.call_hooks('fix_ownership', flat)
+
+            # Create disk descriptor file
             sectorTotal = disk.size * 2048
             sector = int(floor(sectorTotal / 16065)) # pseudo geometry
-            
+
             diskdescriptor = VMBuilder.util.render_template('vmware', self.context, 'flat.vmdk',  { 'adaptertype' : self.adaptertype, 'sectors' : sector, 'diskname' : os.path.basename(flat), 'disksize' : sectorTotal })
-            vmdk = '%s/%s.vmdk' % (self.context.destdir, diskfilename)
-            
+            vmdk = '%s/%s.vmdk' % (destdir, diskfilename)
+
             fp = open(vmdk, 'w')
             fp.write(diskdescriptor)
             fp.close()
             os.chmod(vmdk, stat.S_IRWXU | stat.S_IRWXU | stat.S_IROTH | stat.S_IXOTH)
-            
-            self.context.result_files.append(vmdk)            
 
-    def disks(self):
+            self.call_hooks('fix_ownership', vmdk)
+
+    def get_disks(self):
         return self.vmdks
 
 register_hypervisor(VMWareServer)
