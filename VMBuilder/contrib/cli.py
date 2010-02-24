@@ -87,6 +87,7 @@ class CLI(object):
             if option.startswith('_') or option in ['ensure_value', 'read_module', 'read_file']:
                 continue
             val = getattr(self.options, option)
+            option = option.replace('_', '-')
             if val:
                 if distro.has_setting(option) and distro.get_setting_default(option) != val:
                     distro.set_setting(option, val)
