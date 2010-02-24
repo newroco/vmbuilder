@@ -1,7 +1,7 @@
 #
 #    Uncomplicated VM Builder
 #    Copyright (C) 2007-2009 Canonical Ltd.
-#    
+#
 #    See AUTHORS for list of contributors
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -16,12 +16,6 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from   VMBuilder.util import run_cmd
-import VMBuilder.disk as disk
-import VMBuilder
-import logging
-import glob
-import sys
 
 class Suite(object):
     def __init__(self, context):

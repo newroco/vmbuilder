@@ -21,9 +21,7 @@ import logging
 import os
 import suite
 import shutil
-import socket
 import tempfile
-import VMBuilder
 import VMBuilder.disk as disk
 from   VMBuilder.util import run_cmd
 from   VMBuilder.exception import VMBuilderException
@@ -205,7 +203,7 @@ class Dapper(suite.Suite):
         cmd += addpkg or []
         cmd += ['%s-' % pkg for pkg in removepkg or []]
         self.run_in_target(env={ 'DEBIAN_FRONTEND' : 'noninteractive' }, *cmd)
-        
+
     def unmount_volatile(self):
         for mntpnt in glob.glob('%s/lib/modules/*/volatile' % self.context.chroot_dir):
             logging.debug("Unmounting %s" % mntpnt)

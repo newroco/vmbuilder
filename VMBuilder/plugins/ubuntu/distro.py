@@ -18,8 +18,6 @@
 #
 import logging
 import os
-import socket
-import types
 import shutil
 import VMBuilder
 from   VMBuilder           import register_distro, Distro
@@ -146,7 +144,7 @@ class Ubuntu(Distro):
         if lang:
             try:
                 run_cmd('locale-gen', '%s' % lang)
-            except VMBuilderException, e:
+            except VMBuilderException:
                 raise VMBuilderUserError("Unrecognised locale: '%s'" % (lang, ))
 
 # FIXME
