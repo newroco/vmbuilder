@@ -1,0 +1,28 @@
+0.12.1:
+
+ * Added NEWS file
+ * IntegerSetting.set_value now attempts to convert the given value
+   to an int instead of rejecting it outright.
+ * Bypass blkid cache.
+ * Move initctl out of the way during package installs in Ubuntu plugin.
+ * Update VMWare driver to 0.12 API
+ * Support separate /boot partitions.
+ * Update --part handling to 0.12 API.
+ * Make sure the given MAC is used in the libvirt domain template.
+ * Update libvirt plugin to 0.12 API.
+ * Check for hvm capabilities during preflight check.
+ * Add option to specify a seedfile which will be fed into the debconf
+   database. This enables installing packages like sun-java6-jre which
+   requires the user to accept an EULA.
+ * Correctly handle config keys with dashes in them.
+ * Update postinst plugin to 0.12 API.
+ * If trying to install a file to a nonexisting directory, the directory
+   will be created first.
+ * Refresh the valid_flavours for jaunty, karmic, and Lucid.
+ * Remove lpia from Lucid.
+ * Rewrite $LANG (s/utf8$/UTF-8/) so that locale-gen is happy again.
+ * Bail out early if destdir already exists.
+ * Re-add the option to specify a custom template directory.
+ * Re-add the option to specify a config file.
+ * Default to ext3 for Dapper through Jaunty
+ * Support non-dhcp network configurations.
