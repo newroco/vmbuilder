@@ -42,7 +42,7 @@ class VMWare(Hypervisor):
         return self.context.disks
 
     def deploy(self):
-        vmdesc = VMBuilder.util.render_template('vmware', self.context, self.vmxtemplate, { 'disks' : self.disks(), 'vmhwversion' : self.vmhwversion, 'cpus' : self.context.cpus, 'mem' : self.context.mem, 'hostname' : self.context.hostname, 'arch' : self.context.arch, 'guestos' : (self.context.arch == 'amd64' and 'ubuntu-64' or 'ubuntu') })
+        vmdesc = VMBuilder.util.render_template('vmware', self.context, self.vmxtemplate, { 'disks' : self.disks(), 'vmhwversion' : self.vmhwversion, 'mem' : self.context.mem, 'hostname' : self.context.hostname, 'arch' : self.context.arch, 'guestos' : (self.context.arch == 'amd64' and 'ubuntu-64' or 'ubuntu') })
 
         vmx = '%s/%s.vmx' % (self.context.destdir, self.context.hostname)
         fp = open(vmx, 'w')
