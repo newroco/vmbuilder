@@ -18,6 +18,7 @@
 #
 import os
 import re
+import shutil
 
 import VMBuilder
 import VMBuilder.util as util
