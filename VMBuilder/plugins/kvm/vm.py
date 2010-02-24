@@ -1,7 +1,7 @@
 #
 #    Uncomplicated VM Builder
 #    Copyright (C) 2007-2009 Canonical Ltd.
-#    
+#
 #    See AUTHORS for list of contributors
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -32,7 +32,7 @@ class KVM(Hypervisor):
 
     def register_options(self):
         group = self.setting_group('VM settings')
-        group.add_setting('mem', extra_args=['-m'], default='128', help='Assign MEM megabytes of memory to the guest vm. [default: %default]')
+        group.add_setting('mem', extra_args=['-m'], type='int', default=128, help='Assign MEM megabytes of memory to the guest vm. [default: %default]')
 
     def convert(self, disks, destdir):
         self.imgs = []
@@ -42,7 +42,7 @@ class KVM(Hypervisor):
             self.imgs.append(img_path)
             self.call_hooks('fix_ownership', img_path)
             self.cmdline += ['-drive', 'file=%s' % os.path.basename(img_path)]
-    
+
         self.cmdline += ['"$@"']
 
     def deploy(self, destdir):
