@@ -62,6 +62,7 @@ class Libvirt(Plugin):
 
         hostname = self.context.distro.get_setting('hostname')
         tmpl_ctxt = { 'mem': self.context.get_setting('mem'),
+                      'cpus': self.context.get_setting('cpus'),
                       'bridge' : self.context.get_setting('bridge'),
                       'mac' : self.context.get_setting('mac'),
                       'network' : self.context.get_setting('network'),

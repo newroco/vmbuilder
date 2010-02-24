@@ -34,6 +34,7 @@ class VMWare(Hypervisor):
     def register_options(self):
         group = self.setting_group('VM settings')
         group.add_setting('mem', extra_args=['-m'], default='128', help='Assign MEM megabytes of memory to the guest vm. [default: %default]')
+        group.add_setting('cpus', type='int', default=1, help='Assign NUM cpus to the guest vm. [default: %default]')
 
     def convert(self, disks, destdir):
         self.imgs = []
@@ -47,6 +48,7 @@ class VMWare(Hypervisor):
 
     def deploy(self, destdir):
         mem = self.context.get_setting('mem')
+        cpus = self.context.get_setting('cpus')
         hostname = self.context.distro.get_setting('hostname')
         arch = self.context.distro.get_setting('arch')
         mac = self.context.get_setting('mac')
@@ -56,6 +58,7 @@ class VMWare(Hypervisor):
                                                 { 'disks' : self.get_disks(),
                                                   'vmhwversion' : self.vmhwversion,
                                                   'mem' : mem,
+                                                  'numvcpus' : cpus,
                                                   'hostname' : hostname,
                                                   'arch' : arch,
                                                   'mac' : mac,

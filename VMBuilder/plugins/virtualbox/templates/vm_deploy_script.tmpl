@@ -30,7 +30,7 @@ VBoxManage openmedium #slurp
 disk \${disk_path}/$disk -type normal #slurp
 #end for
 
-VBoxManage modifyvm $vm_name -memory $memory -sata on #slurp
+VBoxManage modifyvm $vm_name -memory $memory -cpus $cpus -sata on #slurp
 #set $i = 0
 #for $disk in $vm_disks
     #set $i = $i + 1

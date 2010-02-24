@@ -33,10 +33,12 @@ class KVM(Hypervisor):
     def register_options(self):
         group = self.setting_group('VM settings')
         group.add_setting('mem', extra_args=['-m'], type='int', default=128, help='Assign MEM megabytes of memory to the guest vm. [default: %default]')
+        group.add_setting('cpus', type='int', default=1, help='Assign NUM cpus to the guest vm. [default: %default]')
 
     def convert(self, disks, destdir):
         self.imgs = []
         self.cmdline = ['kvm', '-m', str(self.context.get_setting('mem'))]
+        self.cmdline += ['-smp', str(self.context.get_setting('cpus'))]
         for disk in disks:
             img_path = disk.convert(destdir, self.filetype)
             self.imgs.append(img_path)
