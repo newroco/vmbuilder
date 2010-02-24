@@ -223,8 +223,10 @@ class Plugin(object):
 
     class IntSetting(Setting):
         def check_value(self, value):
-            if not type(value) == int:
-                raise VMBuilderException('%r is type %s, expected int.' % (value, type(value)))
+            try:
+                val = int(value)
+            except ValueError:
+                raise VMBuilderException('Could not interpret %r as an int.' % (value,))
 
     class BooleanSetting(Setting):
         def check_value(self, value):
