@@ -25,9 +25,7 @@ import os.path
 import re
 import stat
 import string
-import tempfile
 import time
-import VMBuilder
 from   VMBuilder.util      import run_cmd 
 from   VMBuilder.exception import VMBuilderUserError, VMBuilderException
 from   struct              import unpack
@@ -205,7 +203,7 @@ class Disk(object):
     def convert(self, destdir, format):
         """
         Convert the disk image
-        
+
         @type  destdir: string
         @param destdir: Target location of converted disk image
         @type  format: string
@@ -281,7 +279,7 @@ class Disk(object):
                     self.type = type
                 else:
                     self.type = str_to_type(type)
-            except ValueError, e:
+            except ValueError:
                 self.type = str_to_type(type)
 
 class Filesystem(object):
@@ -292,7 +290,7 @@ class Filesystem(object):
         self.devletter = devletter
         self.device = device
         self.dummy = dummy
-           
+
         self.set_type(type)
 
         self.mntpnt = mntpnt
@@ -388,19 +386,19 @@ class Filesystem(object):
                 self.type = type
             else:
                 self.type = str_to_type(type)
-        except ValueError, e:
+        except ValueError:
             self.type = str_to_type(type)
 
 def parse_size(size_str):
     """Takes a size like qemu-img would accept it and returns the size in MB"""
     try:
         return int(size_str)
-    except ValueError, e:
+    except ValueError:
         pass
 
     try:
         num = int(size_str[:-1])
-    except ValueError, e:
+    except ValueError:
         raise VMBuilderUserError("Invalid size: %s" % size_str)
 
     if size_str[-1:] == 'g' or size_str[-1:] == 'G':
@@ -420,7 +418,7 @@ str_to_type_map = { 'ext2': TYPE_EXT2,
 def str_to_type(type):
     try:
         return str_to_type_map[type]
-    except KeyError, e:
+    except KeyError:
         raise Exception('Unknown partition type: %s' % type)
         
 def rootpart(disks):
