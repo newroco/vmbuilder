@@ -329,7 +329,7 @@ class Filesystem(object):
             if os.path.exists("/sbin/vol_id"):
                 self.uuid = run_cmd('vol_id', '--uuid', self.filename).rstrip()
             elif os.path.exists("/sbin/blkid"):
-                self.uuid = run_cmd('blkid', '-sUUID', '-ovalue', self.filename).rstrip()
+                self.uuid = run_cmd('blkid', '-p', '-sUUID', '-ovalue', self.filename).rstrip()
 
     def mkfs_fstype(self):
         map = { TYPE_EXT2: ['mkfs.ext2', '-F'], TYPE_EXT3: ['mkfs.ext3', '-F'], TYPE_EXT4: ['mkfs.ext4', '-F'], TYPE_XFS: ['mkfs.xfs'], TYPE_SWAP: ['mkswap'] }
