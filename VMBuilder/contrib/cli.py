@@ -198,21 +198,21 @@ class CLI(object):
                     disk.add_part(offset, optsize, default_filesystem, '/opt')
         else:
             # We need to parse the file specified
-            if vm.hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
+            if hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
                 try:
                     for line in file(self.options.part):
                         elements = line.strip().split(' ')
                         if elements[0] == 'root':
-                            vm.add_filesystem(elements[1], default_filesystem, mntpnt='/')
+                            hypervisor.add_filesystem(elements[1], default_filesystem, mntpnt='/')
                         elif elements[0] == 'swap':
-                            vm.add_filesystem(elements[1], type='swap', mntpnt=None)
+                            hypervisor.add_filesystem(elements[1], type='swap', mntpnt=None)
                         elif elements[0] == '---':
                             # We just ignore the user's attempt to specify multiple disks
                             pass
                         elif len(elements) == 3:
-                            vm.add_filesystem(elements[1], type=default_filesystem, mntpnt=elements[0], devletter='', device=elements[2], dummy=(int(elements[1]) == 0))
+                            hypervisor.add_filesystem(elements[1], type=default_filesystem, mntpnt=elements[0], devletter='', device=elements[2], dummy=(int(elements[1]) == 0))
                         else:
-                            vm.add_filesystem(elements[1], type=default_filesystem, mntpnt=elements[0])
+                            hypervisor.add_filesystem(elements[1], type=default_filesystem, mntpnt=elements[0])
 
                 except IOError, (errno, strerror):
                     vm.optparser.error("%s parsing --part option: %s" % (errno, strerror))
@@ -220,7 +220,7 @@ class CLI(object):
                 try:
                     curdisk = list()
                     size = 0
-                    for line in file(part):
+                    for line in file(self.options.part):
                         pair = line.strip().split(' ',1) 
                         if pair[0] == '---':
                             self.do_disk(vm, curdisk, size)
@@ -231,14 +231,14 @@ class CLI(object):
                             curdisk.append((pair[0], pair[1]))
                             size += int(pair[1])
 
-                    self.do_disk(vm, curdisk, size)
+                    self.do_disk(hypervisor, curdisk, size)
 
                 except IOError, (errno, strerror):
                     vm.optparser.error("%s parsing --part option: %s" % (errno, strerror))
     
     def do_disk(self, hypervisor, curdisk, size):
         default_filesystem = hypervisor.distro.preferred_filesystem()
-        disk = hypervisor.add_disk(size+1)
+        disk = hypervisor.add_disk(util.tmpfile(keep=False), size+1)
         logging.debug("do_disk - size: %d" % size)
         offset = 0
         for pair in curdisk:
