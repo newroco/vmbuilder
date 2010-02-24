@@ -66,6 +66,7 @@ class Libvirt(Plugin):
                       'bridge' : self.context.get_setting('bridge'),
                       'mac' : self.context.get_setting('mac'),
                       'network' : self.context.get_setting('network'),
+                      'mac' : self.context.get_setting('mac'),
                       'virtio_net' : self.context.distro.use_virtio_net(),
                       'disks' : self.context.disks,
                       'filesystems' : self.context.filesystems,
