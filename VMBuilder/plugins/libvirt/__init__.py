@@ -33,12 +33,12 @@ class Libvirt(Plugin):
         return self.conn.listDefinedDomains() + [self.conn.lookupByID(id).name() for id in self.conn.listDomainsID()]
 
     def preflight_check(self):
-        if not self.context.name == 'KVM':
-            raise VMBuilderUserError('The libvirt plugin is only equiped to work with KVM at the moment.')
-
         libvirt_uri = self.get_setting('libvirt')
         if not libvirt_uri:
             return True
+
+        if not self.context.name == 'KVM':
+            raise VMBuilderUserError('The libvirt plugin is only equiped to work with KVM at the moment.')
 
         import libvirt
         import xml.etree.ElementTree
