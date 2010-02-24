@@ -65,7 +65,7 @@ class Disk(object):
 
         self.partitions = []
 
-    def devletters(self, vm):
+    def devletters(self):
         """
         @type  vm: VM object
         @param vm: The VM object to which the disk belongs L{parse_size})
@@ -75,7 +75,7 @@ class Disk(object):
                  the VM. E.g. the first disk of a VM would return 'a', while the 702nd would return 'zz'
         """
 
-        return index_to_devname(vm.disks.index(self))
+        return index_to_devname(self.vm.disks.index(self))
 
     def create(self):
         """

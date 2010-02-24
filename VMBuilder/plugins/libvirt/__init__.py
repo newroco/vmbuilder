@@ -33,41 +33,48 @@ class Libvirt(Plugin):
         return self.conn.listDefinedDomains() + [self.conn.lookupByID(id).name() for id in self.conn.listDomainsID()]
 
     def preflight_check(self):
+        if not self.context.name == 'KVM':
+            raise VMBuilderUserError('The libvirt plugin is only equiped to work with KVM at the moment.')
+
         libvirt_uri = self.get_setting('libvirt')
         if not libvirt_uri:
             return True
 
         import libvirt
+        import xml.etree.ElementTree
 
         self.conn = libvirt.open(libvirt_uri)
 
-        hostname = self.context.get_setting('hostname')
+        e = xml.etree.ElementTree.fromstring(self.conn.getCapabilities())
+
+        if not 'hvm' in [x.text for x in e.getiterator('os_type')]:
+            raise VMBuilderUserError('libvirt does not seem to want to accept hvm domains')
+
+        hostname = self.context.distro.get_setting('hostname')
         if hostname in self.all_domains() and not self.vm.overwrite:
             raise VMBuilderUserError('Domain %s already exists at %s' % (hostname, libvirt_uri))
         
-        if not self.context.hypervisor.name == 'KVM':
-            raise VMBuilderUserError('The libvirt plugin is only equiped to work with KVM at the moment.')
-
     def deploy(self, destdir):
         libvirt_uri = self.get_setting('libvirt')
         if not libvirt_uri:
             # Not for us
             return False
 
+        hostname = self.context.distro.get_setting('hostname')
         tmpl_ctxt = { 'mem': self.context.get_setting('mem'),
                       'cpus' : self.context.get_setting('cpus'),
                       'bridge' : self.context.get_setting('bridge'),
                       'mac' : self.context.get_setting('mac'),
                       'network' : self.context.get_setting('network'),
-                      'virtio_net' : self.context.get_setting('virtio-net'),
+                      'virtio_net' : self.context.distro.use_virtio_net(),
                       'disks' : self.context.disks,
-                      'filesystems' : self.context.filesystems }
+                      'filesystems' : self.context.filesystems,
+                      'hostname' : hostname }
         if self.context.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
             vmxml = VMBuilder.util.render_template('libvirt', self.context, 'libvirtxml_fsimage', tmpl_ctxt)
         else:
             vmxml = VMBuilder.util.render_template('libvirt', self.context, 'libvirtxml', tmpl_ctxt)
 
-        hostname = self.context.get_setting('hostname')
         if hostname in self.all_domains() and not self.vm.overwrite:
             raise VMBuilderUserError('Domain %s already exists at %s' % (hostname, libvirt_uri))
         else:
