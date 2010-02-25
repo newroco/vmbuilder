@@ -22,6 +22,7 @@ import errno
 import fcntl
 import logging
 import os.path
+import re
 import select
 import subprocess
 import tempfile
