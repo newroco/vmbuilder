@@ -77,27 +77,16 @@ class Ubuntu(Distro):
         group.add_setting('manifest', metavar='PATH', help='If passed, a manifest will be written to PATH')
 
     def set_defaults(self):
-        mirror = self.get_setting('mirror')
-        security_mirror = self.get_setting('security-mirror')
         arch = self.get_setting('arch')
-        components = self.get_setting('components')
 
-        if not mirror:
-            if arch == 'lpia':
-                self.set_setting_default('mirror', 'http://ports.ubuntu.com/ubuntu-ports')
-            else:
-                self.set_setting_default('mirror', 'http://archive.ubuntu.com/ubuntu')
-
-        if not security_mirror:
-            if arch == 'lpia':
-                self.set_setting_default('security-mirror', 'http://ports.ubuntu.com/ubuntu-ports')
-            else:
-                self.set_setting_default('security-mirror', 'http://security.ubuntu.com/ubuntu')
-
-        if not components:
-            self.set_setting_default('components',  ['main', 'restricted', 'universe'])
+        if arch == 'lpia':
+            self.set_setting_default('mirror', 'http://ports.ubuntu.com/ubuntu-ports')
+            self.set_setting_default('security-mirror', 'http://ports.ubuntu.com/ubuntu-ports')
         else:
-            self.set_setting_default('components',  components.split(','))
+            self.set_setting_default('mirror', 'http://archive.ubuntu.com/ubuntu')
+            self.set_setting_default('security-mirror', 'http://security.ubuntu.com/ubuntu')
+
+        self.set_setting_default('components',  ['main', 'restricted', 'universe'])
 
     def get_locale(self):
         lang = os.getenv('LANG')
