@@ -20,14 +20,9 @@
 import ConfigParser
 from   gettext             import gettext
 import logging
-import re
 import os
 import optparse
-import shutil
-import tempfile
 import textwrap
-import socket
-import struct
 import urllib
 import VMBuilder
 import VMBuilder.util      as util
@@ -137,133 +132,6 @@ class VM(object):
             getattr(plugin, func)()
         getattr(self.hypervisor, func)()
         getattr(self.distro, func)()
-        
-    def deploy(self):
-        """
-        "Deploy" the VM, by asking the plugins in turn to deploy it.
-
-        If no non-hypervior and non-distro plugin accepts to deploy
-        the image, thfe hypervisor's default deployment is used.
-
-        Returns when the first True is returned.
-        """
-        for plugin in self.plugins:
-             if getattr(plugin, 'deploy')():
-                 return True
-        getattr(self.hypervisor, 'deploy')()
-
-    def set_distro(self, arg):
-        if arg in VMBuilder.distros.keys():
-            self.distro = VMBuilder.distros[arg](self)
-            self.set_defaults()
-        else:
-            raise VMBuilderUserError("Invalid distro. Valid distros: %s" % " ".join(VMBuilder.distros.keys()))
-
-    def set_hypervisor(self, arg):
-        if arg in VMBuilder.hypervisors.keys():
-            self.hypervisor = VMBuilder.hypervisors[arg](self)
-            self.set_defaults()
-        else:
-            raise VMBuilderUserError("Invalid hypervisor. Valid hypervisors: %s" % " ".join(VMBuilder.hypervisors.keys()))
-
-   
-    def set_defaults(self):
-        """
-        is called to give all the plugins and the distro and hypervisor plugin a chance to set
-        some reasonable defaults, which the frontend then can inspect and present
-        """
-        multiline_split = re.compile("\s*,\s*")
-        if self.distro and self.hypervisor:
-            for plugin in VMBuilder._plugins:
-                self.plugins.append(plugin(self))
-
-            self.optparser.set_defaults(destdir='%s-%s' % (self.distro.arg, self.hypervisor.arg))
-
-            (settings, dummy) = self.optparser.parse_args([])
-            for (k,v) in settings.__dict__.iteritems():
-                confvalue = self.get_conf_value(k)
-                if confvalue:
-                    if self.optparser.get_option('--%s' % k):
-                        if self.optparser.get_option('--%s' % k).action == 'append':
-                            values = multiline_split.split(confvalue)
-                            setattr(self, k, values)
-                        else:
-                            setattr(self, k, confvalue)
-                    else:
-                        setattr(self, k, confvalue)
-                else:
-                    setattr(self, k, v)
-
-            self.distro.set_defaults()
-            self.hypervisor.set_defaults()
-
-    def create_directory_structure(self):
-        """Creates the directory structure where we'll be doing all the work
-
-        When create_directory_structure returns, the following attributes will be set:
-
-         - L{VM.destdir}: The final destination for the disk images
-         - L{VM.workdir}: The temporary directory where we'll do all the work
-         - L{VM.rootmnt}: The root mount point where all the target filesystems will be mounted
-         - L{VM.tmproot}: The directory where we build up the guest filesystem
-
-        ..and the corresponding directories are created.
-
-        Additionally, L{VM.destdir} is created, which is where the files (disk images, filesystem
-        images, run scripts, etc.) will eventually be placed.
-        """
-
-        self.workdir = self.create_workdir()
-        self.add_clean_cmd('rm', '-rf', self.workdir)
-
-        logging.debug('Temporary directory: %s', self.workdir)
-
-        self.rootmnt = '%s/target' % self.workdir
-        logging.debug('Creating the root mount directory: %s', self.rootmnt)
-        os.mkdir(self.rootmnt)
-
-        self.tmproot = '%s/root' % self.workdir
-        logging.debug('Creating temporary root: %s', self.tmproot)
-        os.mkdir(self.tmproot)
-
-        # destdir is where the user's files will land when they're done
-        if os.path.exists(self.destdir):
-            if self.overwrite:
-                logging.info('%s exists, and --overwrite specified. Removing..' % (self.destdir, ))
-                shutil.rmtree(self.destdir)
-            else:
-                raise VMBuilderUserError('%s already exists' % (self.destdir,))
-
-        logging.debug('Creating destination directory: %s', self.destdir)
-        os.mkdir(self.destdir)
-        self.add_clean_cmd('rmdir', self.destdir, ignore_fail=True)
-
-        self.result_files.append(self.destdir)
-
-    def create_workdir(self):
-        """Creates the working directory for this vm and returns its path"""
-        return tempfile.mkdtemp('', 'vmbuilder', self.tmp)
-
-    def install(self):
-        if self.in_place:
-            self.installdir = self.rootmnt
-        else:
-            self.installdir = self.tmproot
-
-        logging.info("Installing guest operating system. This might take some time...")
-        self.distro.install(self.installdir)
-
-        self.call_hooks('post_install')
-    
-        if not self.in_place:
-            logging.info("Copying to disk images")
-            util.run_cmd('rsync', '-aHA', '%s/' % self.tmproot, self.rootmnt)
-
-        if self.hypervisor.needs_bootloader:
-            logging.info("Installing bootloader")
-            self.distro.install_bootloader()
-
-        self.distro.install_vmbuilder_log(log.logfile, self.rootmnt)
 
     def preflight_check(self):
         for opt in sum([self.confparser.options(section) for section in self.confparser.sections()], []) + [k for (k,v) in self.confparser.defaults().iteritems()]:
@@ -326,7 +194,7 @@ class VM(object):
             util.fix_ownership(self.result_files)
 
             finished = True
-        except VMBuilderException,e:
+        except VMBuilderException:
             raise
         finally:
             if not finished:

@@ -215,7 +215,7 @@ class CLI(object):
                             hypervisor.add_filesystem(elements[1], type=default_filesystem, mntpnt=elements[0])
 
                 except IOError, (errno, strerror):
-                    vm.optparser.error("%s parsing --part option: %s" % (errno, strerror))
+                    self.optparser.error("%s parsing --part option: %s" % (errno, strerror))
             else:
                 try:
                     curdisk = list()
@@ -223,7 +223,7 @@ class CLI(object):
                     for line in file(self.options.part):
                         pair = line.strip().split(' ',1) 
                         if pair[0] == '---':
-                            self.do_disk(vm, curdisk, size)
+                            self.do_disk(hypervisor, curdisk, size)
                             curdisk = list()
                             size = 0
                         elif pair[0] != '':
@@ -234,7 +234,7 @@ class CLI(object):
                     self.do_disk(hypervisor, curdisk, size)
 
                 except IOError, (errno, strerror):
-                    vm.optparser.error("%s parsing --part option: %s" % (errno, strerror))
+                    hypervisor.optparser.error("%s parsing --part option: %s" % (errno, strerror))
     
     def do_disk(self, hypervisor, curdisk, size):
         default_filesystem = hypervisor.distro.preferred_filesystem()
@@ -255,8 +255,8 @@ class UVB(CLI):
     arg = 'ubuntu-vm-builder'
 
     def set_usage(self, vm):
-        optparser.set_usage('%prog hypervisor suite [options]')
-        optparser.arg_help = (('hypervisor', vm.hypervisor_help), ('suite', self.suite_help))
+        self.optparser.set_usage('%prog hypervisor suite [options]')
+        self.optparser.arg_help = (('hypervisor', vm.hypervisor_help), ('suite', self.suite_help))
 
     def suite_help(self):
         return 'Suite. Valid options: %s' % " ".join(VMBuilder.plugins.ubuntu.distro.Ubuntu.suites)

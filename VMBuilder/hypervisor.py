@@ -21,7 +21,7 @@
 import logging
 import VMBuilder.distro
 import VMBuilder.disk
-from   VMBuilder.util    import call_hooks, run_cmd, tmpdir
+from   VMBuilder.util    import run_cmd, tmpdir
 
 STORAGE_DISK_IMAGE = 0
 STORAGE_FS_IMAGE = 1

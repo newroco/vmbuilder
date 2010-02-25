@@ -20,11 +20,11 @@
 #    The publically exposed bits of VMBuilder
 #
 import logging
+import VMBuilder.log
 import VMBuilder.plugins
 from   VMBuilder.distro     import Distro
 from   VMBuilder.hypervisor import Hypervisor
 from   VMBuilder.plugins    import Plugin
-from   VMBuilder.vm         import VM
 from   VMBuilder.exception  import VMBuilderException, VMBuilderUserError
 
 # Internal bookkeeping
@@ -66,7 +66,7 @@ def register_hypervisor_plugin(cls):
     _hypervisor_plugins.sort(key=lambda x: x.priority)
 
 def set_console_loglevel(level):
-    log.console.setLevel(level)
+    VMBuilder.log.console.setLevel(level)
 
 def get_version_info():
     import vcsversion
@@ -75,6 +75,6 @@ def get_version_info():
     info['minor'] = 12
     info['micro'] = 1
     return info
- 
+
 logging.debug('Loading plugins')
 VMBuilder.plugins.load_plugins()

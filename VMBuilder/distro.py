@@ -53,7 +53,7 @@ class Context(VMBuilder.plugins.Plugin):
     def cancel_cleanup(self, cb):
         try:
             self._cleanup_cbs.remove(cb)
-        except ValueError, e:
+        except ValueError:
             # Wasn't in there. No worries.
             pass
 
@@ -64,7 +64,7 @@ class Context(VMBuilder.plugins.Plugin):
     def call_hooks(self, *args, **kwargs):
         try:
             call_hooks(self, *args, **kwargs)
-        except Exception, e:
+        except Exception:
             #self.cleanup()
             raise
 

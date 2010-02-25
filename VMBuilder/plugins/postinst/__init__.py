@@ -17,12 +17,9 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from VMBuilder import register_distro_plugin, Plugin, VMBuilderUserError
-from VMBuilder.util import run_cmd
 
 import logging
 import os
-import shutil
-import VMBuilder
 import VMBuilder.util as util
 
 class postinst(Plugin):

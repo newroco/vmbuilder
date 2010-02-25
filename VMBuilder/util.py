@@ -1,7 +1,7 @@
 #
 #    Uncomplicated VM Builder
 #    Copyright (C) 2007-2009 Canonical Ltd.
-#    
+#
 #    See AUTHORS for list of contributors
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -185,9 +185,9 @@ def get_conf_value(context, confparser, key):
     confvalue = None
     try:
         confvalue = confparser.get('DEFAULT', key)
-    except ConfigParser.NoSectionError, e:
+    except ConfigParser.NoSectionError:
         pass
-    except ConfigParser.NoOptionError, e:
+    except ConfigParser.NoOptionError:
         pass
 
     if confparser.has_option(context.arg, key):
@@ -195,11 +195,12 @@ def get_conf_value(context, confparser, key):
 
     logging.debug('Returning value %s for configuration key %s' % (repr(confvalue), key))
     return confvalue
- 
+
 def apply_config_files_to_context(config_files, context):
     confparser = ConfigParser.SafeConfigParser()
     confparser.read(config_files)
 
+    multiline_split = re.compile("\s*,\s*")
     for (key, setting) in context._config.iteritems():
         confvalue = get_conf_value(context, confparser, key)
         if confvalue:

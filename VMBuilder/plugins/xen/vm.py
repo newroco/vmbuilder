@@ -22,7 +22,6 @@ import VMBuilder
 import VMBuilder.hypervisor
 import logging
 import os.path
-import stat
 
 class Xen(Hypervisor):
     name = 'Xen'

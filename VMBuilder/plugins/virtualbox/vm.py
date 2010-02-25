@@ -21,7 +21,7 @@ import os
 import os.path
 import stat
 import VMBuilder
-from   VMBuilder      import register_hypervisor, Hypervisor, VMBuilderUserError
+from   VMBuilder      import register_hypervisor, Hypervisor
 from   VMBuilder.disk import vbox_manager_path
 import VMBuilder.hypervisor
 
