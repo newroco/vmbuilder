@@ -15,6 +15,7 @@ class TestPluginsSettings(unittest.TestCase):
     def setUp(self):
         self.vm = self.VM()
         self.plugin = self.TestPlugin(self.vm)
+        self.i = 0
 
     def test_add_setting_group_and_setting(self):
         setting_group = self.plugin.setting_group('Test Setting Group')
@@ -48,49 +49,55 @@ class TestPluginsSettings(unittest.TestCase):
         self.assertRaises(VMBuilderException, self.vm.set_setting, 'strsetting', 'baz')
         self.vm.set_setting_valid_options('strsetting', None)
         self.vm.set_setting('strsetting', 'baz')
-        
+
     def test_invalid_type_setting_raises_exception(self):
         setting_group = self.plugin.setting_group('Test Setting Group')
 
-        setting_group.add_setting('strsetting')
-        self.vm.set_setting('strsetting', '')
-        self.vm.set_setting_default('strsetting', '')
-        self.assertRaises(VMBuilderException, self.vm.set_setting, 'strsetting', 0)
-        self.assertRaises(VMBuilderException, self.vm.set_setting_default, 'strsetting', 0)
-        self.assertRaises(VMBuilderException, self.vm.set_setting, 'strsetting', True)
-        self.assertRaises(VMBuilderException, self.vm.set_setting_default, 'strsetting', True)
-        self.assertRaises(VMBuilderException, self.vm.set_setting, 'strsetting', [])
-        self.assertRaises(VMBuilderException, self.vm.set_setting_default, 'strsetting', [])
+        test_table = [{ 'type' : 'str',
+                        'good' : [''],
+                        'bad'  : [0, True, ['foo']]
+                      },
+                      { 'type' : 'int',
+                        'good' : [0, ('0', 0)],
+                        'bad'  : ['', True, ['foo']]
+                      },
+                      { 'type' : 'bool',
+                        'good' : [True],
+                        'bad'  : ['', 0, '0', ['foo']]
+                      },
+                      { 'type' : 'list',
+                        'good' : [['foo']],
+                        'bad'  : [True, '', 0, '0']
+                      }]
 
-        setting_group.add_setting('intsetting', type='int')
-        self.assertRaises(VMBuilderException, self.vm.set_setting, 'intsetting', '')
-        self.assertRaises(VMBuilderException, self.vm.set_setting_default, 'intsetting', '')
-        self.vm.set_setting('intsetting', 0)
-        self.vm.set_setting_default('intsetting', 0)
-        self.assertRaises(VMBuilderException, self.vm.set_setting, 'intsetting', True)
-        self.assertRaises(VMBuilderException, self.vm.set_setting_default, 'intsetting', True)
-        self.assertRaises(VMBuilderException, self.vm.set_setting, 'intsetting', [])
-        self.assertRaises(VMBuilderException, self.vm.set_setting_default, 'intsetting', [])
+        def get_new_setting(setting_type):
+            setting_name = '%ssetting%d' % (setting_type, self.i)
+            self.i += 1
+            setting_group.add_setting(setting_name, type=setting_type)
+            return setting_name
 
-        setting_group.add_setting('boolsetting', type='bool')
-        self.assertRaises(VMBuilderException, self.vm.set_setting, 'boolsetting', '')
-        self.assertRaises(VMBuilderException, self.vm.set_setting_default, 'boolsetting', '')
-        self.assertRaises(VMBuilderException, self.vm.set_setting, 'boolsetting', 0)
-        self.assertRaises(VMBuilderException, self.vm.set_setting_default, 'boolsetting', 0)
-        self.vm.set_setting('boolsetting', True)
-        self.vm.set_setting_default('boolsetting', True)
-        self.assertRaises(VMBuilderException, self.vm.set_setting, 'boolsetting', [])
-        self.assertRaises(VMBuilderException, self.vm.set_setting_default, 'boolsetting', [])
+        def try_bad_setting(setting_type, bad, setter):
+            setting_name = get_new_setting(setting_type)
+            self.assertRaises(VMBuilderException, setter, setting_name, bad)
 
-        setting_group.add_setting('listsetting', type='list')
-        self.assertRaises(VMBuilderException, self.vm.set_setting, 'listsetting', '')
-        self.assertRaises(VMBuilderException, self.vm.set_setting_default, 'listsetting', '')
-        self.assertRaises(VMBuilderException, self.vm.set_setting, 'listsetting', 0)
-        self.assertRaises(VMBuilderException, self.vm.set_setting_default, 'listsetting', 0)
-        self.assertRaises(VMBuilderException, self.vm.set_setting, 'listsetting', True)
-        self.assertRaises(VMBuilderException, self.vm.set_setting_default, 'listsetting', True)
-        self.vm.set_setting('listsetting', [])
-        self.vm.set_setting_default('listsetting', [])
+        def try_good_setting(setting_type, good, getter, setter):
+            setting_name = get_new_setting(setting_type)
+            if type(good) == tuple:
+                in_value, out_value = good
+            else:
+                in_value, out_value = good, good
+
+            setter(setting_name, in_value)
+            self.assertEqual(getter(setting_name), out_value)
+
+        for setting_type in test_table:
+            for good in setting_type['good']:
+                try_good_setting(setting_type['type'], good, self.vm.get_setting, self.vm.set_setting)
+                try_good_setting(setting_type['type'], good, self.vm.get_setting, self.vm.set_setting_default)
+                try_good_setting(setting_type['type'], good, self.vm.get_setting_default, self.vm.set_setting_default)
+            for bad in setting_type['bad']:
+                try_bad_setting(setting_type['type'], bad, self.vm.set_setting)
+                try_bad_setting(setting_type['type'], bad, self.vm.set_setting_default)
 
     def test_set_setting_raises_exception_on_invalid_setting(self):
         self.assertRaises(VMBuilderException, self.vm.set_setting_default, 'testsetting', 'newdefault')

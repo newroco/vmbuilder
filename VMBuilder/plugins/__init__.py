@@ -1,7 +1,7 @@
 #
 #    Uncomplicated VM Builder
 #    Copyright (C) 2007-2009 Canonical Ltd.
-#    
+#
 #    See AUTHORS for list of contributors
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -175,7 +175,7 @@ class Plugin(object):
                 if value not in self.valid_options:
                     raise VMBuilderException('%r is not a valid option for %s. Valid options are: %s' % (value, self.name, ' '.join(self.valid_options)))
             else:
-                self.check_value(value)
+                return self.check_value(value)
 
         def get_valid_options(self):
             return self.valid_options
@@ -201,14 +201,14 @@ class Plugin(object):
             """
             Set a new default value.
             """
-            self.do_check_value(value)
+            value = self.do_check_value(value)
             self.default = value
 
         def set_value(self, value):
             """
             Set a new value.
             """
-            self.do_check_value(value)
+            value = self.do_check_value(value)
             self.value = value
             self.value_set = True
 
@@ -220,23 +220,30 @@ class Plugin(object):
         def check_value(self, value):
             if not type(value) == list:
                 raise VMBuilderException('%r is type %s, expected list.' % (value, type(value)))
+            return value
 
     class IntSetting(Setting):
         def check_value(self, value):
-            try:
-                val = int(value)
-            except ValueError:
-                raise VMBuilderException('Could not interpret %r as an int.' % (value,))
+            if type(value) == str:
+                try:
+                    return int(value)
+                except ValueError:
+                    raise VMBuilderException('Could not interpret %r as an int.' % (value,))
+            if not type(value) == int:
+                raise VMBuilderException('%r is type %s, expected int (or a string that can be interpreted as an int).' % (value, type(value)))
+            return value
 
     class BooleanSetting(Setting):
         def check_value(self, value):
             if not type(value) == bool:
                 raise VMBuilderException('%r is type %s, expected bool.' % (value, type(value)))
+            return value
 
     class StringSetting(Setting):
         def check_value(self, value):
             if not type(value) == str:
                 raise VMBuilderException('%r is type %s, expected str.' % (value, type(value)))
+            return value
 
     def setting_group(self, name):
         setting_group = self.SettingGroup(self, self.context, name)
