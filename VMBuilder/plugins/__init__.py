@@ -204,6 +204,17 @@ class Plugin(object):
             value = self.do_check_value(value)
             self.default = value
 
+        def set_value_fuzzy(self, value):
+            """
+            Set new value.
+
+            Contrary to L{set_value}, L{set_value_fuzzy} will attempt
+            to turn L{value} into the target type. E.g. turning '10' 
+            into 10, "main,universe,multiverse" into ['main',
+            'universe', 'multiverse']
+            """
+            return self.set_value(value)
+
         def set_value(self, value):
             """
             Set a new value.
@@ -217,23 +228,50 @@ class Plugin(object):
             self.default = []
             super(Plugin.ListSetting, self).__init__(*args, **kwargs)
 
+        def set_value_fuzzy(self, value):
+            if len(value) == 1 and type(value[0]) == str:
+                value = value[0]
+            if type(value) == str:
+                if value == '':
+                    return self.set_value([])
+                for sep in [':', ',']:
+                    if sep in value:
+                        split_regex = re.compile("\s*%s\s*" % sep)
+                        return self.set_value(split_regex.split(value))
+                value = [value]
+                self.set_value(value)
+            return self.set_value(value)
+
         def check_value(self, value):
             if not type(value) == list:
                 raise VMBuilderException('%r is type %s, expected list.' % (value, type(value)))
             return value
 
     class IntSetting(Setting):
-        def check_value(self, value):
-            if type(value) == str:
+        def set_value_fuzzy(self, value):
+            if type(value) != int:
                 try:
-                    return int(value)
+                    value = int(value)
                 except ValueError:
                     raise VMBuilderException('Could not interpret %r as an int.' % (value,))
+            return self.set_value(value)
+
+        def check_value(self, value):
             if not type(value) == int:
-                raise VMBuilderException('%r is type %s, expected int (or a string that can be interpreted as an int).' % (value, type(value)))
+                raise VMBuilderException('%r is type %s, expected int.' % (value, type(value)))
             return value
 
     class BooleanSetting(Setting):
+        def set_value_fuzzy(self, value):
+            if type(value) == str:
+                if value.lower() in ['no', 'false', 'off', '0']:
+                    value = False
+                elif value.lower() in ['yes', 'true', 'on', '1']:
+                    value = True
+                else:
+                    raise VMBuilderException('Could not interpret %r as a boolean value.' % (value,))
+            return self.set_value(value)
+
         def check_value(self, value):
             if not type(value) == bool:
                 raise VMBuilderException('%r is type %s, expected bool.' % (value, type(value)))
@@ -257,6 +295,12 @@ class Plugin(object):
         if not name in self.context._config:
             raise VMBuilderException('Unknown config key: %s' % name)
         return self.context._config[name].get_value()
+
+    def set_setting_fuzzy(self, name, value):
+        if not name in self.context._config:
+            raise VMBuilderException('Unknown config key: %s' % name)
+#        print 'fuzzy setting of %s: %r' % (name, value)
+        self.context._config[name].set_value_fuzzy(value)
 
     def set_setting(self, name, value):
         if not name in self.context._config:

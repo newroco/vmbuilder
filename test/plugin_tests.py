@@ -55,18 +55,27 @@ class TestPluginsSettings(unittest.TestCase):
 
         test_table = [{ 'type' : 'str',
                         'good' : [''],
+                        'fuzzy': [''],
                         'bad'  : [0, True, ['foo']]
                       },
                       { 'type' : 'int',
-                        'good' : [0, ('0', 0)],
-                        'bad'  : ['', True, ['foo']]
+                        'good' : [0],
+                        'fuzzy': [('0', 0), ('34', 34), (0, 0), (34, 34)],
+                        'bad'  : ['', '0', True, ['foo']]
                       },
                       { 'type' : 'bool',
                         'good' : [True],
-                        'bad'  : ['', 0, '0', ['foo']]
+                        'fuzzy': [(True, True), ('tRuE', True), ('oN', True), ('yEs', True), ('1', True),
+                                  (False, False), ('fAlSe', False), ('oFf', False), ('nO', False), ('0', False) ],
+                        'bad'  : ['', 0, '0', ['foo'], '1']
                       },
                       { 'type' : 'list',
                         'good' : [['foo']],
+                        'fuzzy': [('main    ,        universe,multiverse', ['main', 'universe', 'multiverse']),
+                                  ('main:universe:multiverse', ['main', 'universe', 'multiverse']),
+                                  ('''main:
+                                  universe:multiverse''', ['main', 'universe', 'multiverse']),
+                                  ('',  [])],
                         'bad'  : [True, '', 0, '0']
                       }]
 
@@ -87,6 +96,7 @@ class TestPluginsSettings(unittest.TestCase):
             else:
                 in_value, out_value = good, good
 
+#            print setting_name, in_value
             setter(setting_name, in_value)
             self.assertEqual(getter(setting_name), out_value)
 
@@ -95,6 +105,9 @@ class TestPluginsSettings(unittest.TestCase):
                 try_good_setting(setting_type['type'], good, self.vm.get_setting, self.vm.set_setting)
                 try_good_setting(setting_type['type'], good, self.vm.get_setting, self.vm.set_setting_default)
                 try_good_setting(setting_type['type'], good, self.vm.get_setting_default, self.vm.set_setting_default)
+                try_good_setting(setting_type['type'], good, self.vm.get_setting, self.vm.set_setting_fuzzy)
+            for fuzzy in setting_type['fuzzy']:
+                try_good_setting(setting_type['type'], fuzzy, self.vm.get_setting, self.vm.set_setting_fuzzy)
             for bad in setting_type['bad']:
                 try_bad_setting(setting_type['type'], bad, self.vm.set_setting)
                 try_bad_setting(setting_type['type'], bad, self.vm.set_setting_default)

@@ -22,7 +22,6 @@ import errno
 import fcntl
 import logging
 import os.path
-import re
 import select
 import subprocess
 import tempfile
@@ -201,12 +200,7 @@ def apply_config_files_to_context(config_files, context):
     confparser = ConfigParser.SafeConfigParser()
     confparser.read(config_files)
 
-    multiline_split = re.compile("\s*,\s*")
     for (key, setting) in context._config.iteritems():
         confvalue = get_conf_value(context, confparser, key)
         if confvalue:
-            if type(setting.get_value()) == list:
-                values = multiline_split.split(confvalue)
-                setting.set_default(values)
-            else:
-                setting.set_default(confvalue)
+            setting.set_value_fuzzy(confvalue)

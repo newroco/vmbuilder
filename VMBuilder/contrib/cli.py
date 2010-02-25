@@ -90,9 +90,9 @@ class CLI(object):
             option = option.replace('_', '-')
             if val:
                 if distro.has_setting(option) and distro.get_setting_default(option) != val:
-                    distro.set_setting(option, val)
+                    distro.set_setting_fuzzy(option, val)
                 elif hypervisor.has_setting(option) and hypervisor.get_setting_default(option) != val:
-                    hypervisor.set_setting(option, val)
+                    hypervisor.set_setting_fuzzy(option, val)
         
         if self.options.existing_chroot:
             distro.set_chroot_dir(self.options.existing_chroot)
