@@ -37,19 +37,35 @@ TYPE_SWAP = 3
 TYPE_EXT4 = 4
 
 class Disk(object):
+    """
+    Virtual disk.
+
+    @type  vm: Hypervisor
+    @param vm: The Hypervisor to which the disk belongs
+    @type  filename: string
+    @param filename: filename of the disk image
+    @type  size: string or number
+    @param size: The size of the disk image to create (passed to
+        L{parse_size}). If specified and filename already exists,
+        L{VMBuilderUserError} will be raised. Otherwise, a disk image of
+        this size will be created once L{create}() is called.
+    """
+    
     def __init__(self, vm, filename, size=None):
-        """
-        @type  size: string or number
-        @param size: The size of the disk image (passed to L{parse_size})
-
-        @type  filename: string
-        @param filename: filename of the disk image. If size is given, this
-                         file will be overwritten with an image of the given size
-        """
-
         self.vm = vm
+        "The hypervisor to which the disk belongs."
+
         self.filename = filename
+        "The filename of the disk image."
+
+        self.partitions = []
+        "The list of partitions on the disk. Is kept in order by L{add_part}."
+
         self.preallocated = False
+        "Whether the file existed already (True if it did, False if we had to create it)."
+
+        self.size = 0
+        "The size of the disk. For preallocated disks, this is detected."
 
         if not os.path.exists(self.filename):
             if not size:
@@ -61,13 +77,8 @@ class Disk(object):
             self.preallocated = True
             self.size = detect_size(self.filename)
 
-        self.partitions = []
-
     def devletters(self):
         """
-        @type  vm: VM object
-        @param vm: The VM object to which the disk belongs L{parse_size})
-
         @rtype: string
         @return: the series of letters that ought to correspond to the device inside
                  the VM. E.g. the first disk of a VM would return 'a', while the 702nd would return 'zz'
@@ -77,22 +88,22 @@ class Disk(object):
 
     def create(self):
         """
-        Creates the disk image (unless preallocated)
+        Creates the disk image (if it doesn't already exist).
 
-        It is safe to call this method even if the disk image already exists,
-        in which case, it's a no-op.
-        
-        Once this method returns, self.filename points to whatever holds the virtual disk
+        Once this method returns succesfully, L{filename} can be
+        expected to points to point to whatever holds the virtual disk
         (be it a file, partition, logical volume, etc.).
         """
-
         if not os.path.exists(self.filename):
             logging.info('Creating disk image: "%s" of size: %dMB' % (self.filename, self.size))
             run_cmd(qemu_img_path(), 'create', '-f', 'raw', self.filename, '%dM' % self.size)
 
     def partition(self):
         """
-        Partitions the disk image. Call this once you've added all partitions.
+        Partitions the disk image. First adds a partition table and then
+        adds the individual partitions.
+
+        Should only be called once and only after you've added all partitions.
         """
 
         logging.info('Adding partition table to disk image: %s' % self.filename)
@@ -104,7 +115,12 @@ class Disk(object):
 
     def map_partitions(self):
         """
-        Create loop devices corresponding to the partitions
+        Create loop devices corresponding to the partitions.
+
+        Once this has returned succesfully, each partition's map device
+        is set as its L{filename<Disk.Partition.filename>} attribute.
+
+        Call this after L{partition}.
         """
         logging.info('Creating loop devices corresponding to the created partitions')
         self.vm.add_clean_cb(lambda : self.unmap(ignore_fail=True))
@@ -123,11 +139,10 @@ class Disk(object):
         for (part, mapdev) in zip(self.partitions, mapdevs):
             part.set_filename('/dev/mapper/%s' % mapdev)
 
-        # At this point, all partitions are created and their mapping device has been
-        # created and set as .filename
-
     def mkfs(self):
-        # Adds a filesystem to the partition
+        """
+        Creates the partitions' filesystems
+        """
         logging.info("Creating file systems")
         for part in self.partitions:
             part.mkfs()
@@ -142,13 +157,15 @@ class Disk(object):
     def get_index(self):
         """
         @rtype:  number
-        @return: index of the disk (starting from 0)
+        @return: index of the disk (starting from 0 for the hypervisor's first disk)
         """
         return self.vm.disks.index(self)
 
     def unmap(self, ignore_fail=False):
         """
         Destroy all mapping devices
+
+        Unsets L{Partition}s' and L{Filesystem}s' filename attribute
         """
         # first sleep to give the loopback devices a chance to settle down
         time.sleep(3)
@@ -170,7 +187,7 @@ class Disk(object):
         run_cmd('kpartx', '-d', self.filename, ignore_fail=ignore_fail)
 
         for part in self.partitions:
-            self.mapdev = None
+            part.set_filename(None)
 
     def add_part(self, begin, length, type, mntpnt):
         """
@@ -232,12 +249,25 @@ class Disk(object):
     class Partition(object):
         def __init__(self, disk, begin, end, type, mntpnt):
             self.disk = disk
+            "The disk on which this Partition resides."
+
             self.begin = begin
+            "The start of the partition"
+
             self.end = end
+            "The end of the partition"
+
             self.type = type
+            "The partition type"
+
             self.mntpnt = mntpnt
-            self.mapdev = None
+            "The destined mount point"
+
+            self.filename = None
+            "The filename of this partition (the map device)"
+
             self.fs = Filesystem(vm=self.disk.vm, preallocated=True, type=self.type, mntpnt=self.mntpnt)
+            "The enclosed filesystem"
 
         def set_filename(self, filename):
             print 'set_filename called'
