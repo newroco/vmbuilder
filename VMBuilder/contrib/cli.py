@@ -1,6 +1,6 @@
 #    Uncomplicated VM Builder
 #    Copyright (C) 2007-2009 Canonical Ltd.
-#    
+#
 #    See AUTHORS for list of contributors
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -56,21 +56,17 @@ class CLI(object):
         group.add_option('--part', metavar='PATH', type='str', help="Allows to specify a partition table in PATH each line of partfile should specify (root first): \n    mountpoint size \none per line, separated by space, where size is in megabytes. You can have up to 4 virtual disks, a new disk starts on a line containing only '---'. ie: \n    root 2000 \n    /boot 512 \n    swap 1000 \n    --- \n    /var 8000 \n    /var/log 2000")
         optparser.add_option_group(group)
         
-        distro_name = sys.argv[2]
-        distro_class = VMBuilder.get_distro(distro_name)
-        distro = distro_class()
-        self.add_settings_from_context(optparser, distro)
+        hypervisor, distro = self.handle_args(optparser, sys.argv[1:])
 
-        hypervisor_name = sys.argv[1]
-        hypervisor_class = VMBuilder.get_hypervisor(hypervisor_name)
-        hypervisor = hypervisor_class(distro)
-        hypervisor.register_hook('fix_ownership', self.fix_ownership)
+        self.add_settings_from_context(optparser, distro)
         self.add_settings_from_context(optparser, hypervisor)
+
+        hypervisor.register_hook('fix_ownership', self.fix_ownership)
 
         config_files = ['/etc/vmbuilder.cfg', os.path.expanduser('~/.vmbuilder.cfg')]
         (self.options, args) = optparser.parse_args(sys.argv[2:])
 
-        destdir = self.options.destdir or ('%s-%s' % (distro_name, hypervisor_name))
+        destdir = self.options.destdir or ('%s-%s' % (distro.arg, hypervisor.arg))
         if os.path.exists(destdir):
              raise VMBuilderUserError('%s already exists' % destdir)
 
@@ -157,11 +153,12 @@ class CLI(object):
         optparser.set_usage('%prog hypervisor distro [options]')
 #        optparser.arg_help = (('hypervisor', vm.hypervisor_help), ('distro', vm.distro_help))
 
-    def handle_args(self, vm, args):
+    def handle_args(self, optparser, args):
         if len(args) < 2:
-            vm.optparser.error("You need to specify at least the hypervisor type and the distro")
-        self.hypervisor = vm.get_hypervisor(args[0])
-        self.distro = distro.vm.get_distro(args[1])
+            optparser.error("You need to specify at least the hypervisor type and the distro")
+        distro = VMBuilder.get_distro(args[1])()
+        hypervisor = VMBuilder.get_hypervisor(args[0])(distro)
+        return hypervisor, distro
 
     def set_verbosity(self, option, opt_str, value, parser):
         if opt_str == '--debug':
@@ -254,16 +251,17 @@ class CLI(object):
 class UVB(CLI):
     arg = 'ubuntu-vm-builder'
 
-    def set_usage(self, vm):
-        self.optparser.set_usage('%prog hypervisor suite [options]')
-        self.optparser.arg_help = (('hypervisor', vm.hypervisor_help), ('suite', self.suite_help))
+    def set_usage(self, optparser):
+        optparser.set_usage('%prog hypervisor suite [options]')
+#        optparser.arg_help = (('hypervisor', vm.hypervisor_help), ('suite', self.suite_help))
 
     def suite_help(self):
         return 'Suite. Valid options: %s' % " ".join(VMBuilder.plugins.ubuntu.distro.Ubuntu.suites)
 
-    def handle_args(self, vm, args):
+    def handle_args(self, optparser, args):
         if len(args) < 2:
-            vm.optparser.error("You need to specify at least the hypervisor type and the suite")
-        vm.set_hypervisor(args[0])
-        vm.set_distro('ubuntu')
-        vm.suite = args[1]
+            optparser.error("You need to specify at least the hypervisor type and the series")
+        distro = VMBuilder.get_distro('ubuntu')()
+        hypervisor = VMBuilder.get_hypervisor(args[0])(distro)
+        distro.set_setting('suite', args[1])
+        return hypervisor, distro
