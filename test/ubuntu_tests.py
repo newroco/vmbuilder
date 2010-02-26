@@ -18,17 +18,18 @@
 #
 #    Tests, tests, tests, and more tests
 
+import logging
 import unittest
 
 import VMBuilder
 
 from VMBuilder.plugins.ubuntu.distro import Ubuntu
 from VMBuilder.exception import VMBuilderUserError
-from VMBuilder.log import set_verbosity
+from VMBuilder import set_console_loglevel
 
 class TestUbuntuPlugin(unittest.TestCase):
     def setUp(self):
-        set_verbosity(None, '--quiet', None, None)
+        set_console_loglevel(logging.INFO)
 
     def test_invalid_suite_raises_UserError(self):
         'Building Ubuntu VMs with an invalid suite raises UserError'
