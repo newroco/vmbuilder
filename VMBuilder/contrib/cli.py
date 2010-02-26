@@ -184,7 +184,7 @@ class CLI(object):
                     hypervisor.add_filesystem(size='%dM' % optsize, type='ext3', mntpnt='/opt')
             else:
                 if self.options.raw:
-                    disk = hypervisor.add_disk(filename=self.options.raw, preallocated=True)
+                    disk = hypervisor.add_disk(filename=self.options.raw)
                 else:
                     size = rootsize + swapsize + optsize
                     tmpfile = util.tmpfile(keep=False)
