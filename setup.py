@@ -15,12 +15,12 @@ if os.path.exists('.bzr'):
         print repr(e)
 
 setup(name='VMBuilder',
-      version='0.12.1',
+      version='0.12.2',
       description='Uncomplicated VM Builder',
       author='Soren Hansen',
       author_email='soren@ubuntu.com',
       url='http://launchpad.net/vmbuilder/',
       packages=['VMBuilder', 'VMBuilder.tests', 'VMBuilder.plugins', 'VMBuilder.contrib'] + VMBuilder.plugins.find_plugins(),
       data_files=[('/etc/vmbuilder/%s' % (pkg,), glob('VMBuilder/plugins/%s/templates/*' % (pkg,))) for pkg in [p.split('.')[-1] for p in VMBuilder.plugins.find_plugins()]],
-      scripts=['vmbuilder'], 
+      scripts=['vmbuilder'],
       )

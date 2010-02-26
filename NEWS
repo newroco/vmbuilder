@@ -1,3 +1,14 @@
+0.12.2:
+
+ * Moved test directory under VMBuilder/ and include it in the tarball.
+ * Revive ubuntu-vm-builder (which rotted during the 0.11 -> 0.12 transition)
+ * Skip tests that need root, if not run as root.
+ * Fix installing onto logical volumes.
+ * Fix --raw handling.
+ * Refresh documenation in disk.py
+ * Improve handling of non-string settings from command line and config files.
+ * A big bunch of cleanups, most thanks to pyflakes.
+
 0.12.1:
 
  * Added NEWS file
@@ -26,3 +37,4 @@
  * Re-add the option to specify a config file.
  * Default to ext3 for Dapper through Jaunty
  * Support non-dhcp network configurations.
+
