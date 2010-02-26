@@ -20,7 +20,7 @@ setup(name='VMBuilder',
       author='Soren Hansen',
       author_email='soren@ubuntu.com',
       url='http://launchpad.net/vmbuilder/',
-      packages=['VMBuilder', 'VMBuilder.plugins', 'VMBuilder.contrib'] + VMBuilder.plugins.find_plugins(),
+      packages=['VMBuilder', 'VMBuilder.tests', 'VMBuilder.plugins', 'VMBuilder.contrib'] + VMBuilder.plugins.find_plugins(),
       data_files=[('/etc/vmbuilder/%s' % (pkg,), glob('VMBuilder/plugins/%s/templates/*' % (pkg,))) for pkg in [p.split('.')[-1] for p in VMBuilder.plugins.find_plugins()]],
       scripts=['vmbuilder'], 
       )
