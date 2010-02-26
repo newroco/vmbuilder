@@ -1,7 +1,7 @@
 #
 #    Uncomplicated VM Builder
 #    Copyright (C) 2007-2009 Canonical Ltd.
-#    
+#
 #    See AUTHORS for list of contributors
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -21,8 +21,9 @@ import tempfile
 import unittest
 
 import VMBuilder
-from VMBuilder.disk import parse_size, index_to_devname, devname_to_index, Disk
-from VMBuilder.exception import VMBuilderUserError
+from VMBuilder.disk import detect_size, parse_size, index_to_devname, devname_to_index, Disk
+from VMBuilder.exception import VMBuilderException, VMBuilderUserError
+from VMBuilder.util import run_cmd
 
 def get_temp_filename():
     (fd, tmpfile) = tempfile.mkstemp()
@@ -32,7 +33,7 @@ def get_temp_filename():
 class MockDistro(object):
     def has_256_bit_inode_ext3_support(self):
         return True
-    
+
 class MockHypervisor(object):
     def __init__(self):
         self.disks = []
@@ -49,27 +50,27 @@ class MockHypervisor(object):
 class TestSizeParser(unittest.TestCase):
     def test_suffixesAreCaseInsensitive(self):
         "Suffixes in size strings are case-insensitive"
-        
+
         for letter in ['K', 'M', 'G']:
             self.assertEqual(parse_size('1%s' % letter), parse_size('1%s' % letter.lower()))
-            
+
     def test_suffixless_counts_as_megabytes(self):
         "Suffix-less size string are counted as megabytes"
         self.assertEqual(parse_size(10), 10)
         self.assertEqual(parse_size('10'), 10)
-    
+
     def test_M_suffix_counts_as_megabytes(self):
         "Sizes with M suffix are counted as megabytes"
         self.assertEqual(parse_size('10M'), 10)
-    
+
     def test_G_suffix_counts_as_gigabytes(self):
         "1G is counted as 1024 megabytes"
         self.assertEqual(parse_size('1G'), 1024)
-        
+
     def test_K_suffix_counts_as_kilobytes(self):
         "1024K is counted as 1 megabyte"
         self.assertEqual(parse_size('1024K'), 1)
-        
+
     def test_rounds_size_to_nearest_megabyte(self):
         "parse_size rounds to nearest MB"
         self.assertEqual(parse_size('1025K'), 1)
@@ -94,30 +95,31 @@ class TestSequenceFunctions(unittest.TestCase):
         for i in range(18277):
             self.assertEqual(i, devname_to_index(index_to_devname(i)))
 
+class TestDetectSize(unittest.TestCase):
+    def setUp(self):
+        self.tmpfile = get_temp_filename()
+        run_cmd('qemu-img', 'create', self.tmpfile, '5G')
+        self.imgdev = None
+
+    def test_detect_size_file(self):
+        self.assertTrue(detect_size(self.tmpfile), 5*1024)
+
+    def test_detect_size_loopback_dev(self):
+        self.imgdev = run_cmd('losetup', '-f', '--show', self.tmpfile).strip()
+        self.assertTrue(detect_size(self.imgdev), 5*1024)
+
+    def test_detect_size_fifo(self):
+        os.unlink(self.tmpfile)
+        os.mkfifo(self.tmpfile)
+        self.assertRaises(VMBuilderException, detect_size, self.tmpfile)
+
+    def tearDown(self):
+        run_cmd('udevadm', 'settle')
+        if self.imgdev:
+            run_cmd('losetup', '-d', self.imgdev)
+        os.unlink(self.tmpfile)
+
 class TestDiskPlugin(unittest.TestCase):
-    def test_detect_size(self):
-        "detect_size returns the correct size"
-        from VMBuilder.util import run_cmd
-        from VMBuilder.disk import detect_size
-
-        tmpfile = get_temp_filename()
-        try:
-            # We assume qemu-img is well-behaved
-            run_cmd('qemu-img', 'create', tmpfile, '5G')
-            self.assertTrue(detect_size(tmpfile), 5*1024)
-
-            imgdev = run_cmd('losetup', '-f', '--show', tmpfile).strip()
-            try:
-                self.assertTrue(detect_size(imgdev), 5*1024)
-            except:
-                raise
-            finally:
-                run_cmd('losetup', '-d', imgdev)
-        except:
-            raise
-        finally:
-            os.unlink(tmpfile)
-
     def test_disk_filename(self):
         tmpfile = get_temp_filename()
         os.unlink(tmpfile)
@@ -129,12 +131,15 @@ class TestDiskPlugin(unittest.TestCase):
 
     def test_disk_size(self):
         # parse_size only deals with MB resolution
-        sizes = [('10G', 10*1024*1024*1024),
-                 ('400M', 400*1024*1024),
-                 ('345', 345*1024*1024),
-                 ('10240k', 10*1024*1024),
-                 ('10250k', 10*1024*1024),
-                 ('10230k', 9*1024*1024)]
+        K = 1024
+        M = K*1024
+        G = M*1024
+        sizes = [('10G', 10*G),
+                 ('400M', 400*M),
+                 ('345', 345*M),
+                 ('10240k', 10*M),
+                 ('10250k', 10*M),
+                 ('10230k', 9*M)]
 
         for (sizestr, size) in sizes:
             tmpfile = get_temp_filename()
@@ -145,7 +150,6 @@ class TestDiskPlugin(unittest.TestCase):
             actual_size = os.stat(tmpfile)[stat.ST_SIZE]
             self.assertEqual(size, actual_size, 'Asked for %s, expected %d, got %d' % (sizestr, size, actual_size))
             os.unlink(tmpfile)
-
 
     def test_disk_no_size_given(self):
         tmpname = get_temp_filename()
@@ -171,6 +175,16 @@ class TestDiskPlugin(unittest.TestCase):
         self.assertEqual(fp.read(), 'canary')
         fp.close()
         os.unlink(tmpfile)
+
+    def test_devletters(self):
+        from string import ascii_lowercase
+
+        hypervisor = MockHypervisor()
+        for (expected_devletter, index) in zip(ascii_lowercase, range(len(ascii_lowercase))):
+            tmpname = get_temp_filename()
+            disk = hypervisor.add_disk(filename=tmpname)
+            devletters = disk.devletters()
+            self.assertEqual(devletters, expected_devletter, 'Disk no. %d returned %s, expected %s.' % (index, devletters, expected_devletter))
 
 class TestDiskPartitioningPlugin(unittest.TestCase):
     def setUp(self):
@@ -207,7 +221,7 @@ Sector size (logical/physical): 512B/512B
 Partition Table: msdos
 
 Number  Start  End  Size  Type  File system  Flags''' % self.tmpfile, file_output.strip())
-        
+
     def test_partition_table_nonempty(self):
         from VMBuilder.util import run_cmd
 
