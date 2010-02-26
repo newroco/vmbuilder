@@ -19,11 +19,15 @@ import os
 import stat
 import tempfile
 import unittest
+import testtools
 
 import VMBuilder
 from VMBuilder.disk import detect_size, parse_size, index_to_devname, devname_to_index, Disk
 from VMBuilder.exception import VMBuilderException, VMBuilderUserError
 from VMBuilder.util import run_cmd
+
+TestSkipped = testtools.testcase.TestSkipped
+TestCase = testtools.TestCase
 
 def get_temp_filename():
     (fd, tmpfile) = tempfile.mkstemp()
@@ -47,7 +51,7 @@ class MockHypervisor(object):
         self.disks.append(disk)
         return disk
 
-class TestSizeParser(unittest.TestCase):
+class TestSizeParser(TestCase):
     def test_suffixesAreCaseInsensitive(self):
         "Suffixes in size strings are case-insensitive"
 
@@ -76,7 +80,7 @@ class TestSizeParser(unittest.TestCase):
         self.assertEqual(parse_size('1025K'), 1)
         self.assertEqual(parse_size('10250K'), 10)
 
-class TestSequenceFunctions(unittest.TestCase):
+class TestSequenceFunctions(TestCase):
     def test_index_to_devname(self):
         self.assertEqual(index_to_devname(0), 'a')
         self.assertEqual(index_to_devname(26), 'aa')
@@ -95,8 +99,9 @@ class TestSequenceFunctions(unittest.TestCase):
         for i in range(18277):
             self.assertEqual(i, devname_to_index(index_to_devname(i)))
 
-class TestDetectSize(unittest.TestCase):
+class TestDetectSize(TestCase):
     def setUp(self):
+        TestCase.setUp(self)
         self.tmpfile = get_temp_filename()
         run_cmd('qemu-img', 'create', self.tmpfile, '5G')
         self.imgdev = None
@@ -104,6 +109,7 @@ class TestDetectSize(unittest.TestCase):
     def test_detect_size_file(self):
         self.assertTrue(detect_size(self.tmpfile), 5*1024)
 
+    @testtools.skipIf(os.geteuid() != 0, 'Needs root to run')
     def test_detect_size_loopback_dev(self):
         self.imgdev = run_cmd('losetup', '-f', '--show', self.tmpfile).strip()
         self.assertTrue(detect_size(self.imgdev), 5*1024)
@@ -114,12 +120,13 @@ class TestDetectSize(unittest.TestCase):
         self.assertRaises(VMBuilderException, detect_size, self.tmpfile)
 
     def tearDown(self):
+        TestCase.tearDown(self)
         run_cmd('udevadm', 'settle')
         if self.imgdev:
             run_cmd('losetup', '-d', self.imgdev)
         os.unlink(self.tmpfile)
 
-class TestDiskPlugin(unittest.TestCase):
+class TestDiskPlugin(TestCase):
     def test_disk_filename(self):
         tmpfile = get_temp_filename()
         os.unlink(tmpfile)
@@ -186,8 +193,9 @@ class TestDiskPlugin(unittest.TestCase):
             devletters = disk.devletters()
             self.assertEqual(devletters, expected_devletter, 'Disk no. %d returned %s, expected %s.' % (index, devletters, expected_devletter))
 
-class TestDiskPartitioningPlugin(unittest.TestCase):
+class TestDiskPartitioningPlugin(TestCase):
     def setUp(self):
+        TestCase.setUp(self)
         self.tmpfile = get_temp_filename()
         os.unlink(self.tmpfile)
 
@@ -196,6 +204,7 @@ class TestDiskPartitioningPlugin(unittest.TestCase):
         self.disk.create()
 
     def tearDown(self):
+        TestCase.tearDown(self)
         os.unlink(self.tmpfile)
 
     def test_partition_overlap(self):
@@ -236,6 +245,7 @@ Partition Table: msdos
 Number  Start   End     Size    Type     File system  Flags
  1      16.4kB  1023MB  1023MB  primary''' % self.tmpfile, file_output.strip())
 
+    @testtools.skipIf(os.geteuid() != 0, 'Needs root to run')
     def test_map_partitions(self):
         self.disk.add_part(1, 1023, 'ext3', '/')
         self.disk.partition()
@@ -248,6 +258,7 @@ Number  Start   End     Size    Type     File system  Flags
         finally:
             self.disk.unmap()
 
+    @testtools.skipIf(os.geteuid() != 0, 'Needs root to run')
     def test_mkfs(self):
         self.disk.add_part(1, 1023, 'ext3', '/')
         self.disk.partition()
