@@ -19,6 +19,7 @@
 import logging
 import os
 import shutil
+import stat
 import VMBuilder
 from   VMBuilder           import register_distro, Distro
 from   VMBuilder.util      import run_cmd
@@ -209,10 +210,18 @@ class Ubuntu(Distro):
             new_filename = os.path.join(tmpdir, os.path.basename(disk.filename))
             open('%s%s' % (chroot_dir, new_filename), 'w').close()
             run_cmd('mount', '--bind', disk.filename, '%s%s' % (chroot_dir, new_filename))
+            st = os.stat(disk.filename)
+            if stat.S_ISBLK(st.st_mode):
+                for (part, part_id) in zip(disk.partitions, range(len(disk.partitions))):
+                    part_mountpnt = '%s%s%d' % (chroot_dir, new_filename, part_id+1)
+                    open(part_mountpnt, 'w').close()
+                    run_cmd('mount', '--bind', part.filename, part_mountpnt)
             devmap.write("(hd%d) %s\n" % (id, new_filename))
         devmap.close()
+        run_cmd('cat', '%s%s' % (chroot_dir, devmapfile))
         self.suite.install_grub(chroot_dir)
-        self.run_in_target('grub', '--device-map=%s' % devmapfile, '--batch',  stdin='''root %s
+        self.suite.run_in_target('apt-get', 'install', 'strace')
+        self.run_in_target('strace', '-f', 'grub', '--device-map=%s' % devmapfile, '--batch',  stdin='''root %s
 setup (hd0)
 EOT''' % root_dev) 
         self.suite.install_menu_lst(disks)
