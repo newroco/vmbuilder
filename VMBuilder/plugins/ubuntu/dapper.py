@@ -343,16 +343,13 @@ class Dapper(suite.Suite):
             logging.debug("Creating /var/lock in root filesystem")
             os.makedirs('%s/var/lock' % fs.mntpath)
 
-    def copy_settings(self):
-        if os.path.exists('/etc/default/locale'):
-            self.copy_to_target('/etc/default/locale', '/etc/default/locale')
-        self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'libc6')
-        self.run_in_target('locale-gen', 'en_US')
-        if self.context.lang:
-            self.run_in_target('locale-gen', self.context.lang)
-            self.install_from_template('/etc/default/locale', 'locale', { 'lang' : self.context.lang })
-        self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'locales')
-        self.run_in_target('dpkg-reconfigure', '-pcritical', 'locales')
+    def set_locale(self):
+        lang = self.context.get_setting('lang')
+        if lang:
+            self.install_from_template('/etc/default/locale', 'locale', { 'lang' : lang })
+            self.run_in_target('locale-gen', lang)
+            self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'libc6')
+            self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'locales')
 
     def install_vmbuilder_log(self, logfile, rootdir):
         shutil.copy(logfile, '%s/var/log/vmbuilder-install.log' % (rootdir,))
