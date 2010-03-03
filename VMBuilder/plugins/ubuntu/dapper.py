@@ -57,9 +57,6 @@ class Dapper(suite.Suite):
         logging.debug("Copy host settings")
         self.copy_settings()
 
-        logging.debug("Setting timezone")
-        self.set_timezone()
-
         if hasattr(self.context, 'ec2') and self.context.ec2:
             logging.debug("Configuring for ec2")
             self.install_ec2()
@@ -363,8 +360,8 @@ class Dapper(suite.Suite):
     def set_timezone(self):
         timezone = self.context.get_setting('timezone')
         if timezone:
-            os.unlink('%s/etc/localtime' % self.context.chroot_dir)
-            shutil.copy('%s/usr/share/zoneinfo/%s' % (self.context.chroot_dir, timezone), '%s/etc/localtime' % (self.context.chroot_dir,))
+            self.install_from_template('/etc/timezone', 'timezone', { 'timezone' : timezone })
+        self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'tzdata')
 
     def install_ec2(self):
         if self.context.ec2:
