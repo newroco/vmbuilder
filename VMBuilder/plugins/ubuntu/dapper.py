@@ -57,9 +57,6 @@ class Dapper(suite.Suite):
         logging.debug("Copy host settings")
         self.copy_settings()
 
-        logging.debug("Setting timezone")
-        self.set_timezone()
-
         if hasattr(self.context, 'ec2') and self.context.ec2:
             logging.debug("Configuring for ec2")
             self.install_ec2()
@@ -346,16 +343,13 @@ class Dapper(suite.Suite):
             logging.debug("Creating /var/lock in root filesystem")
             os.makedirs('%s/var/lock' % fs.mntpath)
 
-    def copy_settings(self):
-        if os.path.exists('/etc/default/locale'):
-            self.copy_to_target('/etc/default/locale', '/etc/default/locale')
-        self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'libc6')
-        self.run_in_target('locale-gen', 'en_US')
-        if self.context.lang:
-            self.run_in_target('locale-gen', self.context.lang)
-            self.install_from_template('/etc/default/locale', 'locale', { 'lang' : self.context.lang })
-        self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'locales')
-        self.run_in_target('dpkg-reconfigure', '-pcritical', 'locales')
+    def set_locale(self):
+        lang = self.context.get_setting('lang')
+        if lang:
+            self.install_from_template('/etc/default/locale', 'locale', { 'lang' : lang })
+            self.run_in_target('locale-gen', lang)
+            self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'libc6')
+            self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'locales')
 
     def install_vmbuilder_log(self, logfile, rootdir):
         shutil.copy(logfile, '%s/var/log/vmbuilder-install.log' % (rootdir,))
@@ -363,8 +357,8 @@ class Dapper(suite.Suite):
     def set_timezone(self):
         timezone = self.context.get_setting('timezone')
         if timezone:
-            os.unlink('%s/etc/localtime' % self.context.chroot_dir)
-            shutil.copy('%s/usr/share/zoneinfo/%s' % (self.context.chroot_dir, timezone), '%s/etc/localtime' % (self.context.chroot_dir,))
+            self.install_from_template('/etc/timezone', 'timezone', { 'timezone' : timezone })
+        self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'tzdata')
 
     def install_ec2(self):
         if self.context.ec2:
