@@ -20,6 +20,7 @@ import logging
 import optparse
 import os
 import pwd
+import shutil
 import sys
 import VMBuilder
 import VMBuilder.util as util
@@ -29,7 +30,7 @@ from   VMBuilder.exception import VMBuilderUserError
 
 class CLI(object):
     arg = 'cli'
-       
+
     def main(self):
         optparser = optparse.OptionParser()
 
@@ -41,6 +42,7 @@ class CLI(object):
         group.add_option('--debug', action='callback', callback=self.set_verbosity, help='Show debug information')
         group.add_option('--verbose', '-v', action='callback', callback=self.set_verbosity, help='Show progress information')
         group.add_option('--quiet', '-q', action='callback', callback=self.set_verbosity, help='Silent operation')
+        group.add_option('--overwrite', '-o', action='store_true', help='Configuration file')
         group.add_option('--config', '-c', type='str', help='Configuration file')
         group.add_option('--templates', metavar='DIR', help='Prepend DIR to template search path.')
         group.add_option('--destdir', '-d', type='str', help='Destination directory')
@@ -55,7 +57,7 @@ class CLI(object):
         group.add_option('--raw', metavar='PATH', type='str', help="Specify a file (or block device) to as first disk image.")
         group.add_option('--part', metavar='PATH', type='str', help="Allows to specify a partition table in PATH each line of partfile should specify (root first): \n    mountpoint size \none per line, separated by space, where size is in megabytes. You can have up to 4 virtual disks, a new disk starts on a line containing only '---'. ie: \n    root 2000 \n    /boot 512 \n    swap 1000 \n    --- \n    /var 8000 \n    /var/log 2000")
         optparser.add_option_group(group)
-        
+
         hypervisor, distro = self.handle_args(optparser, sys.argv[1:])
 
         self.add_settings_from_context(optparser, distro)
@@ -68,7 +70,11 @@ class CLI(object):
 
         destdir = self.options.destdir or ('%s-%s' % (distro.arg, hypervisor.arg))
         if os.path.exists(destdir):
-             raise VMBuilderUserError('%s already exists' % destdir)
+            if self.options.overwrite:
+                logging.debug('%s existed, but -o was specified. Nuking it.' % destdir)
+                shutil.rmtree(destdir)
+            else:
+                raise VMBuilderUserError('%s already exists' % destdir)
 
         if self.options.config:
             config_files.append(self.options.config)
