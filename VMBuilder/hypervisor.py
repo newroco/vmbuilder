@@ -27,6 +27,8 @@ STORAGE_DISK_IMAGE = 0
 STORAGE_FS_IMAGE = 1
 
 class Hypervisor(VMBuilder.distro.Context):
+    preferred_storage = STORAGE_DISK_IMAGE
+
     def __init__(self, distro):
         self.plugin_classes = VMBuilder._hypervisor_plugins
         super(Hypervisor, self).__init__()
@@ -35,6 +37,14 @@ class Hypervisor(VMBuilder.distro.Context):
         self.filesystems = []
         self.disks = []
         self.nics = []
+
+    def add_filesystem(self, *args, **kwargs):
+        """Adds a filesystem to the virtual machine"""
+        from VMBuilder.disk import Filesystem
+
+        fs = Filesystem(self, *args, **kwargs)
+        self.filesystems.append(fs)
+        return fs
 
     def add_disk(self, *args, **kwargs):
         """Adds a disk image to the virtual machine"""
@@ -54,17 +64,23 @@ class Hypervisor(VMBuilder.distro.Context):
         self.call_hooks('mount_partitions', self.chroot_dir)
         run_cmd('rsync', '-aHA', '%s/' % self.distro.chroot_dir, self.chroot_dir)
         self.distro.set_chroot_dir(self.chroot_dir)
-        self.call_hooks('install_bootloader', self.chroot_dir, self.disks)
+        if self.needs_bootloader:
+            self.call_hooks('install_bootloader', self.chroot_dir, self.disks)
         self.call_hooks('install_kernel', self.chroot_dir)
         self.call_hooks('unmount_partitions')
 
     def finalise(self, destdir):
-        self.call_hooks('convert', self.disks, destdir)
+        self.call_hooks('convert', 
+                        self.preferred_storage == STORAGE_DISK_IMAGE and self.disks or self.filesystems,
+                        destdir)
         self.call_hooks('deploy', destdir)
 
     def mount_partitions(self, mntdir):
         """Mounts all the vm's partitions and filesystems below .rootmnt"""
         logging.info('Mounting target filesystems')
+        for fs in self.filesystems:
+            fs.create()
+            fs.mkfs()
         for disk in self.disks:
             disk.create()
             disk.partition()
@@ -88,7 +104,7 @@ class Hypervisor(VMBuilder.distro.Context):
     def convert_disks(self, disks, destdir):
         for disk in disks:
             disk.convert(destdir, self.filetype)
-        
+
     class NIC(object):
         def __init__(self, type='dhcp', ip=None, network=None, netmask=None,
                            broadcast=None, dns=None, gateway=None):
