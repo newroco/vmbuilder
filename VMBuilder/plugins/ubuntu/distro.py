@@ -221,8 +221,7 @@ class Ubuntu(Distro):
         devmap.close()
         run_cmd('cat', '%s%s' % (chroot_dir, devmapfile))
         self.suite.install_grub(chroot_dir)
-        self.suite.run_in_target('apt-get', 'install', 'strace')
-        self.run_in_target('strace', '-f', 'grub', '--device-map=%s' % devmapfile, '--batch',  stdin='''root %s
+        self.run_in_target('grub', '--device-map=%s' % devmapfile, '--batch',  stdin='''root %s
 setup (hd0)
 EOT''' % root_dev) 
         self.suite.install_menu_lst(disks)
@@ -233,7 +232,7 @@ EOT''' % root_dev)
             # if this is ec2, do not call rmadison.
             # this could be replaced with a method to get most recent
             # stable kernel, but really, this is not used at all for ec2
-            if hasattr(self.vm, 'ec2') and self.context.ec2:
+            if hasattr(self.context, 'ec2') and self.context.ec2:
                 logging.debug("selecting ec2 kernel")
                 self.xen_kernel = "2.6.ec2-kernel"
                 return self.xen_kernel
@@ -243,8 +242,8 @@ EOT''' % root_dev)
 
                 for line in rmad.splitlines():
                     sline = line.split('|')
-                    
-                    if sline[2].strip().startswith(self.context.suite):
+
+                    if sline[2].strip().startswith(self.context.get_setting('suite')):
                         vt = sline[1].strip().split('.')
                         for i in range(4):
                             if int(vt[i]) > int(version[i]):
@@ -253,7 +252,7 @@ EOT''' % root_dev)
 
                 if version[0] == '0':
                     raise VMBuilderException('Something is wrong, no valid xen kernel for the suite %s found by rmadison' % self.context.suite)
-                
+
                 self.xen_kernel = '%s.%s.%s-%s' % (version[0],version[1],version[2],version[3])
             return self.xen_kernel
         else:
