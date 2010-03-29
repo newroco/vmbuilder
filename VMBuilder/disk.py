@@ -266,11 +266,10 @@ class Disk(object):
             self.filename = None
             "The filename of this partition (the map device)"
 
-            self.fs = Filesystem(vm=self.disk.vm, preallocated=True, type=self.type, mntpnt=self.mntpnt)
+            self.fs = Filesystem(vm=self.disk.vm, type=self.type, mntpnt=self.mntpnt)
             "The enclosed filesystem"
 
         def set_filename(self, filename):
-            print 'set_filename called'
             self.filename = filename
             self.fs.filename = filename
 
@@ -313,7 +312,7 @@ class Disk(object):
                 self.type = str_to_type(type)
 
 class Filesystem(object):
-    def __init__(self, vm=None, size=0, preallocated=False, type=None, mntpnt=None, filename=None, devletter='a', device='', dummy=False):
+    def __init__(self, vm=None, size=0, type=None, mntpnt=None, filename=None, devletter='a', device='', dummy=False):
         self.vm = vm
         self.filename = filename
         self.size = parse_size(size)
@@ -324,6 +323,9 @@ class Filesystem(object):
         self.set_type(type)
 
         self.mntpnt = mntpnt
+
+        self.preallocated = False
+        "Whether the file existed already (True if it did, False if we had to create it)."
 
     def create(self):
         logging.info('Creating filesystem: %s, size: %d, dummy: %s' % (self.mntpnt, self.size, repr(self.dummy)))
