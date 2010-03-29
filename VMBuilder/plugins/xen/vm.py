@@ -1,7 +1,7 @@
 #
 #    Uncomplicated VM Builder
 #    Copyright (C) 2007-2009 Canonical Ltd.
-#    
+#
 #    See AUTHORS for list of contributors
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -30,29 +30,29 @@ class Xen(Hypervisor):
     needs_bootloader = False
 
     def register_options(self):
-        group = self.context.setting_group('Xen option')
-        group.add_option('--xen-kernel', metavar='PATH', help='Path to the kernel to use (e.g.: /boot/vmlinux-2.6.27-7-server). Default depends on distribution and suite')
-        group.add_option('--xen-ramdisk', metavar='PATH', help='Path to the ramdisk to use (e.g.: /boot/initrd.img-2.6.27-7-server). Default depends on distribution and suite.')
-        self.context.register_setting_group(group)
+        group = self.setting_group('Xen options')
+        group.add_setting('xen-kernel', metavar='PATH', help='Path to the kernel to use (e.g.: /boot/vmlinux-2.6.27-7-server). Default depends on distribution and suite')
+        group.add_setting('xen-ramdisk', metavar='PATH', help='Path to the ramdisk to use (e.g.: /boot/initrd.img-2.6.27-7-server). Default depends on distribution and suite.')
+        group.add_setting('mem', extra_args=['-m'], type='int', default=128, help='Assign MEM megabytes of memory to the guest vm. [default: %default]')
 
-    def finalize(self):
+    def convert(self, filesystems, destdir):
         destimages = []
-        for filesystem in self.context.filesystems:
+        for filesystem in filesystems:
             if not filesystem.preallocated:
-                destfile = '%s/%s' % (self.context.destdir, os.path.basename(filesystem.filename))
+                destfile = '%s/%s' % (destdir, os.path.basename(filesystem.filename))
                 logging.info('Moving %s to %s' % (filesystem.filename, destfile))
-                self.context.result_files.append(destfile)
                 run_cmd('cp', '--sparse=always', filesystem.filename, destfile)
+                self.call_hooks('fix_ownership', destfile)
                 os.unlink(filesystem.filename)
                 filesystem.filename = os.path.abspath(destfile)
                 destimages.append(destfile)
-    
-        if not self.context.xen_kernel:
+
+        if not self.context.get_setting('xen-kernel'):
             self.context.xen_kernel = self.context.distro.xen_kernel_path()
-        if not self.context.xen_ramdisk:
+        if not self.context.get_setting('xen-ramdisk'):
             self.context.xen_ramdisk = self.context.distro.xen_ramdisk_path()
 
-        xenconf = '%s/xen.conf' % self.context.destdir
+        xenconf = '%s/xen.conf' % destdir
         fp = open(xenconf, 'w')
         fp.write("""
 # Configuration file for the Xen instance %s, created
@@ -77,13 +77,13 @@ on_crash    = 'restart'
 
 extra = 'xencons=tty console=tty1 console=hvc0'
 
-"""  %   (self.context.name,
-          self.context.xen_kernel,
-          self.context.xen_ramdisk,
-          self.context.mem,
+"""  %   (self.context.distro.get_setting('hostname'),
+          self.context.get_setting('xen-kernel'),
+          self.context.get_setting('xen-ramdisk'),
+          self.context.get_setting('mem'),
           ',\n'.join(["'tap:aio:%s,xvda%d,w'" % (os.path.abspath(img), id+1) for (img, id) in zip(destimages, range(len(destimages)))]),
-          self.context.name))
+          self.context.distro.get_setting('hostname')))
         fp.close()
-        self.context.result_files.append(xenconf)
+        self.call_hooks('fix_ownership', xenconf)
 
 register_hypervisor(Xen)
