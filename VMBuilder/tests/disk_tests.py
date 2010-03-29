@@ -243,7 +243,7 @@ Sector size (logical/physical): 512B/512B
 Partition Table: msdos
 
 Number  Start   End     Size    Type     File system  Flags
- 1      16.4kB  1023MB  1023MB  primary''' % self.tmpfile, file_output.strip())
+ 1      1049kB  1023MB  1022MB  primary''' % self.tmpfile, file_output.strip())
 
     @testtools.skipIf(os.geteuid() != 0, 'Needs root to run')
     def test_map_partitions(self):
