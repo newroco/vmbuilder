@@ -26,95 +26,102 @@ import VMBuilder
 import VMBuilder.util as util
 from   VMBuilder.disk import parse_size
 import VMBuilder.hypervisor
-from   VMBuilder.exception import VMBuilderUserError
+from   VMBuilder.exception import VMBuilderUserError, VMBuilderException
 
 class CLI(object):
     arg = 'cli'
 
     def main(self):
-        optparser = optparse.OptionParser()
+        try:
+            optparser = optparse.OptionParser()
 
-        self.set_usage(optparser)
+            self.set_usage(optparser)
 
-        optparser.add_option('--version', action='callback', callback=self.versioninfo, help='Show version information')
+            optparser.add_option('--version', action='callback', callback=self.versioninfo, help='Show version information')
 
-        group = optparse.OptionGroup(optparser, 'Build options')
-        group.add_option('--debug', action='callback', callback=self.set_verbosity, help='Show debug information')
-        group.add_option('--verbose', '-v', action='callback', callback=self.set_verbosity, help='Show progress information')
-        group.add_option('--quiet', '-q', action='callback', callback=self.set_verbosity, help='Silent operation')
-        group.add_option('--overwrite', '-o', action='store_true', help='Configuration file')
-        group.add_option('--config', '-c', type='str', help='Configuration file')
-        group.add_option('--templates', metavar='DIR', help='Prepend DIR to template search path.')
-        group.add_option('--destdir', '-d', type='str', help='Destination directory')
-        group.add_option('--only-chroot', action='store_true', help="Only build the chroot. Don't install it on disk images or anything.")
-        group.add_option('--existing-chroot', help="Use existing chroot.")
-        optparser.add_option_group(group)
+            group = optparse.OptionGroup(optparser, 'Build options')
+            group.add_option('--debug', action='callback', callback=self.set_verbosity, help='Show debug information')
+            group.add_option('--verbose', '-v', action='callback', callback=self.set_verbosity, help='Show progress information')
+            group.add_option('--quiet', '-q', action='callback', callback=self.set_verbosity, help='Silent operation')
+            group.add_option('--overwrite', '-o', action='store_true', help='Configuration file')
+            group.add_option('--config', '-c', type='str', help='Configuration file')
+            group.add_option('--templates', metavar='DIR', help='Prepend DIR to template search path.')
+            group.add_option('--destdir', '-d', type='str', help='Destination directory')
+            group.add_option('--only-chroot', action='store_true', help="Only build the chroot. Don't install it on disk images or anything.")
+            group.add_option('--existing-chroot', help="Use existing chroot.")
+            optparser.add_option_group(group)
 
-        group = optparse.OptionGroup(optparser, 'Disk')
-        group.add_option('--rootsize', metavar='SIZE', default=4096, help='Size (in MB) of the root filesystem [default: %default]')
-        group.add_option('--optsize', metavar='SIZE', default=0, help='Size (in MB) of the /opt filesystem. If not set, no /opt filesystem will be added.')
-        group.add_option('--swapsize', metavar='SIZE', default=1024, help='Size (in MB) of the swap partition [default: %default]')
-        group.add_option('--raw', metavar='PATH', type='str', help="Specify a file (or block device) to as first disk image.")
-        group.add_option('--part', metavar='PATH', type='str', help="Allows to specify a partition table in PATH each line of partfile should specify (root first): \n    mountpoint size \none per line, separated by space, where size is in megabytes. You can have up to 4 virtual disks, a new disk starts on a line containing only '---'. ie: \n    root 2000 \n    /boot 512 \n    swap 1000 \n    --- \n    /var 8000 \n    /var/log 2000")
-        optparser.add_option_group(group)
+            group = optparse.OptionGroup(optparser, 'Disk')
+            group.add_option('--rootsize', metavar='SIZE', default=4096, help='Size (in MB) of the root filesystem [default: %default]')
+            group.add_option('--optsize', metavar='SIZE', default=0, help='Size (in MB) of the /opt filesystem. If not set, no /opt filesystem will be added.')
+            group.add_option('--swapsize', metavar='SIZE', default=1024, help='Size (in MB) of the swap partition [default: %default]')
+            group.add_option('--raw', metavar='PATH', type='str', help="Specify a file (or block device) to as first disk image.")
+            group.add_option('--part', metavar='PATH', type='str', help="Allows to specify a partition table in PATH each line of partfile should specify (root first): \n    mountpoint size \none per line, separated by space, where size is in megabytes. You can have up to 4 virtual disks, a new disk starts on a line containing only '---'. ie: \n    root 2000 \n    /boot 512 \n    swap 1000 \n    --- \n    /var 8000 \n    /var/log 2000")
+            optparser.add_option_group(group)
 
-        hypervisor, distro = self.handle_args(optparser, sys.argv[1:])
+            hypervisor, distro = self.handle_args(optparser, sys.argv[1:])
 
-        self.add_settings_from_context(optparser, distro)
-        self.add_settings_from_context(optparser, hypervisor)
+            self.add_settings_from_context(optparser, distro)
+            self.add_settings_from_context(optparser, hypervisor)
 
-        hypervisor.register_hook('fix_ownership', self.fix_ownership)
+            hypervisor.register_hook('fix_ownership', self.fix_ownership)
 
-        config_files = ['/etc/vmbuilder.cfg', os.path.expanduser('~/.vmbuilder.cfg')]
-        (self.options, args) = optparser.parse_args(sys.argv[2:])
+            config_files = ['/etc/vmbuilder.cfg', os.path.expanduser('~/.vmbuilder.cfg')]
+            (self.options, args) = optparser.parse_args(sys.argv[2:])
 
-        destdir = self.options.destdir or ('%s-%s' % (distro.arg, hypervisor.arg))
-        if os.path.exists(destdir):
-            if self.options.overwrite:
-                logging.debug('%s existed, but -o was specified. Nuking it.' % destdir)
-                shutil.rmtree(destdir)
+            if os.geteuid() != 0:
+                raise VMBuilderUserError('Must run as root')
+
+            destdir = self.options.destdir or ('%s-%s' % (distro.arg, hypervisor.arg))
+            if os.path.exists(destdir):
+                if self.options.overwrite:
+                    logging.debug('%s existed, but -o was specified. Nuking it.' % destdir)
+                    shutil.rmtree(destdir)
+                else:
+                    raise VMBuilderUserError('%s already exists' % destdir)
+
+            if self.options.config:
+                config_files.append(self.options.config)
+            util.apply_config_files_to_context(config_files, distro)
+            util.apply_config_files_to_context(config_files, hypervisor)
+
+            if self.options.templates:
+                distro.template_dirs.insert(0,'%s/%%s' % self.options.templates)
+                hypervisor.template_dirs.insert(0,'%s/%%s' % self.options.templates)
+
+            for option in dir(self.options):
+                if option.startswith('_') or option in ['ensure_value', 'read_module', 'read_file']:
+                    continue
+                val = getattr(self.options, option)
+                option = option.replace('_', '-')
+                if val:
+                    if distro.has_setting(option) and distro.get_setting_default(option) != val:
+                        distro.set_setting_fuzzy(option, val)
+                    elif hypervisor.has_setting(option) and hypervisor.get_setting_default(option) != val:
+                        hypervisor.set_setting_fuzzy(option, val)
+
+            if self.options.existing_chroot:
+                distro.set_chroot_dir(self.options.existing_chroot)
+                distro.call_hooks('preflight_check')
             else:
-                raise VMBuilderUserError('%s already exists' % destdir)
+                chroot_dir = util.tmpdir()
+                distro.set_chroot_dir(chroot_dir)
+                distro.build_chroot()
 
-        if self.options.config:
-            config_files.append(self.options.config)
-        util.apply_config_files_to_context(config_files, distro)
-        util.apply_config_files_to_context(config_files, hypervisor)
+            if self.options.only_chroot:
+                print 'Chroot can be found in %s' % distro.chroot_dir
+                sys.exit(0)
 
-        if self.options.templates:
-            distro.template_dirs.insert(0,'%s/%%s' % self.options.templates)
-            hypervisor.template_dirs.insert(0,'%s/%%s' % self.options.templates)
+            self.set_disk_layout(hypervisor)
+            hypervisor.install_os()
 
-        for option in dir(self.options):
-            if option.startswith('_') or option in ['ensure_value', 'read_module', 'read_file']:
-                continue
-            val = getattr(self.options, option)
-            option = option.replace('_', '-')
-            if val:
-                if distro.has_setting(option) and distro.get_setting_default(option) != val:
-                    distro.set_setting_fuzzy(option, val)
-                elif hypervisor.has_setting(option) and hypervisor.get_setting_default(option) != val:
-                    hypervisor.set_setting_fuzzy(option, val)
-        
-        if self.options.existing_chroot:
-            distro.set_chroot_dir(self.options.existing_chroot)
-            distro.call_hooks('preflight_check')
-        else:
-            chroot_dir = util.tmpdir()
-            distro.set_chroot_dir(chroot_dir)
-            distro.build_chroot()
-
-        if self.options.only_chroot:
-            print 'Chroot can be found in %s' % distro.chroot_dir
-            sys.exit(0)
-
-        self.set_disk_layout(hypervisor)
-        hypervisor.install_os()
-
-        os.mkdir(destdir)
-        self.fix_ownership(destdir)
-        hypervisor.finalise(destdir)
-        sys.exit(0)
+            os.mkdir(destdir)
+            self.fix_ownership(destdir)
+            hypervisor.finalise(destdir)
+        except VMBuilderException, e:
+            logging.error(e)
+            raise
+            sys.exit(1)
 
     def fix_ownership(self, filename):
         """
@@ -181,10 +188,13 @@ class CLI(object):
             swapsize = parse_size(self.options.swapsize)
             optsize = parse_size(self.options.optsize)
             if hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
-                hypervisor.add_filesystem(size='%dM' % rootsize, type='ext3', mntpnt='/')
-                hypervisor.add_filesystem(size='%dM' % swapsize, type='swap', mntpnt=None)
+                tmpfile = util.tmpfile(keep=False)
+                hypervisor.add_filesystem(filename=tmpfile, size='%dM' % rootsize, type='ext3', mntpnt='/')
+                tmpfile = util.tmpfile(keep=False)
+                hypervisor.add_filesystem(filename=tmpfile, size='%dM' % swapsize, type='swap', mntpnt=None)
                 if optsize > 0:
-                    hypervisor.add_filesystem(size='%dM' % optsize, type='ext3', mntpnt='/opt')
+                    tmpfile = util.tmpfile(keep=False)
+                    hypervisor.add_filesystem(filename=tmpfile, size='%dM' % optsize, type='ext3', mntpnt='/opt')
             else:
                 if self.options.raw:
                     disk = hypervisor.add_disk(filename=self.options.raw)
