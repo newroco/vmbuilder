@@ -300,12 +300,12 @@ class Dapper(suite.Suite):
         return (mirror, updates_mirror, security_mirror)
 
     def install_kernel(self, destdir):
-        self.install_from_template('/etc/kernel-img.conf', 'kernelimg', { 'updategrub' : self.updategrub }) 
-        run_cmd('chroot', destdir, 'apt-get', '--force-yes', '-y', 'install', self.kernel_name(), 'grub')
+        run_cmd('chroot', destdir, 'apt-get', '--force-yes', '-y', 'install', self.kernel_name(), env={ 'DEBIAN_FRONTEND' : 'noninteractive' })
 
     def install_grub(self, chroot_dir):
+        self.install_from_template('/etc/kernel-img.conf', 'kernelimg', { 'updategrub' : self.updategrub })
         arch = self.context.get_setting('arch')
-        self.run_in_target('apt-get', '--force-yes', '-y', 'install', 'grub')
+        self.run_in_target('apt-get', '--force-yes', '-y', 'install', 'grub', env={ 'DEBIAN_FRONTEND' : 'noninteractive' })
         run_cmd('rsync', '-a', '%s%s/%s/' % (chroot_dir, self.grubroot, arch == 'amd64' and 'x86_64-pc' or 'i386-pc'), '%s/boot/grub/' % chroot_dir) 
 
     def create_devices(self):
