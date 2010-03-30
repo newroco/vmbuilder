@@ -30,9 +30,12 @@ class Edgy(Dapper):
 
     def mangle_grub_menu_lst(self, disks):
         bootdev = disk.bootpart(disks)
-        run_cmd('sed', '-ie', 's/^# kopt=root=\([^ ]*\)\(.*\)/# kopt=root=UUID=%s\\2/g' % bootdev.fs.uuid, '%s/boot/grub/menu.lst' % self.destdir)
-        run_cmd('sed', '-ie', 's/^# groot.*/# groot %s/g' % bootdev.get_grub_id(), '%s/boot/grub/menu.lst' % self.destdir)
-        run_cmd('sed', '-ie', '/^# kopt_2_6/ d', '%s/boot/grub/menu.lst' % self.destdir)
+        run_cmd('sed', '-ie', 's/^# kopt=root=\([^ ]*\)\(.*\)/# kopt=root=UUID=%s\\2/g' % bootdev.fs.uuid,
+                '%s/boot/grub/menu.lst' % self.context.chroot_dir)
+        run_cmd('sed', '-ie', 's/^# groot.*/# groot %s/g' % bootdev.get_grub_id(),
+                '%s/boot/grub/menu.lst' % self.context.chroot_dir)
+        run_cmd('sed', '-ie', '/^# kopt_2_6/ d', '%s/boot/grub/menu.lst' %
+                self.context.chroot_dir)
 
     def fstab(self):
         retval = '''# /etc/fstab: static file system information.

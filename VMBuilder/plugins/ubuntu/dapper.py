@@ -46,7 +46,7 @@ class Dapper(suite.Suite):
 
     def check_arch_validity(self, arch):
         return arch in self.valid_flavours.keys()
-        
+
     def install(self, destdir):
         raise VMBuilderException('Do not call this method!')
 
@@ -74,7 +74,7 @@ class Dapper(suite.Suite):
     def update(self):
         self.run_in_target('apt-get', '-y', '--force-yes', 'dist-upgrade',
                            env={ 'DEBIAN_FRONTEND' : 'noninteractive' })
-        
+
     def install_authorized_keys(self):
         ssh_key = self.context.get_setting('ssh-key')
         if ssh_key:
