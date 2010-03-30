@@ -131,11 +131,6 @@ class Ubuntu(Distro):
             raise VMBuilderUserError("Seedfile '%s' does not exist" % seedfile)
 
         lang = self.get_setting('lang')
-        if lang:
-            try:
-                run_cmd('locale-gen', '%s' % lang)
-            except VMBuilderException:
-                raise VMBuilderUserError("Unrecognised locale: '%s'" % (lang, ))
 
 # FIXME
 #        if getattr(self.vm, 'ec2', False):
