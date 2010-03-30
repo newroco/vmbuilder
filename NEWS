@@ -1,3 +1,11 @@
+0.12.3:
+
+ * Reworked the way timezones and locales are handled. This fixes an
+   actual problem with /etc/localtime not being set correctly, and fixes
+   a theoretical problem with people not running VMBuilder on Ubuntu.
+ * Resurrect -o (--overwrite) which went missing with 0.12.0.
+ * Resurrect Xen support which went missing with 0.12.0.
+
 0.12.2:
 
  * Moved test directory under VMBuilder/ and include it in the tarball.
