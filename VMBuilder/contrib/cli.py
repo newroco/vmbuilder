@@ -215,17 +215,18 @@ class CLI(object):
                 try:
                     for line in file(self.options.part):
                         elements = line.strip().split(' ')
+                        tmpfile = util.tmpfile(keep=False)
                         if elements[0] == 'root':
-                            hypervisor.add_filesystem(elements[1], default_filesystem, mntpnt='/')
+                            hypervisor.add_filesystem(elements[1], default_filesystem, filename=tmpfile, mntpnt='/')
                         elif elements[0] == 'swap':
-                            hypervisor.add_filesystem(elements[1], type='swap', mntpnt=None)
+                            hypervisor.add_filesystem(elements[1], type='swap', filename=tmpfile, mntpnt=None)
                         elif elements[0] == '---':
                             # We just ignore the user's attempt to specify multiple disks
                             pass
                         elif len(elements) == 3:
-                            hypervisor.add_filesystem(elements[1], type=default_filesystem, mntpnt=elements[0], devletter='', device=elements[2], dummy=(int(elements[1]) == 0))
+                            hypervisor.add_filesystem(elements[1], type=default_filesystem, filename=tmpfile, mntpnt=elements[0], devletter='', device=elements[2], dummy=(int(elements[1]) == 0))
                         else:
-                            hypervisor.add_filesystem(elements[1], type=default_filesystem, mntpnt=elements[0])
+                            hypervisor.add_filesystem(elements[1], type=default_filesystem, filename=tmpfile, mntpnt=elements[0])
 
                 except IOError, (errno, strerror):
                     self.optparser.error("%s parsing --part option: %s" % (errno, strerror))
