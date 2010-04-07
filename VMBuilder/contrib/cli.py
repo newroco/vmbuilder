@@ -100,6 +100,7 @@ class CLI(object):
                     elif hypervisor.has_setting(option) and hypervisor.get_setting_default(option) != val:
                         hypervisor.set_setting_fuzzy(option, val)
 
+            chroot_dir = None
             if self.options.existing_chroot:
                 distro.set_chroot_dir(self.options.existing_chroot)
                 distro.call_hooks('preflight_check')
@@ -118,6 +119,12 @@ class CLI(object):
             os.mkdir(destdir)
             self.fix_ownership(destdir)
             hypervisor.finalise(destdir)
+            # If chroot_dir is not None, it means we created it,
+            # and if we reach here, it means the user didn't pass
+            # --only-chroot. Hence, we need to remove it to clean
+            # up after ourselves.
+            if chroot_dir:
+                util.run_cmd('rm', '-rf', '--one-file-system', chroot_dir)
         except VMBuilderException, e:
             logging.error(e)
             raise

@@ -19,6 +19,7 @@
 #    Hypervisor super class
 
 import logging
+import os
 import VMBuilder.distro
 import VMBuilder.disk
 from   VMBuilder.util    import run_cmd, tmpdir
@@ -68,6 +69,7 @@ class Hypervisor(VMBuilder.distro.Context):
             self.call_hooks('install_bootloader', self.chroot_dir, self.disks)
         self.call_hooks('install_kernel', self.chroot_dir)
         self.call_hooks('unmount_partitions')
+        os.rmdir(self.chroot_dir)
 
     def finalise(self, destdir):
         self.call_hooks('convert', 
