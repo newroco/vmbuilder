@@ -205,8 +205,9 @@ class CLI(object):
                 offset = 0
                 disk.add_part(offset, rootsize, default_filesystem, '/')
                 offset += rootsize
-                disk.add_part(offset, swapsize, 'swap', 'swap')
-                offset += swapsize
+                if swapsize > 0:
+                    disk.add_part(offset, swapsize, 'swap', 'swap')
+                    offset += swapsize
                 if optsize > 0:
                     disk.add_part(offset, optsize, default_filesystem, '/opt')
         else:
