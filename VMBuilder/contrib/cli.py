@@ -238,29 +238,35 @@ class CLI(object):
                 try:
                     curdisk = list()
                     size = 0
+                    count = 0
                     for line in file(self.options.part):
                         pair = line.strip().split(' ',1) 
                         if pair[0] == '---':
-                            self.do_disk(hypervisor, curdisk, size)
+                            self.do_disk(hypervisor, curdisk, size, count)
                             curdisk = list()
                             size = 0
+                            count += 1
                         elif pair[0] != '':
                             logging.debug("part: %s, size: %d" % (pair[0], int(pair[1])))
                             curdisk.append((pair[0], pair[1]))
                             size += int(pair[1])
 
-                    self.do_disk(hypervisor, curdisk, size)
+                    self.do_disk(hypervisor, curdisk, size, count)
 
                 except IOError, (errno, strerror):
                     hypervisor.optparser.error("%s parsing --part option: %s" % (errno, strerror))
     
-    def do_disk(self, hypervisor, curdisk, size):
+    def do_disk(self, hypervisor, curdisk, size, count):
         default_filesystem = hypervisor.distro.preferred_filesystem()
-        disk = hypervisor.add_disk(util.tmpfile(keep=False), size+1)
-        logging.debug("do_disk - size: %d" % size)
+        if self.options.raw:
+            disk = hypervisor.add_disk(filename=self.options.raw[count])
+        else:
+            disk = hypervisor.add_disk(util.tmpfile(keep=False), size+1)
+
+        logging.debug("do_disk #%i - size: %d" % (count, size))
         offset = 0
         for pair in curdisk:
-            logging.debug("do_disk - part: %s, size: %s, offset: %d" % (pair[0], pair[1], offset))
+            logging.debug("do_disk #%i - part: %s, size: %s, offset: %d" % (count, pair[0], pair[1], offset))
             if pair[0] == 'root':
                 disk.add_part(offset, int(pair[1]), default_filesystem, '/')
             elif pair[0] == 'swap':
