@@ -55,7 +55,7 @@ class CLI(object):
             group.add_option('--rootsize', metavar='SIZE', default=4096, help='Size (in MB) of the root filesystem [default: %default]')
             group.add_option('--optsize', metavar='SIZE', default=0, help='Size (in MB) of the /opt filesystem. If not set, no /opt filesystem will be added.')
             group.add_option('--swapsize', metavar='SIZE', default=1024, help='Size (in MB) of the swap partition [default: %default]')
-            group.add_option('--raw', metavar='PATH', type='str', help="Specify a file (or block device) to use as first disk image.")
+            group.add_option('--raw', metavar='PATH', type='str', action='append', help="Specify a file (or block device) to use as first disk image (can be specified multiple times).")
             group.add_option('--part', metavar='PATH', type='str', help="Specify a partition table in PATH. Each line of partfile should specify (root first): \n    mountpoint size \none per line, separated by space, where size is in megabytes. You can have up to 4 virtual disks, a new disk starts on a line containing only '---'. ie: \n    root 2000 \n    /boot 512 \n    swap 1000 \n    --- \n    /var 8000 \n    /var/log 2000")
             optparser.add_option_group(group)
 
@@ -198,7 +198,9 @@ class CLI(object):
                     hypervisor.add_filesystem(filename=tmpfile, size='%dM' % optsize, type='ext3', mntpnt='/opt')
             else:
                 if self.options.raw:
-                    disk = hypervisor.add_disk(filename=self.options.raw)
+                    for raw_disk in self.options.raw:
+                        hypervisor.add_disk(filename=raw_disk)
+                    disk = hypervisor.disks[0]
                 else:
                     size = rootsize + swapsize + optsize
                     tmpfile = util.tmpfile(keep=False)
