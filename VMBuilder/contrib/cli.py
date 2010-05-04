@@ -190,8 +190,9 @@ class CLI(object):
             if hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
                 tmpfile = util.tmpfile(keep=False)
                 hypervisor.add_filesystem(filename=tmpfile, size='%dM' % rootsize, type='ext3', mntpnt='/')
-                tmpfile = util.tmpfile(keep=False)
-                hypervisor.add_filesystem(filename=tmpfile, size='%dM' % swapsize, type='swap', mntpnt=None)
+                if swapsize > 0:
+                    tmpfile = util.tmpfile(keep=False)
+                    hypervisor.add_filesystem(filename=tmpfile, size='%dM' % swapsize, type='swap', mntpnt=None)
                 if optsize > 0:
                     tmpfile = util.tmpfile(keep=False)
                     hypervisor.add_filesystem(filename=tmpfile, size='%dM' % optsize, type='ext3', mntpnt='/opt')
