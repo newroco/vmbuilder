@@ -48,6 +48,10 @@ class KVM(Hypervisor):
         self.cmdline += ['"$@"']
 
     def deploy(self, destdir):
+        # No need create run script if vm is registered with libvirt
+        if self.context.get_setting('libvirt'):
+            return
+        
         script = '%s/run.sh' % destdir
         fp = open(script, 'w')
         fp.write("#!/bin/sh\n\nexec %s\n" % ' '.join(self.cmdline))
