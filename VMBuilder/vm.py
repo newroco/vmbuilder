@@ -70,7 +70,7 @@ class VM(object):
 
         self.fsmounted = False
 
-        self.optparser = _MyOptParser(epilog="ubuntu-vm-builder is Copyright (C) 2007-2009 Canonical Ltd. and written by Soren Hansen <soren@canonical.com>.", usage='%prog hypervisor distro [options]')
+        self.optparser = _MyOptParser(epilog="ubuntu-vm-builder is Copyright (C) 2007-2009 Canonical Ltd. and written by Soren Hansen <soren@linux2go.dk>.", usage='%prog hypervisor distro [options]')
         self.optparser.arg_help = (('hypervisor', self.hypervisor_help), ('distro', self.distro_help))
 
         self.confparser = ConfigParser.SafeConfigParser()
