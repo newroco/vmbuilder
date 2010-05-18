@@ -15,7 +15,7 @@ if os.path.exists('.bzr'):
         print repr(e)
 
 setup(name='VMBuilder',
-      version='0.12.3',
+      version='0.12.4',
       description='Uncomplicated VM Builder',
       author='Soren Hansen',
       author_email='soren@ubuntu.com',

@@ -1,3 +1,13 @@
+0.12.4:
+
+  * Revive firstscripts plugins. This fixes the --firstboot and --firstlogin
+    options, both of which went missing with 0.12.
+  * Make Plugin.install_file work in non-context plugins (plugins that are not
+    Distros or Hypervisors).
+  * Do a slightly better job at cleaning up after ourselves by removing the
+    distro chroot by default and removing the temporary root mount point.
+  * Revive QEMu hypervisor.
+
 0.12.3:
 
  * Reworked the way timezones and locales are handled. This fixes an
