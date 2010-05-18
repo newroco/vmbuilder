@@ -18,9 +18,7 @@
 #
 from   VMBuilder import register_hypervisor, Hypervisor
 import VMBuilder
-import VMBuilder.hypervisor
 import os
-import os.path
 import stat
 
 class KVM(Hypervisor):
@@ -55,4 +53,15 @@ class KVM(Hypervisor):
         os.chmod(script, stat.S_IRWXU | stat.S_IRWXU | stat.S_IROTH | stat.S_IXOTH)
         self.call_hooks('fix_ownership', script)
 
+    def libvirt_domain_type_name(self):
+        return 'kvm'
+
+class QEMu(KVM):
+    name = 'QEMu'
+    arg = 'qemu'
+
+    def libvirt_domain_type_name(self):
+        return 'qemu'
+
 register_hypervisor(KVM)
+register_hypervisor(QEMu)

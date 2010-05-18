@@ -37,8 +37,8 @@ class Libvirt(Plugin):
         if not libvirt_uri:
             return True
 
-        if not self.context.name == 'KVM':
-            raise VMBuilderUserError('The libvirt plugin is only equiped to work with KVM at the moment.')
+        if not self.context.name == 'KVM' and not self.context.name == 'QEMu':
+            raise VMBuilderUserError('The libvirt plugin is only equiped to work with KVM and QEMu at the moment.')
 
         import libvirt
         import xml.etree.ElementTree
@@ -70,7 +70,8 @@ class Libvirt(Plugin):
                       'virtio_net' : self.context.distro.use_virtio_net(),
                       'disks' : self.context.disks,
                       'filesystems' : self.context.filesystems,
-                      'hostname' : hostname }
+                      'hostname' : hostname,
+                      'domain_type' : self.context.libvirt_domain_type_name() }
         if self.context.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
             vmxml = VMBuilder.util.render_template('libvirt', self.context, 'libvirtxml_fsimage', tmpl_ctxt)
         else:
