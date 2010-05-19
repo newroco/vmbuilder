@@ -32,9 +32,8 @@ class VirtualBox(Hypervisor):
     arg = 'vbox'
 
     def register_options(self):
-        group = self.context.setting_group('VirtualBox options')
-        group.add_option('--vbox-disk-format', metavar='FORMAT', default='vdi', help='Desired disk format. Valid options are: vdi vmdk. [default: %default]')
-        self.context.register_setting_group(group)
+        group = self.setting_group('VM settings')
+        group.add_setting('vbox-disk-format', metavar='FORMAT', default='vdi', help='Desired disk format. Valid options are: vdi vmdk. [default: %default]')
 
     def finalize(self):
         self.imgs = []
