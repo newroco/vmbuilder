@@ -91,11 +91,13 @@ class Ubuntu(Distro):
 
     def get_locale(self):
         lang = os.getenv('LANG')
+        if lang is None:
+            return 'C'
         # People's $LANG looks different since lucid, but locale-gen still
         # wants the old format.
         if lang.endswith('utf8'):
             return lang[:-4] + 'UTF-8'
-        return os.getenv('LANG')
+        return lang
 
     def preflight_check(self):
         """While not all of these are strictly checks, their failure would inevitably
