@@ -60,7 +60,7 @@ class Ubuntu(Distro):
         group.add_setting('install-security-mirror', metavar='URL', help='Use the security mirror at URL for installation only. Apt\'s sources.list will still use default or URL set by --security-mirror')
         group.add_setting('components', type='list', metavar='COMPS', help='A comma seperated list of distro components to include (e.g. main,universe).')
         group.add_setting('ppa', metavar='PPA', type='list', help='Add ppa belonging to PPA to the vm\'s sources.list.')
-        group.add_setting('lang', metavar='LANG', default=self.get_locale(), help='Set the locale to LANG [default: %default]')
+        group.add_setting('lang', metavar='LANG', default=get_locale(), help='Set the locale to LANG [default: %default]')
         group.add_setting('timezone', metavar='TZ', default='UTC', help='Set the timezone to TZ in the vm. [default: %default]')
 
         group = self.setting_group('Settings for the initial user')
@@ -88,16 +88,6 @@ class Ubuntu(Distro):
             self.set_setting_default('security-mirror', 'http://security.ubuntu.com/ubuntu')
 
         self.set_setting_default('components',  ['main', 'restricted', 'universe'])
-
-    def get_locale(self):
-        lang = os.getenv('LANG')
-        if lang is None:
-            return 'C'
-        # People's $LANG looks different since lucid, but locale-gen still
-        # wants the old format.
-        if lang.endswith('utf8'):
-            return lang[:-4] + 'UTF-8'
-        return lang
 
     def preflight_check(self):
         """While not all of these are strictly checks, their failure would inevitably
@@ -288,5 +278,15 @@ EOT''' % root_dev)
 
     def preferred_filesystem(self):
         return self.suite.preferred_filesystem
+
+def get_locale():
+    lang = os.getenv('LANG')
+    if lang is None:
+        return 'C'
+    # People's $LANG looks different since lucid, but locale-gen still
+    # wants the old format.
+    if lang.endswith('utf8'):
+        return lang[:-4] + 'UTF-8'
+    return lang
 
 register_distro(Ubuntu)
