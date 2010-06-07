@@ -168,18 +168,15 @@ def log_no_such_method(*args, **kwargs):
     logging.debug('No such method')
     return
 
-def tmpfile(suffix='', keep=True):
-    (fd, filename) = tempfile.mkstemp(suffix=suffix)
-    os.close(fd)
-    if not keep:
-        os.unlink(filename)
-    return filename
+def tmp_filename(suffix=''):
+    # Using tempfile.mkstemp for just getting a filename is still unsafe,
+    # so let's at least make it obvious that we are doing an unsafe operation.
+    return tempfile.mktemp(suffix=suffix)
 
-def tmpdir(suffix='', keep=True):
-    dir = tempfile.mkdtemp(suffix=suffix)
-    if not keep:
-        os.rmdir(dir)
-    return dir
+def tmpdir(suffix=''):
+    # If we are not keeping a directory, we can just get a tmp_filename
+    # instead.
+    return tempfile.mkdtemp(suffix=suffix)
 
 def get_conf_value(context, confparser, key):
     confvalue = None

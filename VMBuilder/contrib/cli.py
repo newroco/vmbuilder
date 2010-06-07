@@ -195,19 +195,19 @@ class CLI(object):
             swapsize = parse_size(self.options.swapsize)
             optsize = parse_size(self.options.optsize)
             if hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
-                tmpfile = util.tmpfile(keep=False)
+                tmpfile = util.tmp_filename()
                 hypervisor.add_filesystem(filename=tmpfile, size='%dM' % rootsize, type='ext3', mntpnt='/')
-                tmpfile = util.tmpfile(keep=False)
+                tmpfile = util.tmp_filename()
                 hypervisor.add_filesystem(filename=tmpfile, size='%dM' % swapsize, type='swap', mntpnt=None)
                 if optsize > 0:
-                    tmpfile = util.tmpfile(keep=False)
+                    tmpfile = util.tmp_filename()
                     hypervisor.add_filesystem(filename=tmpfile, size='%dM' % optsize, type='ext3', mntpnt='/opt')
             else:
                 if self.options.raw:
                     disk = hypervisor.add_disk(filename=self.options.raw)
                 else:
                     size = rootsize + swapsize + optsize
-                    tmpfile = util.tmpfile(keep=False)
+                    tmpfile = util.tmp_filename()
                     disk = hypervisor.add_disk(tmpfile, size='%dM' % size)
                 offset = 0
                 disk.add_part(offset, rootsize, default_filesystem, '/')
@@ -222,7 +222,7 @@ class CLI(object):
                 try:
                     for line in file(self.options.part):
                         elements = line.strip().split(' ')
-                        tmpfile = util.tmpfile(keep=False)
+                        tmpfile = util.tmp_filename()
                         if elements[0] == 'root':
                             hypervisor.add_filesystem(elements[1], default_filesystem, filename=tmpfile, mntpnt='/')
                         elif elements[0] == 'swap':
@@ -256,10 +256,10 @@ class CLI(object):
 
                 except IOError, (errno, strerror):
                     hypervisor.optparser.error("%s parsing --part option: %s" % (errno, strerror))
-    
+
     def do_disk(self, hypervisor, curdisk, size):
         default_filesystem = hypervisor.distro.preferred_filesystem()
-        disk = hypervisor.add_disk(util.tmpfile(keep=False), size+1)
+        disk = hypervisor.add_disk(util.tmp_filename(), size+1)
         logging.debug("do_disk - size: %d" % size)
         offset = 0
         for pair in curdisk:
