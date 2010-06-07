@@ -168,15 +168,45 @@ def log_no_such_method(*args, **kwargs):
     logging.debug('No such method')
     return
 
-def tmp_filename(suffix=''):
+def tmp_filename(suffix='', tmp_root=None):
     # Using tempfile.mkstemp for just getting a filename is still unsafe,
     # so let's at least make it obvious that we are doing an unsafe operation.
-    return tempfile.mktemp(suffix=suffix)
+    return tempfile.mktemp(suffix=suffix, dir=tmp_root)
 
 def tmpdir(suffix='', tmp_root=None):
     # If we are not keeping a directory, we can just get a tmp_filename
     # instead.
     return tempfile.mkdtemp(suffix=suffix, dir=tmp_root)
+
+def set_up_tmpfs(tmp_root=None, size=1024):
+    """Sets up a tmpfs storage under `tmp_root` with the size of `size` MB.
+
+    `tmp_root` defaults to tempfile.gettempdir().
+    """
+    mount_point = tmpdir('tmpfs', tmp_root)
+    mount_cmd = ["mount", "-t", "tmpfs",
+                 "-o", "size=%dM,mode=0770" % int(size),
+                 "tmpfs", mount_point ]
+    try:
+        logging.info('Mounting tmpfs under %s' % mount_point)
+        logging.debug('Executing: %s' % mount_cmd)
+        run_cmd(*mount_cmd)
+    except VMBuilderUserError:
+        raise VMBuilderException("Can't mount a tmpfs under %s." % mount_point)
+
+    return mount_point
+
+def clean_up_tmpfs(mount_point):
+    """Unmounts a tmpfs storage under `mount_point`."""
+    umount_cmd = ["umount", "-t", "tmpfs", mount_point ]
+    try:
+        logging.info('Un-mounting tmpfs from %s' % mount_point)
+        logging.debug('Executing: %s' % umount_cmd)
+        run_cmd(*umount_cmd)
+    except VMBuilderUserError:
+        raise VMBuilderException(
+            "Can't unmount a tmpfs from %s." % mount_point)
+
 
 def get_conf_value(context, confparser, key):
     confvalue = None
