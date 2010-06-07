@@ -22,6 +22,7 @@ import os
 import pwd
 import shutil
 import sys
+import tempfile
 import VMBuilder
 import VMBuilder.util as util
 from   VMBuilder.disk import parse_size
@@ -49,6 +50,12 @@ class CLI(object):
             group.add_option('--destdir', '-d', type='str', help='Destination directory')
             group.add_option('--only-chroot', action='store_true', help="Only build the chroot. Don't install it on disk images or anything.")
             group.add_option('--existing-chroot', help="Use existing chroot.")
+            group.add_option(
+                '--tmp', '-t', default=tempfile.gettempdir(),
+                help=(
+                    'Use TMP as temporary working space for image generation.'
+                    'Defaults to $TMPDIR if it is defined or /tmp otherwise.'
+                    '[default: %default]'))
             optparser.add_option_group(group)
 
             group = optparse.OptionGroup(optparser, 'Disk')
@@ -105,7 +112,7 @@ class CLI(object):
                 distro.set_chroot_dir(self.options.existing_chroot)
                 distro.call_hooks('preflight_check')
             else:
-                chroot_dir = util.tmpdir()
+                chroot_dir = util.tmpdir(tmp_root=self.options.tmp)
                 distro.set_chroot_dir(chroot_dir)
                 distro.build_chroot()
 

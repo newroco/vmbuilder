@@ -173,10 +173,10 @@ def tmp_filename(suffix=''):
     # so let's at least make it obvious that we are doing an unsafe operation.
     return tempfile.mktemp(suffix=suffix)
 
-def tmpdir(suffix=''):
+def tmpdir(suffix='', tmp_root=None):
     # If we are not keeping a directory, we can just get a tmp_filename
     # instead.
-    return tempfile.mkdtemp(suffix=suffix)
+    return tempfile.mkdtemp(suffix=suffix, dir=tmp_root)
 
 def get_conf_value(context, confparser, key):
     confvalue = None
