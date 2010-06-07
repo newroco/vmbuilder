@@ -169,8 +169,10 @@ def log_no_such_method(*args, **kwargs):
     return
 
 def tmp_filename(suffix='', tmp_root=None):
-    # Using tempfile.mkstemp for just getting a filename is still unsafe,
-    # so let's at least make it obvious that we are doing an unsafe operation.
+    # Using tempfile.mkstemp for just getting a filename is still unsafe
+    # if we remove the file right away.
+    # So let's at least make it obvious that we are doing an unsafe operation
+    # by calling tempfile.mktemp() directly.
     return tempfile.mktemp(suffix=suffix, dir=tmp_root)
 
 def tmpdir(suffix='', tmp_root=None):
@@ -200,7 +202,7 @@ def clean_up_tmpfs(mount_point):
     """Unmounts a tmpfs storage under `mount_point`."""
     umount_cmd = ["umount", "-t", "tmpfs", mount_point ]
     try:
-        logging.info('Un-mounting tmpfs from %s' % mount_point)
+        logging.info('Unmounting tmpfs from %s' % mount_point)
         logging.debug('Executing: %s' % umount_cmd)
         run_cmd(*umount_cmd)
     except VMBuilderUserError:
