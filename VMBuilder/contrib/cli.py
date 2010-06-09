@@ -130,7 +130,7 @@ class CLI(object):
                         tmp_root=self.options.tmp_root, size=tmpfs_size)
                     chroot_root = tmpfs_mount_point
                 else:
-                    chroot_root = self.options_tmp_root
+                    chroot_root = self.options.tmp_root
                 chroot_dir = util.tmpdir(tmp_root=chroot_root)
                 distro.set_chroot_dir(chroot_dir)
                 distro.build_chroot()
