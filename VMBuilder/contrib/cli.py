@@ -119,7 +119,6 @@ class CLI(object):
             if self.options.existing_chroot:
                 distro.set_chroot_dir(self.options.existing_chroot)
                 distro.call_hooks('preflight_check')
-                chroot_needs_building = False
             else:
                 if self.options.tmpfs is not None:
                     if str(self.options.tmpfs) == '-':
@@ -128,10 +127,9 @@ class CLI(object):
                         tmpfs_size = int(self.options.tmpfs)
                     tmpfs_mount_point = util.set_up_tmpfs(
                         tmp_root=self.options.tmp_root, size=tmpfs_size)
-                    chroot_root = tmpfs_mount_point
+                    chroot_dir = tmpfs_mount_point
                 else:
-                    chroot_root = self.options.tmp_root
-                chroot_dir = util.tmpdir(tmp_root=chroot_root)
+                    chroot_dir = util.tmpdir(tmp_root=self.options.tmp_root)
                 distro.set_chroot_dir(chroot_dir)
                 distro.build_chroot()
 
