@@ -147,7 +147,7 @@ class CLI(object):
             # and if we reach here, it means the user didn't pass
             # --only-chroot. Hence, we need to remove it to clean
             # up after ourselves.
-            if chroot_dir is not None:
+            if chroot_dir is not None and tmpfs_mount_point is None:
                 util.run_cmd('rm', '-rf', '--one-file-system', chroot_dir)
         except VMBuilderException, e:
             logging.error(e)
@@ -155,6 +155,7 @@ class CLI(object):
         finally:
             if tmpfs_mount_point is not None:
                 util.clean_up_tmpfs(tmpfs_mount_point)
+                util.run_cmd('rmdir', tmpfs_mount_point)
 
     def fix_ownership(self, filename):
         """
