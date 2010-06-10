@@ -169,15 +169,11 @@ def log_no_such_method(*args, **kwargs):
     return
 
 def tmp_filename(suffix='', tmp_root=None):
-    # Using tempfile.mkstemp for just getting a filename is still unsafe
-    # if we remove the file right away.
-    # So let's at least make it obvious that we are doing an unsafe operation
-    # by calling tempfile.mktemp() directly.
+    # There is a risk in using tempfile.mktemp(): it's not recommended
+    # to run vmbuilder on machines with untrusted users.
     return tempfile.mktemp(suffix=suffix, dir=tmp_root)
 
 def tmpdir(suffix='', tmp_root=None):
-    # If we are not keeping a directory, we can just get a tmp_filename
-    # instead.
     return tempfile.mkdtemp(suffix=suffix, dir=tmp_root)
 
 def set_up_tmpfs(tmp_root=None, size=1024):
