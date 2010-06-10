@@ -189,25 +189,18 @@ def set_up_tmpfs(tmp_root=None, size=1024):
     mount_cmd = ["mount", "-t", "tmpfs",
                  "-o", "size=%dM,mode=0770" % int(size),
                  "tmpfs", mount_point ]
-    try:
-        logging.info('Mounting tmpfs under %s' % mount_point)
-        logging.debug('Executing: %s' % mount_cmd)
-        run_cmd(*mount_cmd)
-    except VMBuilderUserError:
-        raise VMBuilderException("Can't mount a tmpfs under %s." % mount_point)
+    logging.info('Mounting tmpfs under %s' % mount_point)
+    logging.debug('Executing: %s' % mount_cmd)
+    run_cmd(*mount_cmd)
 
     return mount_point
 
 def clean_up_tmpfs(mount_point):
     """Unmounts a tmpfs storage under `mount_point`."""
     umount_cmd = ["umount", "-t", "tmpfs", mount_point ]
-    try:
-        logging.info('Unmounting tmpfs from %s' % mount_point)
-        logging.debug('Executing: %s' % umount_cmd)
-        run_cmd(*umount_cmd)
-    except VMBuilderUserError:
-        raise VMBuilderException(
-            "Can't unmount a tmpfs from %s." % mount_point)
+    logging.info('Unmounting tmpfs from %s' % mount_point)
+    logging.debug('Executing: %s' % umount_cmd)
+    run_cmd(*umount_cmd)
 
 
 def get_conf_value(context, confparser, key):
