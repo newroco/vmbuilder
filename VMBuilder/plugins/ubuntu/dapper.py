@@ -347,7 +347,8 @@ class Dapper(suite.Suite):
         lang = self.context.get_setting('lang')
         if lang:
             self.install_from_template('/etc/default/locale', 'locale', { 'lang' : lang })
-            self.run_in_target('locale-gen', lang)
+            if lang != "C":
+                self.run_in_target('locale-gen', lang)
             self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'libc6')
             self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'locales')
 
