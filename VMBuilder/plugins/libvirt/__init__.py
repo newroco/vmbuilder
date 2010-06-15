@@ -51,9 +51,9 @@ class Libvirt(Plugin):
             raise VMBuilderUserError('libvirt does not seem to want to accept hvm domains')
 
         hostname = self.context.distro.get_setting('hostname')
-        if hostname in self.all_domains() and not self.vm.overwrite:
+        if hostname in self.all_domains() and not self.context.overwrite:
             raise VMBuilderUserError('Domain %s already exists at %s' % (hostname, libvirt_uri))
-        
+
     def deploy(self, destdir):
         libvirt_uri = self.get_setting('libvirt')
         if not libvirt_uri:

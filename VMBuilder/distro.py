@@ -35,6 +35,7 @@ class Context(VMBuilder.plugins.Plugin):
         self.template_dirs = [os.path.expanduser('~/.vmbuilder/%s'),
                               os.path.dirname(__file__) + '/plugins/%s/templates',
                               '/etc/vmbuilder/%s']
+        self.overwrite = False
 
     # Cleanup 
     def cleanup(self):

@@ -87,7 +87,9 @@ class CLI(object):
             if os.geteuid() != 0:
                 raise VMBuilderUserError('Must run as root')
 
+            distro.overwrite = hypervisor.overwrite = self.options.overwrite
             destdir = self.options.destdir or ('%s-%s' % (distro.arg, hypervisor.arg))
+
             if os.path.exists(destdir):
                 if self.options.overwrite:
                     logging.debug('%s existed, but -o was specified. Nuking it.' % destdir)
