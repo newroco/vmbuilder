@@ -168,18 +168,36 @@ def log_no_such_method(*args, **kwargs):
     logging.debug('No such method')
     return
 
-def tmpfile(suffix='', keep=True):
-    (fd, filename) = tempfile.mkstemp(suffix=suffix)
-    os.close(fd)
-    if not keep:
-        os.unlink(filename)
-    return filename
+def tmp_filename(suffix='', tmp_root=None):
+    # There is a risk in using tempfile.mktemp(): it's not recommended
+    # to run vmbuilder on machines with untrusted users.
+    return tempfile.mktemp(suffix=suffix, dir=tmp_root)
 
-def tmpdir(suffix='', keep=True):
-    dir = tempfile.mkdtemp(suffix=suffix)
-    if not keep:
-        os.rmdir(dir)
-    return dir
+def tmpdir(suffix='', tmp_root=None):
+    return tempfile.mkdtemp(suffix=suffix, dir=tmp_root)
+
+def set_up_tmpfs(tmp_root=None, size=1024):
+    """Sets up a tmpfs storage under `tmp_root` with the size of `size` MB.
+
+    `tmp_root` defaults to tempfile.gettempdir().
+    """
+    mount_point = tmpdir('tmpfs', tmp_root)
+    mount_cmd = ["mount", "-t", "tmpfs",
+                 "-o", "size=%dM,mode=0770" % int(size),
+                 "tmpfs", mount_point ]
+    logging.info('Mounting tmpfs under %s' % mount_point)
+    logging.debug('Executing: %s' % mount_cmd)
+    run_cmd(*mount_cmd)
+
+    return mount_point
+
+def clean_up_tmpfs(mount_point):
+    """Unmounts a tmpfs storage under `mount_point`."""
+    umount_cmd = ["umount", "-t", "tmpfs", mount_point ]
+    logging.info('Unmounting tmpfs from %s' % mount_point)
+    logging.debug('Executing: %s' % umount_cmd)
+    run_cmd(*umount_cmd)
+
 
 def get_conf_value(context, confparser, key):
     confvalue = None

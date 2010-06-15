@@ -22,6 +22,7 @@ import os
 import pwd
 import shutil
 import sys
+import tempfile
 import VMBuilder
 import VMBuilder.util as util
 from   VMBuilder.disk import parse_size
@@ -32,6 +33,7 @@ class CLI(object):
     arg = 'cli'
 
     def main(self):
+        tmpfs_mount_point = None
         try:
             optparser = optparse.OptionParser()
 
@@ -49,6 +51,19 @@ class CLI(object):
             group.add_option('--destdir', '-d', type='str', help='Destination directory')
             group.add_option('--only-chroot', action='store_true', help="Only build the chroot. Don't install it on disk images or anything.")
             group.add_option('--existing-chroot', help="Use existing chroot.")
+            group.add_option(
+                '--tmp', '-t', metavar='DIR', dest='tmp_root',
+                default=tempfile.gettempdir(),
+                help=(
+                    'Use TMP as temporary working space for image generation. '
+                    'Defaults to $TMPDIR if it is defined or /tmp otherwise. '
+                    '[default: %default]'))
+            group.add_option(
+                '--tmpfs', metavar="SIZE",
+                help=(
+                    'Use a tmpfs as the working directory, specifying '
+                    'its size or "-" to use tmpfs default '
+                    '(suid,dev,size=1G).'))
             optparser.add_option_group(group)
 
             group = optparse.OptionGroup(optparser, 'Disk')
@@ -105,7 +120,16 @@ class CLI(object):
                 distro.set_chroot_dir(self.options.existing_chroot)
                 distro.call_hooks('preflight_check')
             else:
-                chroot_dir = util.tmpdir()
+                if self.options.tmpfs is not None:
+                    if str(self.options.tmpfs) == '-':
+                        tmpfs_size = 1024
+                    else:
+                        tmpfs_size = int(self.options.tmpfs)
+                    tmpfs_mount_point = util.set_up_tmpfs(
+                        tmp_root=self.options.tmp_root, size=tmpfs_size)
+                    chroot_dir = tmpfs_mount_point
+                else:
+                    chroot_dir = util.tmpdir(tmp_root=self.options.tmp_root)
                 distro.set_chroot_dir(chroot_dir)
                 distro.build_chroot()
 
@@ -123,12 +147,15 @@ class CLI(object):
             # and if we reach here, it means the user didn't pass
             # --only-chroot. Hence, we need to remove it to clean
             # up after ourselves.
-            if chroot_dir:
+            if chroot_dir is not None and tmpfs_mount_point is None:
                 util.run_cmd('rm', '-rf', '--one-file-system', chroot_dir)
         except VMBuilderException, e:
             logging.error(e)
             raise
-            sys.exit(1)
+        finally:
+            if tmpfs_mount_point is not None:
+                util.clean_up_tmpfs(tmpfs_mount_point)
+                util.run_cmd('rmdir', tmpfs_mount_point)
 
     def fix_ownership(self, filename):
         """
@@ -195,19 +222,19 @@ class CLI(object):
             swapsize = parse_size(self.options.swapsize)
             optsize = parse_size(self.options.optsize)
             if hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
-                tmpfile = util.tmpfile(keep=False)
+                tmpfile = util.tmp_filename(tmp_root=self.options.tmp_root)
                 hypervisor.add_filesystem(filename=tmpfile, size='%dM' % rootsize, type='ext3', mntpnt='/')
-                tmpfile = util.tmpfile(keep=False)
+                tmpfile = util.tmp_filename(tmp_root=self.options.tmp_root)
                 hypervisor.add_filesystem(filename=tmpfile, size='%dM' % swapsize, type='swap', mntpnt=None)
                 if optsize > 0:
-                    tmpfile = util.tmpfile(keep=False)
+                    tmpfile = util.tmp_filename(tmp_root=self.options.tmp_root)
                     hypervisor.add_filesystem(filename=tmpfile, size='%dM' % optsize, type='ext3', mntpnt='/opt')
             else:
                 if self.options.raw:
                     disk = hypervisor.add_disk(filename=self.options.raw)
                 else:
                     size = rootsize + swapsize + optsize
-                    tmpfile = util.tmpfile(keep=False)
+                    tmpfile = util.tmp_filename(tmp_root=self.options.tmp_root)
                     disk = hypervisor.add_disk(tmpfile, size='%dM' % size)
                 offset = 0
                 disk.add_part(offset, rootsize, default_filesystem, '/')
@@ -222,7 +249,8 @@ class CLI(object):
                 try:
                     for line in file(self.options.part):
                         elements = line.strip().split(' ')
-                        tmpfile = util.tmpfile(keep=False)
+                        tmpfile = util.tmp_filename(
+                            tmp_root=self.options.tmp_root)
                         if elements[0] == 'root':
                             hypervisor.add_filesystem(elements[1], default_filesystem, filename=tmpfile, mntpnt='/')
                         elif elements[0] == 'swap':
@@ -256,10 +284,12 @@ class CLI(object):
 
                 except IOError, (errno, strerror):
                     hypervisor.optparser.error("%s parsing --part option: %s" % (errno, strerror))
-    
+
     def do_disk(self, hypervisor, curdisk, size):
         default_filesystem = hypervisor.distro.preferred_filesystem()
-        disk = hypervisor.add_disk(util.tmpfile(keep=False), size+1)
+        disk = hypervisor.add_disk(
+            util.tmp_filename(tmp_root=self.options.tmp_root),
+            size+1)
         logging.debug("do_disk - size: %d" % size)
         offset = 0
         for pair in curdisk:
