@@ -39,8 +39,8 @@ class Ubuntu(Distro):
 
     def register_options(self):
         group = self.setting_group('Package options')
-        group.add_setting('addpkg', type='list', metavar='PKG', help='Install PKG into the guest (can be specfied multiple times).')
-        group.add_setting('removepkg', type='list', metavar='PKG', help='Remove PKG from the guest (can be specfied multiple times)')
+        group.add_setting('addpkg', type='list', metavar='PKG', help='Install PKG into the guest (can be specified multiple times).')
+        group.add_setting('removepkg', type='list', metavar='PKG', help='Remove PKG from the guest (can be specified multiple times)')
         group.add_setting('seedfile', metavar="SEEDFILE", help='Seed the debconf database with the contents of this seed file before installing packages')
 
         group = self.setting_group('General OS options')

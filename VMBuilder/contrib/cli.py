@@ -70,8 +70,8 @@ class CLI(object):
             group.add_option('--rootsize', metavar='SIZE', default=4096, help='Size (in MB) of the root filesystem [default: %default]')
             group.add_option('--optsize', metavar='SIZE', default=0, help='Size (in MB) of the /opt filesystem. If not set, no /opt filesystem will be added.')
             group.add_option('--swapsize', metavar='SIZE', default=1024, help='Size (in MB) of the swap partition [default: %default]')
-            group.add_option('--raw', metavar='PATH', type='str', help="Specify a file (or block device) to as first disk image.")
-            group.add_option('--part', metavar='PATH', type='str', help="Allows to specify a partition table in PATH each line of partfile should specify (root first): \n    mountpoint size \none per line, separated by space, where size is in megabytes. You can have up to 4 virtual disks, a new disk starts on a line containing only '---'. ie: \n    root 2000 \n    /boot 512 \n    swap 1000 \n    --- \n    /var 8000 \n    /var/log 2000")
+            group.add_option('--raw', metavar='PATH', type='str', action='append', help="Specify a file (or block device) to use as first disk image (can be specified multiple times).")
+            group.add_option('--part', metavar='PATH', type='str', help="Specify a partition table in PATH. Each line of partfile should specify (root first): \n    mountpoint size \none per line, separated by space, where size is in megabytes. You can have up to 4 virtual disks, a new disk starts on a line containing only '---'. ie: \n    root 2000 \n    /boot 512 \n    swap 1000 \n    --- \n    /var 8000 \n    /var/log 2000")
             optparser.add_option_group(group)
 
             hypervisor, distro = self.handle_args(optparser, sys.argv[1:])
@@ -226,14 +226,17 @@ class CLI(object):
             if hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
                 tmpfile = util.tmp_filename(tmp_root=self.options.tmp_root)
                 hypervisor.add_filesystem(filename=tmpfile, size='%dM' % rootsize, type='ext3', mntpnt='/')
-                tmpfile = util.tmp_filename(tmp_root=self.options.tmp_root)
-                hypervisor.add_filesystem(filename=tmpfile, size='%dM' % swapsize, type='swap', mntpnt=None)
+                if swapsize > 0:
+                    tmpfile = util.tmp_filename(tmp_root=self.options.tmp_root)
+                    hypervisor.add_filesystem(filename=tmpfile, size='%dM' % swapsize, type='swap', mntpnt=None)
                 if optsize > 0:
                     tmpfile = util.tmp_filename(tmp_root=self.options.tmp_root)
                     hypervisor.add_filesystem(filename=tmpfile, size='%dM' % optsize, type='ext3', mntpnt='/opt')
             else:
                 if self.options.raw:
-                    disk = hypervisor.add_disk(filename=self.options.raw)
+                    for raw_disk in self.options.raw:
+                        hypervisor.add_disk(filename=raw_disk)
+                    disk = hypervisor.disks[0]
                 else:
                     size = rootsize + swapsize + optsize
                     tmpfile = util.tmp_filename(tmp_root=self.options.tmp_root)
@@ -241,8 +244,9 @@ class CLI(object):
                 offset = 0
                 disk.add_part(offset, rootsize, default_filesystem, '/')
                 offset += rootsize
-                disk.add_part(offset, swapsize, 'swap', 'swap')
-                offset += swapsize
+                if swapsize > 0:
+                    disk.add_part(offset, swapsize, 'swap', 'swap')
+                    offset += swapsize
                 if optsize > 0:
                     disk.add_part(offset, optsize, default_filesystem, '/opt')
         else:
@@ -271,31 +275,38 @@ class CLI(object):
                 try:
                     curdisk = list()
                     size = 0
+                    disk_idx = 0
                     for line in file(self.options.part):
                         pair = line.strip().split(' ',1) 
                         if pair[0] == '---':
-                            self.do_disk(hypervisor, curdisk, size)
+                            self.do_disk(hypervisor, curdisk, size, disk_idx)
                             curdisk = list()
                             size = 0
+                            disk_idx += 1
                         elif pair[0] != '':
                             logging.debug("part: %s, size: %d" % (pair[0], int(pair[1])))
                             curdisk.append((pair[0], pair[1]))
                             size += int(pair[1])
 
-                    self.do_disk(hypervisor, curdisk, size)
+                    self.do_disk(hypervisor, curdisk, size, disk_idx)
 
                 except IOError, (errno, strerror):
                     hypervisor.optparser.error("%s parsing --part option: %s" % (errno, strerror))
 
-    def do_disk(self, hypervisor, curdisk, size):
+    def do_disk(self, hypervisor, curdisk, size, disk_idx):
         default_filesystem = hypervisor.distro.preferred_filesystem()
-        disk = hypervisor.add_disk(
-            util.tmp_filename(tmp_root=self.options.tmp_root),
-            size+1)
-        logging.debug("do_disk - size: %d" % size)
+
+        if self.options.raw:
+            disk = hypervisor.add_disk(filename=self.options.raw[disk_idx])
+        else:
+            disk = hypervisor.add_disk(
+                util.tmp_filename(tmp_root=self.options.tmp_root),
+                size+1)
+
+        logging.debug("do_disk #%i - size: %d" % (disk_idx, size))
         offset = 0
         for pair in curdisk:
-            logging.debug("do_disk - part: %s, size: %s, offset: %d" % (pair[0], pair[1], offset))
+            logging.debug("do_disk #%i - part: %s, size: %s, offset: %d" % (disk_idx, pair[0], pair[1], offset))
             if pair[0] == 'root':
                 disk.add_part(offset, int(pair[1]), default_filesystem, '/')
             elif pair[0] == 'swap':

@@ -183,7 +183,7 @@ class Disk(object):
 
             if tries >= max_tries:
                 # try it one last time
-                logging.info("Could not unmount '%s' after '%d' attempts. Final attempt" % (self.filename, tries))
+                logging.info("Could not unmap '%s' after '%d' attempts. Final attempt" % (self.filename, tries))
         run_cmd('kpartx', '-d', self.filename, ignore_fail=ignore_fail)
 
         for part in self.partitions:
