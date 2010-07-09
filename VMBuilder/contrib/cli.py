@@ -39,39 +39,98 @@ class CLI(object):
 
             self.set_usage(optparser)
 
-            optparser.add_option('--version', action='callback', callback=self.versioninfo, help='Show version information')
+            optparser.add_option('--version',
+                                 action='callback',
+                                 callback=self.versioninfo,
+                                 help='Show version information')
 
             group = optparse.OptionGroup(optparser, 'Build options')
-            group.add_option('--debug', action='callback', callback=self.set_verbosity, help='Show debug information')
-            group.add_option('--verbose', '-v', action='callback', callback=self.set_verbosity, help='Show progress information')
-            group.add_option('--quiet', '-q', action='callback', callback=self.set_verbosity, help='Silent operation')
-            group.add_option('--overwrite', '-o', action='store_true', help='Configuration file')
-            group.add_option('--config', '-c', type='str', help='Configuration file')
-            group.add_option('--templates', metavar='DIR', help='Prepend DIR to template search path.')
-            group.add_option('--destdir', '-d', type='str', help='Destination directory')
-            group.add_option('--only-chroot', action='store_true', help="Only build the chroot. Don't install it on disk images or anything.")
-            group.add_option('--existing-chroot', help="Use existing chroot.")
-            group.add_option(
-                '--tmp', '-t', metavar='DIR', dest='tmp_root',
-                default=tempfile.gettempdir(),
-                help=(
-                    'Use TMP as temporary working space for image generation. '
-                    'Defaults to $TMPDIR if it is defined or /tmp otherwise. '
-                    '[default: %default]'))
-            group.add_option(
-                '--tmpfs', metavar="SIZE",
-                help=(
-                    'Use a tmpfs as the working directory, specifying '
-                    'its size or "-" to use tmpfs default '
-                    '(suid,dev,size=1G).'))
+            group.add_option('--debug',
+                             action='callback',
+                             callback=self.set_verbosity,
+                             help='Show debug information')
+            group.add_option('--verbose',
+                             '-v',
+                             action='callback',
+                             callback=self.set_verbosity,
+                             help='Show progress information')
+            group.add_option('--quiet',
+                             '-q',
+                             action='callback',
+                             callback=self.set_verbosity,
+                             help='Silent operation')
+            group.add_option('--overwrite',
+                             '-o',
+                             action='store_true',
+                             help='Configuration file')
+            group.add_option('--config',
+                             '-c',
+                             type='str',
+                             help='Configuration file')
+            group.add_option('--templates',
+                             metavar='DIR',
+                             help='Prepend DIR to template search path.')
+            group.add_option('--destdir',
+                             '-d',
+                             type='str',
+                             help='Destination directory')
+            group.add_option('--only-chroot',
+                             action='store_true',
+                             help=("Only build the chroot. Don't install it "
+                                   "on disk images or anything."))
+            group.add_option('--existing-chroot',
+                             help="Use existing chroot.")
+            group.add_option('--tmp',
+                             '-t',
+                             metavar='DIR',
+                             dest='tmp_root',
+                             default=tempfile.gettempdir(),
+                             help=('Use TMP as temporary working space for '
+                                   'image generation. Defaults to $TMPDIR if '
+                                   'it is defined or /tmp otherwise. '
+                                   '[default: %default]'))
+            group.add_option('--tmpfs',
+                             metavar="SIZE",
+                             help=('Use a tmpfs as the working directory, '
+                                   'specifying its size or "-" to use tmpfs '
+                                   'default (suid,dev,size=1G).'))
             optparser.add_option_group(group)
 
             group = optparse.OptionGroup(optparser, 'Disk')
-            group.add_option('--rootsize', metavar='SIZE', default=4096, help='Size (in MB) of the root filesystem [default: %default]')
-            group.add_option('--optsize', metavar='SIZE', default=0, help='Size (in MB) of the /opt filesystem. If not set, no /opt filesystem will be added.')
-            group.add_option('--swapsize', metavar='SIZE', default=1024, help='Size (in MB) of the swap partition [default: %default]')
-            group.add_option('--raw', metavar='PATH', type='str', action='append', help="Specify a file (or block device) to use as first disk image (can be specified multiple times).")
-            group.add_option('--part', metavar='PATH', type='str', help="Specify a partition table in PATH. Each line of partfile should specify (root first): \n    mountpoint size \none per line, separated by space, where size is in megabytes. You can have up to 4 virtual disks, a new disk starts on a line containing only '---'. ie: \n    root 2000 \n    /boot 512 \n    swap 1000 \n    --- \n    /var 8000 \n    /var/log 2000")
+            group.add_option('--rootsize',
+                             metavar='SIZE',
+                             default=4096,
+                             help=('Size (in MB) of the root filesystem '
+                                   '[default: %default]'))
+            group.add_option('--optsize',
+                             metavar='SIZE',
+                             default=0,
+                             help=('Size (in MB) of the /opt filesystem. If not'
+                                   ' set, no /opt filesystem will be added.'))
+            group.add_option('--swapsize',
+                             metavar='SIZE',
+                             default=1024,
+                             help=('Size (in MB) of the swap partition '
+                                   '[default: %default]'))
+            group.add_option('--raw',
+                             metavar='PATH',
+                             type='str',
+                             action='append',
+                             help=("Specify a file (or block device) to use as "
+                                   "first disk image (can be specified multiple"
+                                   " times)."))
+            group.add_option('--part',
+                             metavar='PATH',
+                             type='str',
+                             help=("Specify a partition table in PATH. Each "
+                                   "line of partfile should specify (root "
+                                   "first): \n    mountpoint size \none per "
+                                   "line, separated by space, where size is "
+                                   "in megabytes. You can have up to 4 "
+                                   "virtual disks, a new disk starts on a "
+                                   "line containing only '---'. ie: \n    root "
+                                   "2000 \n    /boot 512 \n    swap 1000 \n    "
+                                   "--- \n    /var 8000 \n    /var/log 2000"))
             optparser.add_option_group(group)
 
             hypervisor, distro = self.handle_args(optparser, sys.argv[1:])
@@ -81,18 +140,21 @@ class CLI(object):
 
             hypervisor.register_hook('fix_ownership', self.fix_ownership)
 
-            config_files = ['/etc/vmbuilder.cfg', os.path.expanduser('~/.vmbuilder.cfg')]
+            config_files = ['/etc/vmbuilder.cfg',
+                            os.path.expanduser('~/.vmbuilder.cfg')]
             (self.options, args) = optparser.parse_args(sys.argv[2:])
 
             if os.geteuid() != 0:
                 raise VMBuilderUserError('Must run as root')
 
             distro.overwrite = hypervisor.overwrite = self.options.overwrite
-            destdir = self.options.destdir or ('%s-%s' % (distro.arg, hypervisor.arg))
+            destdir = self.options.destdir or ('%s-%s' % (distro.arg,
+                                                          hypervisor.arg))
 
             if os.path.exists(destdir):
                 if self.options.overwrite:
-                    logging.debug('%s existed, but -o was specified. Nuking it.' % destdir)
+                    logging.debug('%s existed, but -o was specified. '
+                                  'Nuking it.' % destdir)
                     shutil.rmtree(destdir)
                 else:
                     raise VMBuilderUserError('%s already exists' % destdir)
@@ -103,18 +165,24 @@ class CLI(object):
             util.apply_config_files_to_context(config_files, hypervisor)
 
             if self.options.templates:
-                distro.template_dirs.insert(0,'%s/%%s' % self.options.templates)
-                hypervisor.template_dirs.insert(0,'%s/%%s' % self.options.templates)
+                distro.template_dirs.insert(0, '%s/%%s'
+                                                   % self.options.templates)
+                hypervisor.template_dirs.insert(0, '%s/%%s'
+                                                   % self.options.templates)
 
             for option in dir(self.options):
-                if option.startswith('_') or option in ['ensure_value', 'read_module', 'read_file']:
+                if option.startswith('_') or option in ['ensure_value',
+                                                        'read_module',
+                                                        'read_file']:
                     continue
                 val = getattr(self.options, option)
                 option = option.replace('_', '-')
                 if val:
-                    if distro.has_setting(option) and distro.get_setting_default(option) != val:
+                    if (distro.has_setting(option) and
+                        distro.get_setting_default(option) != val):
                         distro.set_setting_fuzzy(option, val)
-                    elif hypervisor.has_setting(option) and hypervisor.get_setting_default(option) != val:
+                    elif (hypervisor.has_setting(option) and
+                          hypervisor.get_setting_default(option) != val):
                         hypervisor.set_setting_fuzzy(option, val)
 
             chroot_dir = None
@@ -167,12 +235,14 @@ class CLI(object):
         @param path: file or directory to give to $SUDO_USER
         """
         if 'SUDO_USER' in os.environ:
-            logging.debug('Changing ownership of %s to %s' % (filename, os.environ['SUDO_USER']))
+            logging.debug('Changing ownership of %s to %s' %
+                          (filename, os.environ['SUDO_USER']))
             (uid, gid) = pwd.getpwnam(os.environ['SUDO_USER'])[2:4]
             os.chown(filename, uid, gid)
 
     def add_settings_from_context(self, optparser, context):
-        setting_groups = set([setting.setting_group for setting in context._config.values()])
+        setting_groups = set([setting.setting_group for setting
+                                                in context._config.values()])
         for setting_group in setting_groups:
             optgroup = optparse.OptionGroup(optparser, setting_group.name)
             for setting in setting_group._settings:
@@ -195,7 +265,8 @@ class CLI(object):
             optparser.add_option_group(optgroup)
 
     def versioninfo(self, option, opt, value, parser):
-        print '%(major)d.%(minor)d.%(micro)s.r%(revno)d' % VMBuilder.get_version_info()
+        print ('%(major)d.%(minor)d.%(micro)s.r%(revno)d' %
+                                                 VMBuilder.get_version_info())
         sys.exit(0)
 
     def set_usage(self, optparser):
@@ -204,7 +275,8 @@ class CLI(object):
 
     def handle_args(self, optparser, args):
         if len(args) < 2:
-            optparser.error("You need to specify at least the hypervisor type and the distro")
+            optparser.error("You need to specify at least the hypervisor type "
+                            "and the distro")
         distro = VMBuilder.get_distro(args[1])()
         hypervisor = VMBuilder.get_hypervisor(args[0])(distro)
         return hypervisor, distro
@@ -225,13 +297,22 @@ class CLI(object):
             optsize = parse_size(self.options.optsize)
             if hypervisor.preferred_storage == VMBuilder.hypervisor.STORAGE_FS_IMAGE:
                 tmpfile = util.tmp_filename(tmp_root=self.options.tmp_root)
-                hypervisor.add_filesystem(filename=tmpfile, size='%dM' % rootsize, type='ext3', mntpnt='/')
+                hypervisor.add_filesystem(filename=tmpfile,
+                                          size='%dM' % rootsize,
+                                          type='ext3',
+                                          mntpnt='/')
                 if swapsize > 0:
                     tmpfile = util.tmp_filename(tmp_root=self.options.tmp_root)
-                    hypervisor.add_filesystem(filename=tmpfile, size='%dM' % swapsize, type='swap', mntpnt=None)
+                    hypervisor.add_filesystem(filename=tmpfile,
+                                              size='%dM' % swapsize,
+                                              type='swap',
+                                              mntpnt=None)
                 if optsize > 0:
                     tmpfile = util.tmp_filename(tmp_root=self.options.tmp_root)
-                    hypervisor.add_filesystem(filename=tmpfile, size='%dM' % optsize, type='ext3', mntpnt='/opt')
+                    hypervisor.add_filesystem(filename=tmpfile,
+                                              size='%dM' % optsize,
+                                              type='ext3',
+                                              mntpnt='/opt')
             else:
                 if self.options.raw:
                     for raw_disk in self.options.raw:
@@ -258,40 +339,57 @@ class CLI(object):
                         tmpfile = util.tmp_filename(
                             tmp_root=self.options.tmp_root)
                         if elements[0] == 'root':
-                            hypervisor.add_filesystem(elements[1], default_filesystem, filename=tmpfile, mntpnt='/')
+                            hypervisor.add_filesystem(elements[1],
+                                                       default_filesystem,
+                                                       filename=tmpfile,
+                                                       mntpnt='/')
                         elif elements[0] == 'swap':
-                            hypervisor.add_filesystem(elements[1], type='swap', filename=tmpfile, mntpnt=None)
+                            hypervisor.add_filesystem(elements[1],
+                                                      type='swap',
+                                                      filename=tmpfile,
+                                                      mntpnt=None)
                         elif elements[0] == '---':
                             # We just ignore the user's attempt to specify multiple disks
                             pass
                         elif len(elements) == 3:
-                            hypervisor.add_filesystem(elements[1], type=default_filesystem, filename=tmpfile, mntpnt=elements[0], devletter='', device=elements[2], dummy=(int(elements[1]) == 0))
+                            hypervisor.add_filesystem(elements[1],
+                                                      type=default_filesystem,
+                                                      filename=tmpfile,
+                                                      mntpnt=elements[0],
+                                                      devletter='',
+                                                      device=elements[2],
+                                                      dummy=(int(elements[1]) == 0))
                         else:
-                            hypervisor.add_filesystem(elements[1], type=default_filesystem, filename=tmpfile, mntpnt=elements[0])
-
+                            hypervisor.add_filesystem(elements[1],
+                                                      type=default_filesystem,
+                                                      filename=tmpfile,
+                                                      mntpnt=elements[0])
                 except IOError, (errno, strerror):
-                    self.optparser.error("%s parsing --part option: %s" % (errno, strerror))
+                    self.optparser.error("%s parsing --part option: %s" %
+                                                           (errno, strerror))
             else:
                 try:
                     curdisk = list()
                     size = 0
                     disk_idx = 0
                     for line in file(self.options.part):
-                        pair = line.strip().split(' ',1) 
+                        pair = line.strip().split(' ',1)
                         if pair[0] == '---':
                             self.do_disk(hypervisor, curdisk, size, disk_idx)
                             curdisk = list()
                             size = 0
                             disk_idx += 1
                         elif pair[0] != '':
-                            logging.debug("part: %s, size: %d" % (pair[0], int(pair[1])))
+                            logging.debug("part: %s, size: %d" % (pair[0],
+                                          int(pair[1])))
                             curdisk.append((pair[0], pair[1]))
                             size += int(pair[1])
 
                     self.do_disk(hypervisor, curdisk, size, disk_idx)
 
                 except IOError, (errno, strerror):
-                    hypervisor.optparser.error("%s parsing --part option: %s" % (errno, strerror))
+                    hypervisor.optparser.error("%s parsing --part option: %s" %
+                                                              (errno, strerror))
 
     def do_disk(self, hypervisor, curdisk, size, disk_idx):
         default_filesystem = hypervisor.distro.preferred_filesystem()
@@ -306,7 +404,8 @@ class CLI(object):
         logging.debug("do_disk #%i - size: %d" % (disk_idx, size))
         offset = 0
         for pair in curdisk:
-            logging.debug("do_disk #%i - part: %s, size: %s, offset: %d" % (disk_idx, pair[0], pair[1], offset))
+            logging.debug("do_disk #%i - part: %s, size: %s, offset: %d" %
+                                           (disk_idx, pair[0], pair[1], offset))
             if pair[0] == 'root':
                 disk.add_part(offset, int(pair[1]), default_filesystem, '/')
             elif pair[0] == 'swap':
@@ -323,11 +422,13 @@ class UVB(CLI):
 #        optparser.arg_help = (('hypervisor', vm.hypervisor_help), ('suite', self.suite_help))
 
     def suite_help(self):
-        return 'Suite. Valid options: %s' % " ".join(VMBuilder.plugins.ubuntu.distro.Ubuntu.suites)
+        return ('Suite. Valid options: %s' %
+                        " ".join(VMBuilder.plugins.ubuntu.distro.Ubuntu.suites))
 
     def handle_args(self, optparser, args):
         if len(args) < 2:
-            optparser.error("You need to specify at least the hypervisor type and the series")
+            optparser.error("You need to specify at least the hypervisor type "
+                            "and the series")
         distro = VMBuilder.get_distro('ubuntu')()
         hypervisor = VMBuilder.get_hypervisor(args[0])(distro)
         distro.set_setting('suite', args[1])
