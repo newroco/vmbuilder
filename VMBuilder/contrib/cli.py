@@ -133,7 +133,11 @@ class CLI(object):
                                    "--- \n    /var 8000 \n    /var/log 2000"))
             optparser.add_option_group(group)
 
-            hypervisor, distro = self.handle_args(optparser, sys.argv[1:])
+            optparser.disable_interspersed_args()
+            (dummy, args) = optparser.parse_args(sys.argv[1:])
+            optparser.enable_interspersed_args()
+
+            hypervisor, distro = self.handle_args(optparser, args)
 
             self.add_settings_from_context(optparser, distro)
             self.add_settings_from_context(optparser, hypervisor)
