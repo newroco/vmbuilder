@@ -54,7 +54,7 @@ class KVM(Hypervisor):
         fp = open(script, 'w')
         fp.write("#!/bin/sh\n\nexec %s\n" % ' '.join(self.cmdline))
         fp.close()
-        os.chmod(script, stat.S_IRWXU | stat.S_IRWXU | stat.S_IROTH | stat.S_IXOTH)
+        os.chmod(script, stat.S_IRWXU | stat.S_IRWXG | stat.S_IROTH | stat.S_IXOTH)
         self.call_hooks('fix_ownership', script)
 
     def libvirt_domain_type_name(self):
