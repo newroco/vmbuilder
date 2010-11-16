@@ -16,8 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from   VMBuilder.plugins.ubuntu.lucid import Lucid
+from   VMBuilder.plugins.ubuntu.maverick import Maverick
 
-class Maverick(Lucid):
-    valid_flavours = { 'i386' :  ['generic', 'generic-pae', 'virtual'],
-                       'amd64' : ['generic', 'server', 'virtual'] }
+class Natty(Maverick):
+    pass
