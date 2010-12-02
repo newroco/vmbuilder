@@ -359,7 +359,7 @@ class Dapper(suite.Suite):
         timezone = self.context.get_setting('timezone')
         if timezone:
             self.install_from_template('/etc/timezone', 'timezone', { 'timezone' : timezone })
-        self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'tzdata')
+        self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'locales')
 
     def install_ec2(self):
         if self.context.ec2:

@@ -66,6 +66,12 @@ proc                                            /proc           proc    defaults
         if have_cs:
             self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'console-setup')
 
+    def set_timezone(self):
+        timezone = self.context.get_setting('timezone')
+        if timezone:
+            self.install_from_template('/etc/timezone', 'timezone', { 'timezone' : timezone })
+        self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'tzdata')
+
     def prevent_daemons_starting(self):
         super(Edgy, self).prevent_daemons_starting()
         initctl = '%s/sbin/initctl' % (self.context.chroot_dir,)
