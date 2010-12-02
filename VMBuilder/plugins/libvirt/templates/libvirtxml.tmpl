@@ -35,6 +35,9 @@
     <graphics type='vnc' port='-1' listen='127.0.0.1'/>
 #for $disk in $disks
     <disk type='file' device='disk'>
+#if $disk.format_type != None
+      <driver name='qemu' type='$disk.format_type' />
+#end if
       <source file='$disk.filename' />
       <target dev='hd$disk.devletters()' />
     </disk>

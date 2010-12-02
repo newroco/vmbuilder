@@ -22,6 +22,9 @@
     <graphics type='vnc' port='-1' listen='127.0.0.1'/>
 #for $fs in $filesystems
     <disk type='file' device='disk'>
+#if $fs.format_type != None
+      <driver name='qemu' type='$fs.format_type' />
+#end if
       <source file='$fs.filename' />
       <target dev='hd$fs.devletters()' />
     </disk>

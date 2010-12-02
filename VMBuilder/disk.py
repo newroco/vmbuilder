@@ -77,6 +77,9 @@ class Disk(object):
             self.preallocated = True
             self.size = detect_size(self.filename)
 
+        self.format_type = None
+        "The format type of the disks. Only used for converted disks."
+
     def devletters(self):
         """
         @rtype: string
@@ -244,6 +247,7 @@ class Disk(object):
             run_cmd(qemu_img_path(), 'convert', '-O', format, self.filename, destfile)
         os.unlink(self.filename)
         self.filename = os.path.abspath(destfile)
+        self.format_type = format
         return destfile
 
     class Partition(object):
