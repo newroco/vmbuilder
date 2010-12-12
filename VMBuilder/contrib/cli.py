@@ -340,8 +340,11 @@ class CLI(object):
                 try:
                     for line in file(self.options.part):
                         elements = line.strip().split(' ')
-                        tmpfile = util.tmp_filename(
-                            tmp_root=self.options.tmp_root)
+			if not elements[3]:
+				tmpfile = util.tmp_filename(tmp_root=self.options.tmp_root)
+			else:
+				tmpfile = elements[3]
+
                         if elements[0] == 'root':
                             hypervisor.add_filesystem(elements[1],
                                                        default_filesystem,
