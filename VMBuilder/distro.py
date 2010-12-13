@@ -66,7 +66,7 @@ class Context(VMBuilder.plugins.Plugin):
         try:
             call_hooks(self, *args, **kwargs)
         except Exception:
-            #self.cleanup()
+            self.cleanup()
             raise
 
 class Distro(Context):
@@ -83,6 +83,7 @@ class Distro(Context):
         self.call_hooks('bootstrap')
         self.call_hooks('configure_os')
         self.call_hooks('post_install')
+	self.cleanup()
         
     def has_xen_support(self):
         """Install the distro into destdir"""
