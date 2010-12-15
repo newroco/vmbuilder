@@ -287,7 +287,12 @@ class Disk(object):
         def create(self, disk):
             """Adds partition to the disk image (does not mkfs or anything like that)"""
             logging.info('Adding type %d partition to disk image: %s' % (self.type, disk.filename))
-            run_cmd('parted', '--script', '--', disk.filename, 'mkpart', 'primary', self.parted_fstype(), self.begin, self.end)
+	    if self.begin == 0:
+		logging.info('Partition at beginning of disk - reserving first cylinder')
+		partition_start = "63s"
+	    else:
+	    	partition_start = self.begin
+            run_cmd('parted', '--script', '--', disk.filename, 'mkpart', 'primary', self.parted_fstype(), partition_start, self.end)
 
         def mkfs(self):
             """Adds Filesystem object"""
