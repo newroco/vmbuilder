@@ -78,6 +78,8 @@ class CLI(object):
                              action='store_true',
                              help=("Only build the chroot. Don't install it "
                                    "on disk images or anything."))
+            group.add_option('--chroot-dir',
+                             help="Build the chroot in directory.")
             group.add_option('--existing-chroot',
                              help="Use existing chroot.")
             group.add_option('--tmp',
@@ -155,6 +157,9 @@ class CLI(object):
             destdir = self.options.destdir or ('%s-%s' % (distro.arg,
                                                           hypervisor.arg))
 
+            if self.options.tmpfs and self.options.chroot_dir:
+                raise VMBuilderUserError('--chroot-dir and --tmpfs can not be used together.')
+
             if os.path.exists(destdir):
                 if self.options.overwrite:
                     logging.debug('%s existed, but -o was specified. '
@@ -202,6 +207,9 @@ class CLI(object):
                     tmpfs_mount_point = util.set_up_tmpfs(
                         tmp_root=self.options.tmp_root, size=tmpfs_size)
                     chroot_dir = tmpfs_mount_point
+                elif self.options.chroot_dir:
+                    os.mkdir(self.options.chroot_dir)
+                    chroot_dir = self.options.chroot_dir
                 else:
                     chroot_dir = util.tmpdir(tmp_root=self.options.tmp_root)
                 distro.set_chroot_dir(chroot_dir)
