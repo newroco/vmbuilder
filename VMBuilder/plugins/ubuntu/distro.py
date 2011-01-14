@@ -144,7 +144,6 @@ class Ubuntu(Distro):
         self.suite.install_extras()
         self.suite.create_initial_user()
         self.suite.install_authorized_keys()
-        self.suite.config_host_and_domainname()
         self.suite.set_timezone()
         self.suite.set_locale()
         self.suite.update()
@@ -158,6 +157,7 @@ class Ubuntu(Distro):
         self.suite.create_manifest()
 
     def configure_networking(self, nics):
+        self.suite.config_host_and_domainname()
         self.suite.config_interfaces(nics)
 
     def configure_mounting(self, disks, filesystems):
