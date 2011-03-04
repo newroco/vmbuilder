@@ -69,17 +69,17 @@ Assign NUM cpus to the guest vm. [default: 1]
 Allows to specify a partition table in PATH each line of partfile should specify (root first):
 .RS
 .RS
- mountpoint size  
+ mountpoint size (device) (filename)
 .RE
-one per line, separated by space, where size is in megabytes. You can have up to 4
+one per line, separated by space, where size is in megabytes. The third and fourth options allow you to specify a device for the filesystem, and a name for the filesystem image, both of which are optional. You can have up to 4
 virtual disks, a new disk starts on a line containing only '---'. ie:
 .RS
- root 2000     
- /boot 512
- swap 1000      
+ root 2000 a1 rootfs
+ /boot 512 a2 boot
+ swap 1000 a3 swapfs
  ---      
- /var 8000      
- /var/log 2000
+ /var 8000 b1 var
+ /var/log 2000 b2 varlog
 .RE
 .RE
 .TP
