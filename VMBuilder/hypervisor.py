@@ -68,6 +68,7 @@ class Hypervisor(VMBuilder.distro.Context):
         if self.needs_bootloader:
             self.call_hooks('install_bootloader', self.chroot_dir, self.disks)
         self.call_hooks('install_kernel', self.chroot_dir)
+        self.distro.call_hooks('post_install')
         self.call_hooks('unmount_partitions')
         os.rmdir(self.chroot_dir)
 
