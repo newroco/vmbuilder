@@ -82,7 +82,6 @@ class Distro(Context):
         self.call_hooks('set_defaults')
         self.call_hooks('bootstrap')
         self.call_hooks('configure_os')
-        self.call_hooks('post_install')
 	self.cleanup()
         
     def has_xen_support(self):
