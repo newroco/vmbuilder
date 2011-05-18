@@ -348,7 +348,7 @@ class CLI(object):
                 try:
                     for line in file(self.options.part):
                         elements = line.strip().split(' ')
-			if not elements[3]:
+			if len(elements) < 4:
 				tmpfile = util.tmp_filename(tmp_root=self.options.tmp_root)
 			else:
 				tmpfile = elements[3]
