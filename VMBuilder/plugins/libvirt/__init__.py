@@ -77,7 +77,7 @@ class Libvirt(Plugin):
         else:
             vmxml = VMBuilder.util.render_template('libvirt', self.context, 'libvirtxml', tmpl_ctxt)
 
-        if hostname in self.all_domains() and not self.vm.overwrite:
+        if hostname in self.all_domains() and not self.context.overwrite:
             raise VMBuilderUserError('Domain %s already exists at %s' % (hostname, libvirt_uri))
         else:
             self.conn.defineXML(vmxml)
