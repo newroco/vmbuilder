@@ -32,20 +32,24 @@ class VirtualBox(Hypervisor):
     arg = 'vbox'
 
     def register_options(self):
-        group = self.setting_group('VM settings')
+        group = self.setting_group('VirtualBox options')
+        group.add_setting('mem', extra_args=['-m'], type='int', default=128, help='Assign MEM megabytes of memory to the guest vm. [default: %default]')
+        group.add_setting('cpus', type='int', default=1, help='Assign NUM cpus to the guest vm. [default: %default]')
         group.add_setting('vbox-disk-format', metavar='FORMAT', default='vdi', help='Desired disk format. Valid options are: vdi vmdk. [default: %default]')
 
-    def finalize(self):
+    def convert(self, disks, destdir):
         self.imgs = []
-        for disk in self.context.disks:
-            img_path = disk.convert(self.context.destdir, self.context.vbox_disk_format)
+        for disk in disks:
+            img_path = disk.convert(destdir, self.context.get_setting('vbox-disk-format'))
             self.imgs.append(img_path)
-            self.context.result_files.append(img_path)
 
-    def deploy(self):
-        vm_deploy_script = VMBuilder.util.render_template('virtualbox', self.context, 'vm_deploy_script', { 'os_type' : self.context.distro.__class__.__name__, 'vm_name' : self.context.hostname, 'vm_disks' : self.imgs, 'memory' : self.context.mem, 'cpus' : self.context.cpus })
+    def deploy(self,destdir):
+        hostname = self.context.distro.get_setting('hostname')
+        mac = self.context.get_setting('mac')
+        ip = self.context.get_setting('ip')
+        vm_deploy_script = VMBuilder.util.render_template('virtualbox', self.context, 'vm_deploy_script', { 'os_type' : self.context.distro.__class__.__name__, 'vm_name' : hostname, 'vm_disks' : self.imgs, 'memory' : self.context.get_setting('mem'), 'cpus' : self.context.get_setting('cpus') })
 
-        script_file = '%s/deploy_%s.sh' % (self.context.destdir, self.context.hostname)
+        script_file = '%s/deploy_%s.sh' % (destdir, hostname)
         fp = open(script_file, 'w')
         fp.write(vm_deploy_script)
         fp.close()
