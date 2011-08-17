@@ -16,7 +16,13 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from   VMBuilder.plugins.ubuntu.natty import Natty
+import time
+from VMBuilder.plugins.ubuntu.natty import Natty
 
 class Oneiric(Natty):
-    pass
+
+    def unmount_dev(self):
+        # no idea why, but something keep /dev busy briefly during the
+        # bootstrap
+        time.sleep(1)
+        super(Oneiric, self).unmount_dev()
