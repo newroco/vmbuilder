@@ -29,7 +29,8 @@ class Ubuntu(Distro):
     name = 'Ubuntu'
     arg = 'ubuntu'
     suites = ['dapper', 'gutsy', 'hardy', 'intrepid', 'jaunty', 
-              'karmic', 'lucid', 'maverick', 'natty', 'oneiric']
+              'karmic', 'lucid', 'maverick', 'natty', 'oneiric',
+              'precise' ]
 
     # Maps host arch to valid guest archs
     valid_archs = { 'amd64' : ['amd64', 'i386', 'lpia' ],
