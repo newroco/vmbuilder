@@ -219,7 +219,7 @@ class CLI(object):
                 print 'Chroot can be found in %s' % distro.chroot_dir
                 sys.exit(0)
 
-            self.set_disk_layout(hypervisor)
+            self.set_disk_layout(optparser, hypervisor)
             hypervisor.install_os()
 
             os.mkdir(destdir)
@@ -301,7 +301,7 @@ class CLI(object):
         elif opt_str == '--quiet':
             VMBuilder.set_console_loglevel(logging.CRITICAL)
 
-    def set_disk_layout(self, hypervisor):
+    def set_disk_layout(self, optparser, hypervisor):
         default_filesystem = hypervisor.distro.preferred_filesystem()
         if not self.options.part:
             rootsize = parse_size(self.options.rootsize)
@@ -380,8 +380,8 @@ class CLI(object):
                                                       filename=tmpfile,
                                                       mntpnt=elements[0])
                 except IOError, (errno, strerror):
-                    self.optparser.error("%s parsing --part option: %s" %
-                                                           (errno, strerror))
+                    optparser.error("%s parsing --part option: %s" %
+                                    (errno, strerror))
             else:
                 try:
                     curdisk = list()
@@ -403,8 +403,8 @@ class CLI(object):
                     self.do_disk(hypervisor, curdisk, size, disk_idx)
 
                 except IOError, (errno, strerror):
-                    hypervisor.optparser.error("%s parsing --part option: %s" %
-                                                              (errno, strerror))
+                    optparser.error("%s parsing --part option: %s" %
+                                    (errno, strerror))
 
     def do_disk(self, hypervisor, curdisk, size, disk_idx):
         default_filesystem = hypervisor.distro.preferred_filesystem()
