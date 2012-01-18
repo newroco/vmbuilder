@@ -190,7 +190,7 @@ class Disk(object):
         run_cmd('kpartx', '-d', self.filename, ignore_fail=ignore_fail)
 
         for part in self.partitions:
-            parted_oldmap=part.filename[len("/dev/mapper/"):-1]+"p"+part.filename[-1]
+            parted_oldmap=part.filename[len("/dev/mapper/"):-1]+part.filename[-1]
             logging.debug("Removing parted old map with  'dmsetup remove %s'" % parted_oldmap)
             run_cmd('dmsetup', 'remove', parted_oldmap, ignore_fail=ignore_fail)
             part.set_filename(None)
