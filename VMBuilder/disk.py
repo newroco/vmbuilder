@@ -190,9 +190,13 @@ class Disk(object):
         run_cmd('kpartx', '-d', self.filename, ignore_fail=ignore_fail)
 
         for part in self.partitions:
-            parted_oldmap=part.filename[len("/dev/mapper/"):-1]+part.filename[-1]
-            logging.debug("Removing parted old map with  'dmsetup remove %s'" % parted_oldmap)
-            run_cmd('dmsetup', 'remove', parted_oldmap, ignore_fail=ignore_fail)
+            logging.debug("Removing partition %s" % part.filename)
+            parted_oldmap=part.filename[len("/dev/mapper/"):-1]+"p"+part.filename[-1]
+            dmsetup_output = run_cmd('dmsetup', 'info', parted_oldmap, ignore_fail=True)
+            for line in dmsetup_output.split('\n'):
+                if line.startswith("State:") and line.endswith("ACTIVE"):
+                    logging.debug("Removing parted old map with  'dmsetup remove %s'" % parted_oldmap)
+                    dmsetup_output=run_cmd('dmsetup', 'remove', parted_oldmap, ignore_fail=ignore_fail)
             part.set_filename(None)
 
     def add_part(self, begin, length, type, mntpnt):
