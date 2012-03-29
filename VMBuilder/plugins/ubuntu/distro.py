@@ -137,8 +137,8 @@ class Ubuntu(Distro):
         self.suite.pre_install()
 
     def configure_os(self):
-        self.suite.install_sources_list()
         self.suite.install_apt_proxy()
+        self.suite.install_sources_list()
         self.suite.create_devices()
         self.suite.prevent_daemons_starting()
         self.suite.mount_dev_proc()
