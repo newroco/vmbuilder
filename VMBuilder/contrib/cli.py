@@ -277,7 +277,7 @@ class CLI(object):
             optparser.add_option_group(optgroup)
 
     def versioninfo(self, option, opt, value, parser):
-        print ('%(major)d.%(minor)d.%(micro)s.r%(revno)d' %
+        print ('%(major)d.%(minor)d.%(micro)s' %
                                                  VMBuilder.get_version_info())
         sys.exit(0)
 
