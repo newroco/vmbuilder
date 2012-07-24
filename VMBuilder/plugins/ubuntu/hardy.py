@@ -16,6 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import time
 from VMBuilder.plugins.ubuntu.gutsy import Gutsy
 
 class Hardy(Gutsy):
@@ -56,3 +57,9 @@ class Hardy(Gutsy):
 
     def has_256_bit_inode_ext3_support(self):
         return True
+
+    def unmount_dev(self):
+        # no idea why, but something keep /dev busy briefly during the
+        # bootstrap
+        time.sleep(1)
+        super(Hardy, self).unmount_dev()

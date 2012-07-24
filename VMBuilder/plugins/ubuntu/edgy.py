@@ -72,13 +72,20 @@ proc                                            /proc           proc    defaults
             self.install_from_template('/etc/timezone', 'timezone', { 'timezone' : timezone })
         self.run_in_target('dpkg-reconfigure', '-fnoninteractive', '-pcritical', 'tzdata')
 
+    def divert_file(self, path, add):
+        full_path = '%s/%s' % (self.context.chroot_dir, path)
+        renamed_path = '%s.real' % (full_path, )
+        if add: (src, dst) = full_path, renamed_path
+        else:   (src, dst) = renamed_path, full_path
+        os.rename(src, dst)
+
     def prevent_daemons_starting(self):
         super(Edgy, self).prevent_daemons_starting()
-        initctl = '%s/sbin/initctl' % (self.context.chroot_dir,)
-        os.rename(initctl, '%s.REAL' % (initctl,))
+        initctl = '/sbin/initctl'
+        self.divert_file(initctl, True)
         self.install_from_template('/sbin/initctl', 'initctl-stub', mode=0755)
 
     def unprevent_daemons_starting(self):
         super(Edgy, self).unprevent_daemons_starting()
-        initctl = '%s/sbin/initctl' % (self.context.chroot_dir,)
-        os.rename('%s.REAL' % (initctl,), initctl)
+        initctl = '/sbin/initctl'
+        self.divert_file(initctl, False)
