@@ -62,7 +62,7 @@ class CLI(object):
             group.add_option('--overwrite',
                              '-o',
                              action='store_true',
-                             help='Configuration file')
+                             help='Remove destination directory before starting build')
             group.add_option('--config',
                              '-c',
                              type='str',
@@ -161,6 +161,8 @@ class CLI(object):
                 raise VMBuilderUserError('--chroot-dir and --tmpfs can not be used together.')
 
             if os.path.exists(destdir):
+                if os.path.realpath(destdir) == os.getcwd():
+                    raise VMBuilderUserError('Current working directory cannot be used as a destination directory')
                 if self.options.overwrite:
                     logging.debug('%s existed, but -o was specified. '
                                   'Nuking it.' % destdir)
@@ -348,10 +350,10 @@ class CLI(object):
                 try:
                     for line in file(self.options.part):
                         elements = line.strip().split(' ')
-			if len(elements) < 4:
-				tmpfile = util.tmp_filename(tmp_root=self.options.tmp_root)
-			else:
-				tmpfile = elements[3]
+                        if len(elements) < 4:
+                                tmpfile = util.tmp_filename(tmp_root=self.options.tmp_root)
+                        else:
+                                tmpfile = elements[3]
 
                         if elements[0] == 'root':
                             hypervisor.add_filesystem(elements[1],
