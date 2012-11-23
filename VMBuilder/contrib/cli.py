@@ -161,6 +161,8 @@ class CLI(object):
                 raise VMBuilderUserError('--chroot-dir and --tmpfs can not be used together.')
 
             if os.path.exists(destdir):
+                if os.path.realpath(destdir) == os.getcwd():
+                    raise VMBuilderUserError('Current working directory cannot be used as a destination directory')
                 if self.options.overwrite:
                     logging.debug('%s existed, but -o was specified. '
                                   'Nuking it.' % destdir)
