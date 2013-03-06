@@ -155,18 +155,22 @@ def call_hooks(context, func, *args, **kwargs):
     logging.debug('(args=%r, kwargs=%r)' % (args, kwargs))
     for plugin in context.plugins:
         logging.debug('Calling %s method in %s plugin.' % (func, plugin.__module__))
-        getattr(plugin, func, log_no_such_method)(*args, **kwargs)
+        try:
+            getattr(plugin, func)(*args, **kwargs)
+        except AttributeError as e:
+            logging.debug('No such method ({}) in context plugin ({})'.format(
+                func, plugin.__module__))
 
     for f in context.hooks.get(func, []):
         logging.debug('Calling %r.' % (f,))
         f(*args, **kwargs)
 
     logging.debug('Calling %s method in context plugin %s.' % (func, context.__module__))
-    getattr(context, func, log_no_such_method)(*args, **kwargs)
-
-def log_no_such_method(*args, **kwargs):
-    logging.debug('No such method')
-    return
+    try:
+        getattr(context, func)(*args, **kwargs)
+    except AttributeError as e:
+        logging.debug('No such method ({}) in context plugin ({})'.format(
+            func, plugin.__module__))
 
 def tmp_filename(suffix='', tmp_root=None):
     # There is a risk in using tempfile.mktemp(): it's not recommended

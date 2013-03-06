@@ -153,9 +153,12 @@ class CLI(object):
             if os.geteuid() != 0:
                 raise VMBuilderUserError('Must run as root')
 
+            logging.debug("Launch directory: {}".format(os.getcwd()))
+
             distro.overwrite = hypervisor.overwrite = self.options.overwrite
             destdir = self.options.destdir or ('%s-%s' % (distro.arg,
                                                           hypervisor.arg))
+            logging.debug("Output destdir: {}".format(destdir))
 
             if self.options.tmpfs and self.options.chroot_dir:
                 raise VMBuilderUserError('--chroot-dir and --tmpfs can not be used together.')
