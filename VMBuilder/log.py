@@ -34,3 +34,4 @@ console.setLevel(logging.INFO)
 console.setFormatter(logging.Formatter(format))
 logging.getLogger('').addHandler(console)
 
+logging.info("logging to file: {}".format(logfile))
