@@ -259,6 +259,10 @@ class Dapper(suite.Suite):
         if variant:
             cmd += ['--variant=%s' % variant]
 
+        debootstrap_tarball = self.context.get_setting('debootstrap-tarball')
+        if debootstrap_tarball:
+            cmd += ['--unpack-tarball=%s' % debootstrap_tarball]
+
         suite = self.context.get_setting('suite')
         cmd += [suite, self.context.chroot_dir, self.debootstrap_mirror()]
         kwargs = { 'env' : { 'DEBIAN_FRONTEND' : 'noninteractive' } }
