@@ -54,6 +54,7 @@ class Ubuntu(Distro):
         group.add_setting('suite', default='lucid', help='Suite to install. Valid options: %s [default: %%default]' % ' '.join(self.suites))
         group.add_setting('flavour', extra_args=['--kernel-flavour'], help='Kernel flavour to use. Default and valid options depend on architecture and suite')
         group.add_setting('variant', metavar='VARIANT', help='Passed to debootstrap --variant flag; use minbase, buildd, or fakechroot.')
+        group.add_setting('debootstrap-tarball', metavar='FILE', help='Passed to debootstrap --unpack-tarball flag.')
         group.add_setting('iso', metavar='PATH', help='Use an iso image as the source for installation of file. Full path to the iso must be provided. If --mirror is also provided, it will be used in the final sources.list of the vm.  This requires suite and kernel parameter to match what is available on the iso, obviously.')
         group.add_setting('mirror', metavar='URL', help='Use Ubuntu mirror at URL instead of the default, which is http://archive.ubuntu.com/ubuntu for official arches and http://ports.ubuntu.com/ubuntu-ports otherwise')
         group.add_setting('proxy', metavar='URL', help='Use proxy at URL for cached packages')
