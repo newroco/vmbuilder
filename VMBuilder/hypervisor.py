@@ -59,6 +59,7 @@ class Hypervisor(VMBuilder.distro.Context):
         self.nics = [self.NIC()]
         self.call_hooks('preflight_check')
         self.call_hooks('configure_networking', self.nics)
+        self.call_hooks('create_partitions')
         self.call_hooks('configure_mounting', self.disks, self.filesystems)
 
         self.chroot_dir = tmpdir()
@@ -78,9 +79,8 @@ class Hypervisor(VMBuilder.distro.Context):
                         destdir)
         self.call_hooks('deploy', destdir)
 
-    def mount_partitions(self, mntdir):
-        """Mounts all the vm's partitions and filesystems below .rootmnt"""
-        logging.info('Mounting target filesystems')
+    def create_partitions(self):
+        """Creates all the vms partitions and formats them """
         for fs in self.filesystems:
             fs.create()
             fs.mkfs()
@@ -89,6 +89,10 @@ class Hypervisor(VMBuilder.distro.Context):
             disk.partition()
             disk.map_partitions()
             disk.mkfs()
+
+    def mount_partitions(self, mntdir):
+        """Mounts all the vm's partitions and filesystems below .rootmnt"""
+        logging.info('Mounting target filesystems')
         fss = VMBuilder.disk.get_ordered_filesystems(self)
         for fs in fss:
             fs.mount(mntdir)
