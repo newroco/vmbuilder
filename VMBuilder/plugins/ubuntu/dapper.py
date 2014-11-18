@@ -246,7 +246,7 @@ class Dapper(suite.Suite):
             self.context.install_file('/etc/apt/apt.conf', '// Proxy added by vmbuilder\nAcquire::http { Proxy "%s"; };' % proxy)
 
     def install_fstab(self, disks, filesystems):
-        self.install_from_template('/etc/fstab', 'dapper_fstab', { 'parts' : disk.get_ordered_partitions(disks), 'prefix' : self.disk_prefix })
+        self.install_from_template('/etc/fstab', 'dapper_fstab', { 'parts' : disk.get_ordered_partitions(disks) })
 
     def install_device_map(self):
         self.install_from_template('/boot/grub/device.map', 'devicemap', { 'prefix' : self.disk_prefix })
