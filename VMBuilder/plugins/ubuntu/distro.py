@@ -1,6 +1,6 @@
 #
 #    Uncomplicated VM Builder
-#    Copyright (C) 2007-2010 Canonical Ltd.
+#    Copyright (C) 2007-2015 Canonical Ltd.
 #
 #    See AUTHORS for list of contributors
 #
@@ -30,7 +30,9 @@ class Ubuntu(Distro):
     arg = 'ubuntu'
     suites = ['dapper', 'gutsy', 'hardy', 'intrepid', 'jaunty', 
               'karmic', 'lucid', 'maverick', 'natty', 'oneiric',
-              'precise', 'quantal', 'raring', 'saucy', 'trusty' ]
+              'precise', 'quantal', 'raring', 'saucy', 'trusty',
+              'utopic', 'vivid', 'wily',
+             ]
 
     # Maps host arch to valid guest archs
     valid_archs = { 'amd64' : ['amd64', 'i386', 'lpia' ],
