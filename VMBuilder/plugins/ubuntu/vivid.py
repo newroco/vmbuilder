@@ -17,7 +17,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import time
-from VMBuilder.plugins.ubuntu.saucy import Utopic
+from VMBuilder.plugins.ubuntu.utopic import Utopic
 
 class Vivid(Utopic):
     pass

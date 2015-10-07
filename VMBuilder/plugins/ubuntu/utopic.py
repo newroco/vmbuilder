@@ -17,7 +17,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import time
-from VMBuilder.plugins.ubuntu.saucy import Trusty
+from VMBuilder.plugins.ubuntu.trusty import Trusty
 
 class Utopic(Trusty):
     pass

@@ -17,7 +17,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import time
-from VMBuilder.plugins.ubuntu.saucy import Vivid
+from VMBuilder.plugins.ubuntu.vivid import Vivid
 
 class Wily(Vivid):
     pass
