@@ -31,7 +31,7 @@ class Ubuntu(Distro):
     suites = ['dapper', 'gutsy', 'hardy', 'intrepid', 'jaunty', 
               'karmic', 'lucid', 'maverick', 'natty', 'oneiric',
               'precise', 'quantal', 'raring', 'saucy', 'trusty',
-              'utopic', 'vivid', 'wily',
+              'utopic', 'vivid', 'wily', 'xenial',
              ]
 
     # Maps host arch to valid guest archs
