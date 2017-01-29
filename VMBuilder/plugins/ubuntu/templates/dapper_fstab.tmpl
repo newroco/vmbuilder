@@ -1,0 +1,7 @@
+# /etc/fstab: static file system information.
+#
+# <file system>                                 <mount point>   <type>  <options>       <dump>  <pass>
+proc                                            /proc           proc    defaults        0       0
+#for $part in $parts
+UUID=$part.fs.uuid                                $part.mntpnt        $part.fs.fstab_fstype()    $part.fs.fstab_options()    0    0
+#end for

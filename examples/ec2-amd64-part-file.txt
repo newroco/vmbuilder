@@ -1,0 +1,2 @@
+root 2048 a1 rootfs
+/mnt 1 b

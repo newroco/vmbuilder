@@ -1,0 +1,170 @@
+.TH VMBUILDER 1 "Oct 2008"
+.SH NAME
+vmbuilder \- builds virtual machines from the command line
+.SH SYNOPSIS
+.B vmbuilder <hypervisor> <distro> 
+[\fIOPTIONS\fR]...
+.TP
+<hypervisor>  Hypervisor image format. Valid options: xen kvm vmw6 vmserver
+.TP
+<distro>      Distribution. Valid options: ubuntu
+.SH DESCRIPTION
+This manual page documents the
+.B vmbuilder
+command.
+.B vmbuilder
+is a program that builds virtual machines from the command line, but can have other interfaces implemented through its plugin mechanism. You can pass command line options to add extra packages, remove packages, choose which version of Ubuntu, which mirror etc. On recent hardware with plenty of RAM, tmpdir in /dev/shm or using a tmpfs, and a local mirror (see apt-proxy or apt-mirror), you can bootstrap a vm in less than a minute.
+
+
+.SH OPTIONS
+.TP
+.B NOTE:
+Only common basic options are described here.  Many options can be added through plugins and others, they depends on the hypervisor and distro you specify.  Please use
+.B vmbuilder <hypervisor> <distro> --help
+for a full options list.
+.TP
+.B \-h, \-\-help            
+Show this help message and exit.
+.TP
+.B \-c ALTCONFIG \-\-config
+Specify the path to an optional configuration file. [default:None]. /etc/vmbuilder.cfg and ~/.vmbuilder.cfg are always read if present. The content of the configuration file is explained at https://help.ubuntu.com/community/JeOSVMBuilder#Using%20configuration%20files.
+.TP
+.B \-d DEST, \-\-dest DEST  
+Specify the destination directory. [default:<hypervisor>-<distro>]. Config option: destdir.
+.TP
+.B \-\-debug
+Show (a lot of) debug information
+.TP
+.B \-v, \-\-verbose
+Show progress information
+.TP
+.B \-q, \-\-quiet
+Silent operation
+.TP
+.B \-t TMP, \-\-tmp TMP     
+Use TMP as temporary working space for image generation. Defaults to $TMPDIR if it is defined or /tmp otherwise. [default: /tmp]
+.TP
+.B \-\-templates DIR
+Prepends dir to template search path. See https://help.ubuntu.com/community/JeOSVMBuilder#Modifying%20the%20libvirt%20template%20to%20use%20bridging for an example.
+.TP
+.B \-o, \-\-overwrite
+Force overwrite of destination directory if it already exist. [default: False]
+.TP
+.B \-\-in-place            
+Install directly into the filesystem images. This is needed if your $TMPDIR is nodev and/or nosuid, but will result in slightly larger file system images.
+.TP
+.B \-\-tmpfs OPTS          
+Use a tmpfs as the working directory, specifying its size or "-" to use tmpfs default (suid,dev,size=1G).
+.TP
+.B \-m MEM, \-\-mem MEM     
+Assign MEM megabytes of memory to the guest vm. [default: 128]
+.TP
+.B \-\-cpus NUM
+Assign NUM cpus to the guest vm. [default: 1]
+
+
+.SS Guest partitioning options
+.TP
+.B \-\-part PATH           
+Allows to specify a partition table in PATH each line of partfile should specify (root first):
+.RS
+.RS
+ mountpoint size (device) (filename)
+.RE
+one per line, separated by space, where size is in megabytes. The third and fourth options allow you to specify a device for the filesystem, and a name for the filesystem image, both of which are optional. You can have up to 4
+virtual disks, a new disk starts on a line containing only '---'. ie:
+.RS
+ root 2000 a1 rootfs
+ /boot 512 a2 boot
+ swap 1000 a3 swapfs
+ ---      
+ /var 8000 b1 var
+ /var/log 2000 b2 varlog
+.RE
+.RE
+.TP
+The following three options are not used if --part is specified:
+.RS
+.TP
+.B \-\-rootsize SIZE       
+Size (in MB) of the root filesystem [default: 4096].  Discarded when --part is used.
+.TP
+.B \-\-optsize SIZE
+Size (in MB) of the /opt filesystem. If not set, no /opt filesystem will be added. Discarded when --part is used.
+.TP
+.B \-\-swapsize SIZE     
+Size (in MB) of the swap partition [default: 1024]. Discarded when --part is used.
+.RS
+
+.SS Network related options:
+.TP
+.B \-\-domain DOMAIN     
+Set DOMAIN as the domain name of the guest. Default: The domain of the machine running this script.
+.TP
+.B \-\-ip ADDRESS 
+IP address in dotted form [default: dhcp]
+.TP
+Options below are discarded if \-\-ip is not specified
+.RS
+.B \-\-mask VALUE
+IP mask in dotted form [default: based on ip setting]. 
+.TP
+.B \-\-net ADDRESS       
+IP net address in dotted form [default: based on ip setting].
+.TP
+.B \-\-bcast VALUE       
+IP broadcast in dotted form [default: based on ip setting]. 
+.TP
+.B \-\-gw ADDRESS
+Gateway (router) address in dotted form [default: based on ip setting (first valid address in the network)].
+.TP
+.B \-\-dns ADDRESS
+DNS address in dotted form [default: based on ip setting (first valid address in the network)] 
+.RE
+
+.SS Post install actions:
+.TP
+.B \-\-copy FILE         
+Read 'source dest' lines from FILE, copying source files from host to dest in the guest's file system.
+.TP
+.B \-\-execscript SCRIPT, \-\-exec SCRIPT
+Run SCRIPT after distro installation finishes. Script will be called with the guest's chroot as first argument, so you can use
+.B chroot $1 <cmd>
+to run code in the virtual machine.
+
+.SS libvirt integration:
+.TP
+.B \-\-libvirt=URI
+Add VM to given URI
+
+.SS Scripts:
+.TP
+.B \-\-firstboot PATH    
+Specify a script that will be copied into the guest and executed the first time the machine boots.  This script must not be interactive.
+.TP
+.B \-\-firstlogin PATH   
+Specify a script that will be copied into the guest and will be executed the first time the user logs in.  This script can be interactive.
+
+.SH DEVELOPMENT
+.B vmbuilder
+is a python program that offers a very simple mechanism to increase functionalities, interfaces, support other distribution and hypervisors. Feel free to join the project at https://launchpad.net/vmbuilder
+
+.SH COMPATIBILTY
+.B vmbuilder
+includes a command line interface compatibility with its ancestor
+.B ubuntu-vm-builder.
+This compatibility does not include template or configration files which now use a newer format. Programs or script that were relying on ubuntu-vm-builder should continue working without any issues if the do not use templates or configuration files.
+
+.SH SUPPORT
+Feel free to join #ubuntu-virt on freenode to get some help or just say hello.
+
+.SH SEE ALSO
+apt-proxy(8), apt-mirror(8)
+.TP
+The vmbuilder tutorial available at https://help.ubuntu.com/community/JeOSVMBuilder
+.TP
+The CheetahTemplate documentation for syntax of the template files at http://www.cheetahtemplate.org/docs/users_guide_html/
+
+.SH AUTHOR
+vmbuilder is Copyright (C) 2007-2008 Canonical Ltd. and written by Soren Hansen <soren@canonical.com> with the help of others, see /usr/share/doc/python-vm-builder/AUTHORS for more details.
+
