@@ -174,6 +174,9 @@ class Dapper(suite.Suite):
                                      'dns' : nics[0].dns,
                                      'domain' : self.context.get_setting('domain') })
 
+    def config_ssh(self):
+        self.install_from_template('/etc/ssh/sshd_config', 'sshd_config')
+
     def unprevent_daemons_starting(self):
         os.unlink('%s/usr/sbin/policy-rc.d' % self.context.chroot_dir)
 
