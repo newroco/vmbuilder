@@ -159,6 +159,7 @@ class Ubuntu(Distro):
         self.suite.unmount_dev()
         self.suite.unprevent_daemons_starting()
         self.suite.create_manifest()
+        self.suite.config_ssh()
 
     def configure_networking(self, nics):
         self.suite.config_host_and_domainname()
