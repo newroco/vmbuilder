@@ -6,11 +6,11 @@ auto lo
 iface lo inet loopback
 
 # The primary network interface
-auto eth0
+auto $ifacename
 #if $ip == 'dhcp'
-iface eth0 inet dhcp
+iface $ifacename inet dhcp
 #else
-iface eth0 inet static
+iface $ifacename inet static
         address $ip
         netmask $mask 
         network $net
