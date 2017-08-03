@@ -146,6 +146,7 @@ class Dapper(suite.Suite):
 
         self.run_in_target('addgroup', '--system', 'admin')
         self.run_in_target('adduser', user, 'admin')
+        self.run_in_target('adduser', user, 'sudo')
 
         for group in ['adm', 'audio', 'cdrom', 'dialout', 'floppy', 'video', 'plugdev', 'dip', 'netdev', 'powerdev', 'lpadmin', 'scanner']:
             self.run_in_target('adduser', user, group, ignore_fail=True)
