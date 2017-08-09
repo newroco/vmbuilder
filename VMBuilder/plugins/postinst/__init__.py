@@ -52,7 +52,6 @@ class postinst(Plugin):
 
     def post_install(self):
         copy = self.context.get_setting('copy')
-        execscript = self.context.get_setting('execscript')
         if copy:
             logging.info("Copying files specified by copy in: %s" % copy)
             try:
@@ -68,6 +67,9 @@ class postinst(Plugin):
             except IOError, (errno, strerror):
                 raise VMBuilderUserError("%s executing copy directives: %s" % (errno, strerror))
 
+        execscript = self.context.get_setting('execscript')
+        if not(execscript.startswith('/')):
+            execscript = "%s/%s" % (os.getcwd(), execscript)
         if execscript:
             logging.info("Executing script: %s" % execscript)
             util.run_cmd(execscript, self.context.chroot_dir)
