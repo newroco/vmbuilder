@@ -36,17 +36,19 @@ class Firstscripts(Plugin):
         firstboot = self.context.get_setting('firstboot')
         if firstboot:
             logging.debug("Checking if firstboot script %s exists" % (firstboot,))
-            if not(os.path.isfile(firstboot) and firstboot.startswith('/')):
+            if not(os.path.isfile(firstboot)):
                 raise VMBuilderUserError('The path to the first-boot script is invalid: %s. Make sure you are providing a full path.' % firstboot)
 
         firstlogin = self.context.get_setting('firstlogin')
         if firstlogin:
             logging.debug("Checking if first login script %s exists" % (firstlogin,))
-            if not(os.path.isfile(firstlogin) and firstlogin.startswith('/')):
+            if not(os.path.isfile(firstlogin)):
                 raise VMBuilderUserError('The path to the first-login script is invalid: %s.  Make sure you are providing a full path.' % firstlogin)
 
     def post_install(self):
         firstboot = self.context.get_setting('firstboot')
+        if not(firstboot.startswith('/')):
+            firstboot = "%s/%s" % (os.getcwd(), firstboot)
         if firstboot:
             logging.debug("Installing firstboot script %s" % (firstboot,))
             self.context.install_file('/root/firstboot.sh', source=firstboot, mode=0700)
@@ -54,6 +56,8 @@ class Firstscripts(Plugin):
             self.install_from_template('/etc/rc.local', 'firstbootrc', mode=0755)
 
         firstlogin = self.context.get_setting('firstlogin')
+        if not(firstlogin.startswith('/')):
+            firstlogin = "%s/%s" % (os.getcwd(), firstlogin)
         if firstlogin:
             logging.debug("Installing first login script %s" % (firstlogin,))
             self.context.install_file('/root/firstlogin.sh', source=firstlogin, mode=0755)
