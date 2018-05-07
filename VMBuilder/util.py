@@ -180,7 +180,7 @@ def tmp_filename(suffix='', tmp_root=None):
 def tmpdir(suffix='', tmp_root=None):
     return tempfile.mkdtemp(suffix=suffix, dir=tmp_root)
 
-def set_up_tmpfs(tmp_root=None, size=1024):
+def set_up_tmpfs(tmp_root=None, size=2048):
     """Sets up a tmpfs storage under `tmp_root` with the size of `size` MB.
 
     `tmp_root` defaults to tempfile.gettempdir().
