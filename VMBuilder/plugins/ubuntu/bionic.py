@@ -20,4 +20,11 @@ import time
 from VMBuilder.plugins.ubuntu.xenial import Xenial
 
 class Bionic(Xenial):
-    pass
+    def config_interfaces(self, nics):
+        self.install_from_template('/etc/netplan/01-netcfg.yaml', 'netplan_config',
+            { 'ip' : nics[0].type == 'dhcp' and 'dhcp' or nics[0].ip,
+            'mask' : nics[0].netmask,
+            'gw' : nics[0].gateway,
+            'dns' : nics[0].dns,
+            'domain' : self.context.get_setting('domain'),
+            'ifacename' : "enp3s0" })
