@@ -1,0 +1,24 @@
+# This file describes the network interfaces available on your system
+# For more information, see netplan(5).
+
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    $ifacename:
+#if $ip == 'dhcp'
+      dhcp4: true
+      dhcp6: true
+#else
+      dhcp4: no
+      dhcp6: no
+      addresses: [$ip/$mask]
+      gateway4: $gw
+      nameservers:
+        #if $dns ==''
+        addresses: [208.67.222.222, 208.67.220.220]
+        #else
+        addresses: [$dns]
+        search: [$domain]
+        #end if
+#end if
