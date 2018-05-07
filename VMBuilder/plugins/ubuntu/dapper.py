@@ -72,7 +72,7 @@ class Dapper(suite.Suite):
             self.call_hook('fix_ownership', manifest)
 
     def update(self):
-        self.run_in_target('apt-get', '-y', '--force-yes', 'dist-upgrade',
+        self.run_in_target('apt-get', '-y', 'dist-upgrade',
                            env={ 'DEBIAN_FRONTEND' : 'noninteractive' })
 
     def install_authorized_keys(self):
@@ -165,28 +165,15 @@ class Dapper(suite.Suite):
         self.install_from_template('/etc/hosts', 'etc_hosts', { 'hostname' : hostname, 'domain' : domain }) 
 
     def config_interfaces(self, nics):
-        suite = self.context.get_setting('suite')
-        if suite == 'xenial' or suite == 'bionic':
-                self.install_from_template('/etc/network/interfaces', 'interfaces',
-                                   { 'ip' : nics[0].type == 'dhcp' and 'dhcp' or nics[0].ip,
-                                     'mask' : nics[0].netmask,
-                                     'net' : nics[0].network,
-                                     'bcast' : nics[0].broadcast,
-                                     'gw' : nics[0].gateway,
-                                     'dns' : nics[0].dns,
-                                     'domain' : self.context.get_setting('domain'),
-                                     'ifacename' : 'ens3' })
-
-        else:
-                self.install_from_template('/etc/network/interfaces', 'interfaces',
-                                   { 'ip' : nics[0].type == 'dhcp' and 'dhcp' or nics[0].ip,
-                                     'mask' : nics[0].netmask,
-                                     'net' : nics[0].network,
-                                     'bcast' : nics[0].broadcast,
-                                     'gw' : nics[0].gateway,
-                                     'dns' : nics[0].dns,
-                                     'domain' : self.context.get_setting('domain'),
-                                     'ifacename' : "eth0" })
+        self.install_from_template('/etc/network/interfaces', 'interfaces',
+            { 'ip' : nics[0].type == 'dhcp' and 'dhcp' or nics[0].ip,
+            'mask' : nics[0].netmask,
+            'net' : nics[0].network,
+            'bcast' : nics[0].broadcast,
+            'gw' : nics[0].gateway,
+            'dns' : nics[0].dns,
+            'domain' : self.context.get_setting('domain'),
+            'ifacename' : "eth0" })
 
     def config_ssh(self):
         self.install_from_template('/etc/ssh/sshd_config', 'sshd_config')
@@ -213,7 +200,7 @@ class Dapper(suite.Suite):
         if not addpkg and not removepkg:
             return
 
-        cmd = ['apt-get', 'install', '-y', '--force-yes']
+        cmd = ['apt-get', 'install', '-y']
         cmd += addpkg or []
         cmd += ['%s-' % pkg for pkg in removepkg or []]
         self.run_in_target(env={ 'DEBIAN_FRONTEND' : 'noninteractive' }, *cmd)
@@ -321,12 +308,12 @@ class Dapper(suite.Suite):
         return (mirror, updates_mirror, security_mirror)
 
     def install_kernel(self, destdir):
-        run_cmd('chroot', destdir, 'apt-get', '--force-yes', '-y', 'install', self.kernel_name(), env={ 'DEBIAN_FRONTEND' : 'noninteractive' })
+        run_cmd('chroot', destdir, 'apt-get', '-y', 'install', self.kernel_name(), env={ 'DEBIAN_FRONTEND' : 'noninteractive' })
 
     def install_grub(self, chroot_dir):
         self.install_from_template('/etc/kernel-img.conf', 'kernelimg', { 'updategrub' : self.updategrub })
         arch = self.context.get_setting('arch')
-        self.run_in_target('apt-get', '--force-yes', '-y', 'install', 'grub', env={ 'DEBIAN_FRONTEND' : 'noninteractive' })
+        self.run_in_target('apt-get', '-y', 'install', 'grub', env={ 'DEBIAN_FRONTEND' : 'noninteractive' })
         run_cmd('rsync', '-a', '%s%s/%s/' % (chroot_dir, self.grubroot, arch == 'amd64' and 'x86_64-pc' or 'i386-pc'), '%s/boot/grub/' % chroot_dir) 
 
     def create_devices(self):
