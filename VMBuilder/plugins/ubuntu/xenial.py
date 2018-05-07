@@ -20,4 +20,13 @@ import time
 from VMBuilder.plugins.ubuntu.wily import Wily
 
 class Xenial(Wily):
-    pass
+    def config_interfaces(self, nics):
+        self.install_from_template('/etc/network/interfaces', 'interfaces',
+            { 'ip' : nics[0].type == 'dhcp' and 'dhcp' or nics[0].ip,
+            'mask' : nics[0].netmask,
+            'net' : nics[0].network,
+            'bcast' : nics[0].broadcast,
+            'gw' : nics[0].gateway,
+            'dns' : nics[0].dns,
+            'domain' : self.context.get_setting('domain'),
+            'ifacename' : 'ens3' })
